@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTenant } from '@/contexts/TenantContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { CreateTabInputSchema, AddTabItemInputSchema, validateInput } from '@/lib/validations';
 
 export interface Tab {
   id: string;
@@ -137,6 +138,9 @@ export function useCreateTab() {
     mutationFn: async (input: CreateTabInput) => {
       if (!currentTenant?.id) throw new Error('Nenhum tenant selecionado');
 
+      // Validate input
+      validateInput(CreateTabInputSchema, input);
+
       const { data, error } = await supabase
         .from('tabs')
         .insert({
@@ -179,7 +183,13 @@ export function useAddTabItem() {
 
   return useMutation({
     mutationFn: async (input: AddTabItemInput) => {
+      // Validate input
+      validateInput(AddTabItemInputSchema, input);
+
       const total = (input.quantity * input.unit_price) - (input.discount || 0);
+
+      // Validate calculated total
+      if (total < 0) throw new Error("Total do item não pode ser negativo");
 
       const { data, error } = await supabase
         .from('tab_items')
@@ -250,10 +260,16 @@ export function useCloseTab() {
       items: TabItem[];
     }) => {
       if (!currentTenant?.id) throw new Error('Nenhum tenant selecionado');
+      if (!paymentMethod || paymentMethod.length === 0) throw new Error('Forma de pagamento é obrigatória');
+      if (items.length === 0) throw new Error('Comanda deve ter pelo menos um item');
 
       const grossTotal = items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
       const discountTotal = items.reduce((sum, item) => sum + item.discount, 0);
       const netTotal = grossTotal - discountTotal;
+
+      // Validate totals
+      if (netTotal < 0) throw new Error('Total líquido não pode ser negativo');
+      if (discountTotal > grossTotal) throw new Error('Desconto não pode ser maior que o valor bruto');
 
       // Create sale
       const { data: sale, error: saleError } = await supabase
@@ -288,29 +304,17 @@ export function useCloseTab() {
 
       if (itemsError) throw itemsError;
 
-      // Update stock for each product
+      // Update stock atomically using RPC for each product
       for (const item of items) {
-        await supabase
-          .from('products')
-          .update({
-            stock_current: supabase.rpc ? undefined : 0, // Will use direct update below
-          })
-          .eq('id', item.product_id);
+        // Use atomic decrement_stock function to prevent race conditions
+        const { error: stockError } = await supabase.rpc('decrement_stock', {
+          p_product_id: item.product_id,
+          p_quantity: item.quantity,
+        });
 
-        // Get current stock and update
-        const { data: product } = await supabase
-          .from('products')
-          .select('stock_current')
-          .eq('id', item.product_id)
-          .single();
-
-        if (product) {
-          await supabase
-            .from('products')
-            .update({
-              stock_current: (product.stock_current || 0) - item.quantity,
-            })
-            .eq('id', item.product_id);
+        if (stockError) {
+          console.error('Stock update error:', stockError);
+          // Continue with sale even if stock update fails
         }
 
         // Create stock movement

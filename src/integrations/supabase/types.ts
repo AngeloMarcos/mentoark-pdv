@@ -535,6 +535,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      decrement_stock: {
+        Args: { p_product_id: string; p_quantity: number }
+        Returns: undefined
+      }
       get_user_tenants: { Args: never; Returns: string[] }
       has_tenant_role: {
         Args: {
@@ -542,6 +546,10 @@ export type Database = {
           _tenant_id: string
         }
         Returns: boolean
+      }
+      increment_stock: {
+        Args: { p_product_id: string; p_quantity: number }
+        Returns: undefined
       }
       user_belongs_to_tenant: { Args: { _tenant_id: string }; Returns: boolean }
     }

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useTenant } from '@/contexts/TenantContext';
 import { toast } from 'sonner';
+import { TableInputSchema, validateInput } from '@/lib/validations';
 
 export interface Table {
   id: string;
@@ -15,9 +16,8 @@ export interface Table {
 
 export interface TableInput {
   number: string;
-  name?: string;
-  capacity?: number;
-  status?: 'available' | 'occupied' | 'reserved';
+  name?: string | null;
+  capacity?: number | null;
 }
 
 export function useTables() {
@@ -27,17 +27,18 @@ export function useTables() {
     queryKey: ['tables', currentTenant?.id],
     queryFn: async () => {
       if (!currentTenant?.id) return [];
-      
+
       const { data, error } = await supabase
         .from('tables')
         .select('*')
         .eq('tenant_id', currentTenant.id)
         .order('number');
-      
+
       if (error) throw error;
       return data as Table[];
     },
     enabled: !!currentTenant?.id,
+    refetchInterval: 15000,
   });
 }
 
@@ -49,6 +50,9 @@ export function useCreateTable() {
     mutationFn: async (input: TableInput) => {
       if (!currentTenant?.id) throw new Error('Nenhum tenant selecionado');
 
+      // Validate input
+      validateInput(TableInputSchema, input);
+
       const { data, error } = await supabase
         .from('tables')
         .insert({
@@ -56,7 +60,7 @@ export function useCreateTable() {
           number: input.number,
           name: input.name || null,
           capacity: input.capacity || null,
-          status: input.status || 'available',
+          status: 'available',
         })
         .select()
         .single();
@@ -78,14 +82,16 @@ export function useUpdateTable() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, ...input }: { id: string } & Partial<TableInput>) => {
+    mutationFn: async ({ id, ...input }: TableInput & { id: string }) => {
+      // Validate input
+      validateInput(TableInputSchema, input);
+
       const { data, error } = await supabase
         .from('tables')
         .update({
           number: input.number,
-          name: input.name,
-          capacity: input.capacity,
-          status: input.status,
+          name: input.name || null,
+          capacity: input.capacity || null,
         })
         .eq('id', id)
         .select()
@@ -96,6 +102,7 @@ export function useUpdateTable() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tables'] });
+      toast.success('Mesa atualizada com sucesso');
     },
     onError: (error: Error) => {
       toast.error('Erro ao atualizar mesa: ' + error.message);
@@ -121,6 +128,30 @@ export function useDeleteTable() {
     },
     onError: (error: Error) => {
       toast.error('Erro ao excluir mesa: ' + error.message);
+    },
+  });
+}
+
+export function useUpdateTableStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: 'available' | 'occupied' | 'reserved' }) => {
+      const { data, error } = await supabase
+        .from('tables')
+        .update({ status })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
+    },
+    onError: (error: Error) => {
+      toast.error('Erro ao atualizar status: ' + error.message);
     },
   });
 }

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
 import { toast } from "sonner";
+import { CreateFinancialEntryInputSchema, validateInput } from "@/lib/validations";
 
 export interface FinancialEntry {
   id: string;
@@ -147,6 +148,9 @@ export function useCreateFinancialEntry() {
   return useMutation({
     mutationFn: async (input: CreateFinancialEntryInput) => {
       if (!currentTenant) throw new Error("Nenhuma empresa selecionada");
+
+      // Validate input
+      validateInput(CreateFinancialEntryInputSchema, input);
 
       const { data, error } = await supabase
         .from("financial_entries")

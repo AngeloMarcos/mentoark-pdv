@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Users, Clock, Settings, UtensilsCrossed } from 'lucide-react';
-import { useTables, useCreateTable, useUpdateTable, type Table } from '@/hooks/useTables';
+import { useTables, useCreateTable, useUpdateTable, useUpdateTableStatus, type Table } from '@/hooks/useTables';
 import { useOpenTabs, useCreateTab, type Tab } from '@/hooks/useTabs';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -31,6 +31,7 @@ export default function Tables() {
   const { data: openTabs = [] } = useOpenTabs();
   const createTable = useCreateTable();
   const updateTable = useUpdateTable();
+  const updateTableStatus = useUpdateTableStatus();
   const createTab = useCreateTab();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -173,7 +174,7 @@ export default function Tables() {
                     <Select
                       value={table.status}
                       onValueChange={(value) =>
-                        updateTable.mutate({ id: table.id, status: value as Table['status'] })
+                        updateTableStatus.mutate({ id: table.id, status: value as Table['status'] })
                       }
                     >
                       <SelectTrigger className="w-32">

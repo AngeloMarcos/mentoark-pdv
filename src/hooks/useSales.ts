@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { CreateSaleInputSchema, validateInput } from "@/lib/validations";
 
 export interface SaleItem {
   product_id: string;
@@ -72,7 +73,7 @@ export function useTodaySales() {
       };
     },
     enabled: !!currentTenant,
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 30000,
   });
 }
 
@@ -90,7 +91,6 @@ export function useSalesReport(startDate: Date, endDate: Date) {
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999);
 
-      // Fetch sales
       const { data: salesData, error: salesError } = await supabase
         .from("sales")
         .select("*")
@@ -104,7 +104,6 @@ export function useSalesReport(startDate: Date, endDate: Date) {
       const sales = salesData as Sale[];
       const saleIds = sales.map((s) => s.id);
 
-      // Fetch sale items with product info
       let productRanking: { product_id: string; product_name: string; quantity: number; revenue: number }[] = [];
       
       if (saleIds.length > 0) {
@@ -120,7 +119,6 @@ export function useSalesReport(startDate: Date, endDate: Date) {
 
         if (itemsError) throw itemsError;
 
-        // Aggregate by product
         const productMap = new Map<string, { name: string; quantity: number; revenue: number }>();
         
         for (const item of itemsData || []) {
@@ -179,10 +177,17 @@ export function useCreateSale() {
       if (!currentTenant) throw new Error("Nenhuma empresa selecionada");
       if (!user) throw new Error("Usuário não autenticado");
 
+      // Validate input
+      validateInput(CreateSaleInputSchema, input);
+
       const grossTotal = input.items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
       const itemDiscounts = input.items.reduce((sum, item) => sum + item.discount, 0);
       const discountTotal = (input.discount_total || 0) + itemDiscounts;
       const netTotal = grossTotal - discountTotal;
+
+      // Validate calculated totals
+      if (netTotal < 0) throw new Error("Total líquido não pode ser negativo");
+      if (discountTotal > grossTotal) throw new Error("Desconto não pode ser maior que o valor bruto");
 
       // Create sale
       const { data: sale, error: saleError } = await supabase
@@ -215,20 +220,17 @@ export function useCreateSale() {
       const { error: itemsError } = await supabase.from("sale_items").insert(saleItems);
       if (itemsError) throw itemsError;
 
-      // Update stock and create movements
+      // Update stock atomically using RPC and create movements
       for (const item of input.items) {
-        // Update product stock directly
-        const { data: product } = await supabase
-          .from("products")
-          .select("stock_current")
-          .eq("id", item.product_id)
-          .single();
+        // Use atomic decrement_stock function to prevent race conditions
+        const { error: stockError } = await supabase.rpc("decrement_stock", {
+          p_product_id: item.product_id,
+          p_quantity: item.quantity,
+        });
 
-        if (product) {
-          await supabase
-            .from("products")
-            .update({ stock_current: Number(product.stock_current) - item.quantity })
-            .eq("id", item.product_id);
+        if (stockError) {
+          console.error("Stock update error:", stockError);
+          // Continue with sale even if stock update fails
         }
 
         // Create stock movement
