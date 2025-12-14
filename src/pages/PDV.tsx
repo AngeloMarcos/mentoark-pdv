@@ -205,7 +205,7 @@ const PDV = () => {
                 </SelectContent>
               </Select>
 
-              <Button className="w-full h-14 text-lg touch-target" disabled={cart.length === 0 || createSale.isPending} onClick={handleFinalizeSale}>
+              <Button className="w-full h-14 text-lg touch-target sale-button" disabled={cart.length === 0 || createSale.isPending} onClick={handleFinalizeSale}>
                 {createSale.isPending ? "Finalizando..." : "Finalizar Venda"}
               </Button>
             </div>

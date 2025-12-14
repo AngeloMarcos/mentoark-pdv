@@ -3,129 +3,117 @@
 @tailwind utilities;
 
 /* 
-  PDV Universal - Design System
-  Modern, minimal, professional
+  Nexus Retail Cloud - Design System
+  Modern SaaS Dark Theme with Orange/Green accents
   All colors in HSL
 */
 
 @layer base {
   :root {
-    /* Background & Foreground */
-    --background: 0 0% 98%;
-    --foreground: 222 47% 11%;
-
-    /* Card surfaces */
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-
-    /* Popover */
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-
-    /* Primary - Deep blue */
-    --primary: 217 91% 50%;
-    --primary-foreground: 0 0% 100%;
-
-    /* Secondary - Slate gray */
-    --secondary: 215 20% 95%;
-    --secondary-foreground: 222 47% 11%;
-
-    /* Muted */
-    --muted: 215 20% 95%;
-    --muted-foreground: 215 16% 47%;
-
-    /* Accent - Teal */
-    --accent: 173 80% 40%;
-    --accent-foreground: 0 0% 100%;
-
-    /* Success - Green */
-    --success: 142 76% 36%;
-    --success-foreground: 0 0% 100%;
-
-    /* Warning - Amber */
-    --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 100%;
-
-    /* Destructive - Red */
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    /* Border & Input */
-    --border: 215 20% 88%;
-    --input: 215 20% 88%;
-    --ring: 217 91% 50%;
-
-    /* Radius */
-    --radius: 0.625rem;
-
-    /* Sidebar */
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 215 20% 95%;
-    --sidebar-primary: 217 91% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 47% 16%;
-    --sidebar-accent-foreground: 215 20% 95%;
-    --sidebar-border: 222 47% 16%;
-    --sidebar-ring: 217 91% 55%;
-    --sidebar-muted: 215 16% 55%;
-  }
-
-  .dark {
-    /* Background & Foreground */
+    /* Force dark mode */
+    color-scheme: dark;
+    
+    /* Background & Foreground - Dark */
     --background: 222 47% 6%;
-    --foreground: 215 20% 95%;
+    --foreground: 210 20% 95%;
 
-    /* Card surfaces */
+    /* Card surfaces - Slightly lighter dark */
     --card: 222 47% 9%;
-    --card-foreground: 215 20% 95%;
+    --card-foreground: 210 20% 95%;
 
     /* Popover */
     --popover: 222 47% 9%;
-    --popover-foreground: 215 20% 95%;
+    --popover-foreground: 210 20% 95%;
 
-    /* Primary - Bright blue */
-    --primary: 217 91% 60%;
+    /* Primary - Vibrant Orange */
+    --primary: 24 95% 53%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary */
+    /* Secondary - Dark gray */
     --secondary: 222 47% 14%;
-    --secondary-foreground: 215 20% 95%;
+    --secondary-foreground: 210 20% 95%;
 
     /* Muted */
     --muted: 222 47% 14%;
     --muted-foreground: 215 16% 55%;
 
-    /* Accent - Teal */
-    --accent: 173 80% 45%;
+    /* Accent - Green for sales/WhatsApp */
+    --accent: 142 72% 45%;
     --accent-foreground: 0 0% 100%;
 
-    /* Success */
-    --success: 142 76% 42%;
+    /* Success - Green */
+    --success: 142 72% 45%;
     --success-foreground: 0 0% 100%;
 
-    /* Warning */
+    /* Warning - Amber */
     --warning: 38 92% 55%;
     --warning-foreground: 0 0% 0%;
 
-    /* Destructive */
+    /* Destructive - Red */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
     /* Border & Input */
     --border: 222 47% 16%;
     --input: 222 47% 16%;
-    --ring: 217 91% 60%;
+    --ring: 24 95% 53%;
 
-    /* Sidebar */
+    /* Radius */
+    --radius: 0.75rem;
+
+    /* Sidebar - Darkest */
     --sidebar-background: 222 47% 4%;
-    --sidebar-foreground: 215 20% 95%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-foreground: 210 20% 90%;
+    --sidebar-primary: 24 95% 53%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 222 47% 11%;
-    --sidebar-accent-foreground: 215 20% 95%;
+    --sidebar-accent-foreground: 210 20% 95%;
     --sidebar-border: 222 47% 11%;
-    --sidebar-ring: 217 91% 60%;
-    --sidebar-muted: 215 16% 45%;
+    --sidebar-ring: 24 95% 53%;
+    --sidebar-muted: 215 16% 50%;
+
+    /* Chart colors */
+    --chart-1: 24 95% 53%;
+    --chart-2: 142 72% 45%;
+    --chart-3: 38 92% 55%;
+    --chart-4: 217 91% 60%;
+    --chart-5: 280 65% 60%;
+  }
+
+  /* Light mode fallback (kept for compatibility but not used) */
+  .light {
+    --background: 0 0% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 24 95% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 215 20% 95%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 215 20% 95%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 142 72% 40%;
+    --accent-foreground: 0 0% 100%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 20% 88%;
+    --input: 215 20% 88%;
+    --ring: 24 95% 50%;
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 215 20% 95%;
+    --sidebar-primary: 24 95% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 47% 16%;
+    --sidebar-accent-foreground: 215 20% 95%;
+    --sidebar-border: 222 47% 16%;
+    --sidebar-ring: 24 95% 55%;
+    --sidebar-muted: 215 16% 55%;
   }
 }
 
@@ -139,7 +127,7 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Custom scrollbar */
+  /* Custom scrollbar - Dark theme */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -154,7 +142,7 @@
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground/30;
+    @apply bg-muted-foreground/40;
   }
 }
 
@@ -164,19 +152,29 @@
     @apply min-h-[44px] min-w-[44px];
   }
 
-  /* Glassmorphism card */
+  /* Glass card for dark mode */
   .glass-card {
-    @apply bg-card/80 backdrop-blur-sm border border-border/50;
+    @apply bg-card/90 backdrop-blur-md border border-border/50;
   }
 
-  /* Gradient text */
+  /* Gradient text - Orange */
   .gradient-text {
-    @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+    @apply bg-gradient-to-r from-primary to-warning bg-clip-text text-transparent;
+  }
+
+  /* Gradient text - Green */
+  .gradient-text-success {
+    @apply bg-gradient-to-r from-accent to-success bg-clip-text text-transparent;
   }
 
   /* Stat card hover */
   .stat-card {
-    @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5;
+    @apply transition-all duration-200 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5;
+  }
+
+  /* KPI card */
+  .kpi-card {
+    @apply bg-card border border-border rounded-xl p-4 transition-all duration-200 hover:border-primary/40;
   }
 
   /* PDV item row */
@@ -184,9 +182,24 @@
     @apply flex items-center gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors;
   }
 
+  /* Hero card gradient */
+  .hero-card {
+    @apply bg-gradient-to-br from-primary/20 via-card to-card border border-primary/30;
+  }
+
+  /* Sale button - Green */
+  .sale-button {
+    @apply bg-accent hover:bg-accent/90 text-accent-foreground font-semibold shadow-lg shadow-accent/20;
+  }
+
   /* Input focus ring */
   .input-focus {
     @apply focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background;
+  }
+
+  /* Active sidebar item */
+  .sidebar-active {
+    @apply bg-sidebar-accent text-sidebar-primary border-l-2 border-sidebar-primary;
   }
 }
 
@@ -199,7 +212,7 @@
   @keyframes fadeIn {
     from {
       opacity: 0;
-      transform: translateY(4px);
+      transform: translateY(8px);
     }
     to {
       opacity: 1;
@@ -223,17 +236,31 @@
     }
   }
 
-  /* Pulse glow for success */
+  /* Pulse glow for success - Green */
   .animate-success-glow {
     animation: successGlow 0.6s ease-out;
   }
 
   @keyframes successGlow {
     0% {
-      box-shadow: 0 0 0 0 hsl(var(--success) / 0.4);
+      box-shadow: 0 0 0 0 hsl(var(--success) / 0.5);
     }
     100% {
-      box-shadow: 0 0 0 8px hsl(var(--success) / 0);
+      box-shadow: 0 0 0 12px hsl(var(--success) / 0);
+    }
+  }
+
+  /* Orange glow animation */
+  .animate-primary-glow {
+    animation: primaryGlow 2s ease-in-out infinite;
+  }
+
+  @keyframes primaryGlow {
+    0%, 100% {
+      box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+    }
+    50% {
+      box-shadow: 0 0 30px hsl(var(--primary) / 0.5);
     }
   }
 }
