@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
 import { toast } from "sonner";
+import { getUserFriendlyError, sanitizeSearchTerm } from "@/lib/error-handler";
 
 export interface Customer {
   id: string;
@@ -37,7 +38,9 @@ export function useCustomers(searchTerm?: string) {
         .order("name");
 
       if (searchTerm) {
-        query = query.or(`name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%,document.ilike.%${searchTerm}%`);
+        // Sanitize search input to prevent SQL wildcard manipulation
+        const sanitized = sanitizeSearchTerm(searchTerm);
+        query = query.or(`name.ilike.%${sanitized}%,phone.ilike.%${sanitized}%,document.ilike.%${sanitized}%`);
       }
 
       const { data, error } = await query;
@@ -82,7 +85,7 @@ export function useCreateCustomer() {
       toast.success("Cliente criado com sucesso!");
     },
     onError: (error) => {
-      toast.error(`Erro ao criar cliente: ${error.message}`);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }
@@ -117,7 +120,7 @@ export function useUpdateCustomer() {
       toast.success("Cliente atualizado com sucesso!");
     },
     onError: (error) => {
-      toast.error(`Erro ao atualizar cliente: ${error.message}`);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }
@@ -139,7 +142,7 @@ export function useDeleteCustomer() {
       toast.success("Cliente excluído com sucesso!");
     },
     onError: (error) => {
-      toast.error(`Erro ao excluir cliente: ${error.message}`);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }

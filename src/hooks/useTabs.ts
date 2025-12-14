@@ -4,6 +4,7 @@ import { useTenant } from '@/contexts/TenantContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { CreateTabInputSchema, AddTabItemInputSchema, validateInput } from '@/lib/validations';
+import { getUserFriendlyError } from '@/lib/error-handler';
 
 export interface Tab {
   id: string;
@@ -172,7 +173,7 @@ export function useCreateTab() {
       toast.success('Comanda aberta com sucesso');
     },
     onError: (error: Error) => {
-      toast.error('Erro ao abrir comanda: ' + error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }
@@ -214,7 +215,7 @@ export function useAddTabItem() {
       toast.success('Item adicionado');
     },
     onError: (error: Error) => {
-      toast.error('Erro ao adicionar item: ' + error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }
@@ -237,7 +238,7 @@ export function useRemoveTabItem() {
       toast.success('Item removido');
     },
     onError: (error: Error) => {
-      toast.error('Erro ao remover item: ' + error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }
@@ -313,7 +314,7 @@ export function useCloseTab() {
         });
 
         if (stockError) {
-          console.error('Stock update error:', stockError);
+          console.error('[Stock Update Error]', stockError);
           // Continue with sale even if stock update fails
         }
 
@@ -366,7 +367,7 @@ export function useCloseTab() {
       toast.success('Comanda fechada com sucesso');
     },
     onError: (error: Error) => {
-      toast.error('Erro ao fechar comanda: ' + error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }
@@ -397,7 +398,7 @@ export function useCancelTab() {
       toast.success('Comanda cancelada');
     },
     onError: (error: Error) => {
-      toast.error('Erro ao cancelar comanda: ' + error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }

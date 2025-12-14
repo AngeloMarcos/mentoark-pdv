@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
 import { toast } from "sonner";
 import { CreateStockMovementInputSchema, validateInput } from "@/lib/validations";
+import { getUserFriendlyError } from "@/lib/error-handler";
 
 export interface StockMovement {
   id: string;
@@ -116,7 +117,7 @@ export function useCreateStockMovement() {
       toast.success("Movimentação registrada com sucesso!");
     },
     onError: (error) => {
-      toast.error(`Erro ao registrar movimentação: ${error.message}`);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }

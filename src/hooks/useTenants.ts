@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { getUserFriendlyError } from "@/lib/error-handler";
 
 export interface CreateTenantInput {
   name: string;
@@ -48,7 +49,7 @@ export function useCreateTenant() {
       toast.success("Empresa criada com sucesso!");
     },
     onError: (error) => {
-      toast.error(`Erro ao criar empresa: ${error.message}`);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }
@@ -78,7 +79,7 @@ export function useUpdateTenant() {
       toast.success("Empresa atualizada com sucesso!");
     },
     onError: (error) => {
-      toast.error(`Erro ao atualizar empresa: ${error.message}`);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }

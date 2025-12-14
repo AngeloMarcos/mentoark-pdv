@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
 import { toast } from "sonner";
 import { CreateFinancialEntryInputSchema, validateInput } from "@/lib/validations";
+import { getUserFriendlyError } from "@/lib/error-handler";
 
 export interface FinancialEntry {
   id: string;
@@ -173,7 +174,7 @@ export function useCreateFinancialEntry() {
       toast.success("Lançamento criado com sucesso!");
     },
     onError: (error) => {
-      toast.error(`Erro ao criar lançamento: ${error.message}`);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }
@@ -191,7 +192,7 @@ export function useDeleteFinancialEntry() {
       toast.success("Lançamento excluído com sucesso!");
     },
     onError: (error) => {
-      toast.error(`Erro ao excluir lançamento: ${error.message}`);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }
