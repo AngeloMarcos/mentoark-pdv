@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
 import { toast } from "sonner";
+import { ProductInputSchema, validateInput } from "@/lib/validations";
 
 export interface Product {
   id: string;
@@ -94,6 +95,9 @@ export function useCreateProduct() {
     mutationFn: async (input: ProductInput) => {
       if (!currentTenant) throw new Error("Nenhuma empresa selecionada");
 
+      // Validate input
+      validateInput(ProductInputSchema, input);
+
       const { data, error } = await supabase
         .from("products")
         .insert({
@@ -130,6 +134,9 @@ export function useUpdateProduct() {
 
   return useMutation({
     mutationFn: async ({ id, ...input }: ProductInput & { id: string }) => {
+      // Validate input
+      validateInput(ProductInputSchema, input);
+
       const { data, error } = await supabase
         .from("products")
         .update({

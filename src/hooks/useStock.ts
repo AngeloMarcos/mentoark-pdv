@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
 import { toast } from "sonner";
+import { CreateStockMovementInputSchema, validateInput } from "@/lib/validations";
 
 export interface StockMovement {
   id: string;
@@ -68,6 +69,9 @@ export function useCreateStockMovement() {
     mutationFn: async (input: CreateStockMovementInput) => {
       if (!currentTenant) throw new Error("Nenhuma empresa selecionada");
 
+      // Validate input
+      validateInput(CreateStockMovementInputSchema, input);
+
       // Determine quantity sign based on movement type
       const quantityDelta =
         input.movement_type === "purchase" || input.movement_type === "adjustment_plus"
@@ -89,23 +93,20 @@ export function useCreateStockMovement() {
 
       if (movementError) throw movementError;
 
-      // Update product stock
-      const { data: product, error: productError } = await supabase
-        .from("products")
-        .select("stock_current")
-        .eq("id", input.product_id)
-        .single();
-
-      if (productError) throw productError;
-
-      const newStock = Number(product.stock_current) + quantityDelta;
-
-      const { error: updateError } = await supabase
-        .from("products")
-        .update({ stock_current: newStock })
-        .eq("id", input.product_id);
-
-      if (updateError) throw updateError;
+      // Use atomic stock update via RPC
+      if (quantityDelta > 0) {
+        const { error: stockError } = await supabase.rpc("increment_stock", {
+          p_product_id: input.product_id,
+          p_quantity: Math.abs(quantityDelta),
+        });
+        if (stockError) throw stockError;
+      } else {
+        const { error: stockError } = await supabase.rpc("decrement_stock", {
+          p_product_id: input.product_id,
+          p_quantity: Math.abs(quantityDelta),
+        });
+        if (stockError) throw stockError;
+      }
 
       return movement;
     },
