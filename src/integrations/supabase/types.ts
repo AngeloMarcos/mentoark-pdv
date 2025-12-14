@@ -325,6 +325,152 @@ export type Database = {
           },
         ]
       }
+      tab_items: {
+        Row: {
+          added_at: string | null
+          added_by: string | null
+          discount: number | null
+          id: string
+          notes: string | null
+          product_id: string
+          quantity: number
+          tab_id: string
+          total: number
+          unit_price: number
+        }
+        Insert: {
+          added_at?: string | null
+          added_by?: string | null
+          discount?: number | null
+          id?: string
+          notes?: string | null
+          product_id: string
+          quantity: number
+          tab_id: string
+          total: number
+          unit_price: number
+        }
+        Update: {
+          added_at?: string | null
+          added_by?: string | null
+          discount?: number | null
+          id?: string
+          notes?: string | null
+          product_id?: string
+          quantity?: number
+          tab_id?: string
+          total?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tab_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tab_items_tab_id_fkey"
+            columns: ["tab_id"]
+            isOneToOne: false
+            referencedRelation: "tabs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tables: {
+        Row: {
+          capacity: number | null
+          created_at: string | null
+          id: string
+          name: string | null
+          number: string
+          status: string | null
+          tenant_id: string
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string | null
+          id?: string
+          name?: string | null
+          number: string
+          status?: string | null
+          tenant_id: string
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string | null
+          id?: string
+          name?: string | null
+          number?: string
+          status?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tables_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tabs: {
+        Row: {
+          closed_at: string | null
+          created_at: string | null
+          customer_name: string | null
+          id: string
+          notes: string | null
+          opened_at: string | null
+          status: string | null
+          table_id: string | null
+          tenant_id: string
+          user_id: string | null
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string | null
+          customer_name?: string | null
+          id?: string
+          notes?: string | null
+          opened_at?: string | null
+          status?: string | null
+          table_id?: string | null
+          tenant_id: string
+          user_id?: string | null
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string | null
+          customer_name?: string | null
+          id?: string
+          notes?: string | null
+          opened_at?: string | null
+          status?: string | null
+          table_id?: string | null
+          tenant_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tabs_table_id_fkey"
+            columns: ["table_id"]
+            isOneToOne: false
+            referencedRelation: "tables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tabs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_users: {
         Row: {
           created_at: string | null

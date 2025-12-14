@@ -13,12 +13,14 @@ import {
   Building2,
   LogOut,
   Menu,
+  UtensilsCrossed,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/tables", label: "Mesas", icon: UtensilsCrossed },
   { path: "/pdv", label: "PDV", icon: ShoppingCart },
   { path: "/products", label: "Produtos", icon: Package },
   { path: "/sales-report", label: "Relatórios", icon: BarChart3 },
