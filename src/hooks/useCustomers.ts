@@ -11,7 +11,7 @@ export interface Customer {
   document: string | null;
   email: string | null;
   notes: string | null;
-  created_at: string;
+  created_at: string | null;
 }
 
 export interface CustomerInput {
@@ -37,7 +37,7 @@ export function useCustomers(searchTerm?: string) {
         .order("name");
 
       if (searchTerm) {
-        query = query.or(`name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%`);
+        query = query.or(`name.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%,document.ilike.%${searchTerm}%`);
       }
 
       const { data, error } = await query;
@@ -57,10 +57,18 @@ export function useCreateCustomer() {
     mutationFn: async (input: CustomerInput) => {
       if (!currentTenant) throw new Error("Nenhuma empresa selecionada");
 
+      if (!input.name?.trim()) {
+        throw new Error("Nome é obrigatório");
+      }
+
       const { data, error } = await supabase
         .from("customers")
         .insert({
-          ...input,
+          name: input.name.trim(),
+          phone: input.phone?.trim() || null,
+          document: input.document?.trim() || null,
+          email: input.email?.trim() || null,
+          notes: input.notes?.trim() || null,
           tenant_id: currentTenant.id,
         })
         .select()
@@ -75,6 +83,63 @@ export function useCreateCustomer() {
     },
     onError: (error) => {
       toast.error(`Erro ao criar cliente: ${error.message}`);
+    },
+  });
+}
+
+export function useUpdateCustomer() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: CustomerInput }) => {
+      if (!data.name?.trim()) {
+        throw new Error("Nome é obrigatório");
+      }
+
+      const { data: updated, error } = await supabase
+        .from("customers")
+        .update({
+          name: data.name.trim(),
+          phone: data.phone?.trim() || null,
+          document: data.document?.trim() || null,
+          email: data.email?.trim() || null,
+          notes: data.notes?.trim() || null,
+        })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return updated;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      toast.success("Cliente atualizado com sucesso!");
+    },
+    onError: (error) => {
+      toast.error(`Erro ao atualizar cliente: ${error.message}`);
+    },
+  });
+}
+
+export function useDeleteCustomer() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("customers")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      toast.success("Cliente excluído com sucesso!");
+    },
+    onError: (error) => {
+      toast.error(`Erro ao excluir cliente: ${error.message}`);
     },
   });
 }

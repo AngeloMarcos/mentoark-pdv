@@ -4,7 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useTodaySales } from "@/hooks/useSales";
 import { useLowStockProducts } from "@/hooks/useProducts";
-import { ShoppingCart, DollarSign, CreditCard, Banknote, QrCode, AlertTriangle } from "lucide-react";
+import { useSalesLast7Days, useRecentSales } from "@/hooks/useSalesChart";
+import { ShoppingCart, DollarSign, CreditCard, Banknote, QrCode, AlertTriangle, TrendingUp, Clock } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { format } from "date-fns";
 
 const PAYMENT_ICONS: Record<string, typeof CreditCard> = {
   dinheiro: Banknote,
@@ -21,9 +24,19 @@ const PAYMENT_LABELS: Record<string, string> = {
   fiado: "Fiado",
 };
 
+const PAYMENT_LABELS_SHORT: Record<string, string> = {
+  dinheiro: "Dinheiro",
+  cartao_credito: "Crédito",
+  cartao_debito: "Débito",
+  pix: "PIX",
+  fiado: "Fiado",
+};
+
 const Dashboard = () => {
   const { data: todaySales, isLoading: salesLoading } = useTodaySales();
   const { data: lowStockProducts = [] } = useLowStockProducts();
+  const { data: chartData = [] } = useSalesLast7Days();
+  const { data: recentSales = [] } = useRecentSales();
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -83,39 +96,126 @@ const Dashboard = () => {
           })}
         </div>
 
-        {/* Low Stock Alert */}
-        {lowStockProducts.length > 0 && (
-          <Card className="border-warning/50 bg-warning/5">
+        {/* Sales Chart */}
+        <Card className="stat-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5" />
+              Vendas - Últimos 7 Dias
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="hsl(217, 91%, 50%)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="hsl(217, 91%, 50%)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis 
+                    dataKey="label" 
+                    axisLine={false} 
+                    tickLine={false}
+                    tick={{ fill: 'hsl(215, 16%, 47%)', fontSize: 12 }}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false}
+                    tick={{ fill: 'hsl(215, 16%, 47%)', fontSize: 12 }}
+                    tickFormatter={(value) => `R$${value}`}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(0, 0%, 100%)',
+                      border: '1px solid hsl(215, 20%, 88%)',
+                      borderRadius: '8px',
+                    }}
+                    formatter={(value: number) => [formatCurrency(value), "Total"]}
+                    labelFormatter={(label) => `${label}`}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="total"
+                    stroke="hsl(217, 91%, 50%)"
+                    strokeWidth={2}
+                    fill="url(#colorTotal)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          {/* Recent Sales */}
+          <Card className="stat-card">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-warning">
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                Vendas Recentes
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {recentSales.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">Nenhuma venda recente</p>
+              ) : (
+                <div className="space-y-3">
+                  {recentSales.map((sale) => (
+                    <div key={sale.id} className="flex justify-between items-center py-2 border-b border-border last:border-0">
+                      <div>
+                        <p className="font-medium">{formatCurrency(sale.net_total)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {PAYMENT_LABELS_SHORT[sale.payment_method] || sale.payment_method}
+                        </p>
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {format(new Date(sale.datetime), "HH:mm")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Low Stock Alert */}
+          <Card className={lowStockProducts.length > 0 ? "border-warning/50 bg-warning/5" : "stat-card"}>
+            <CardHeader>
+              <CardTitle className={`flex items-center gap-2 ${lowStockProducts.length > 0 ? "text-warning" : ""}`}>
                 <AlertTriangle className="w-5 h-5" />
                 Produtos com Estoque Baixo
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {lowStockProducts.slice(0, 5).map((product) => (
-                  <div
-                    key={product.id}
-                    className="flex justify-between items-center py-2 border-b border-border last:border-0"
-                  >
-                    <span className="font-medium">{product.name}</span>
-                    <span className="text-muted-foreground">
-                      {product.stock_current} / {product.min_stock} {product.unit}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              {lowStockProducts.length > 5 && (
-                <Link to="/stock">
-                  <Button variant="link" className="mt-2 p-0">
-                    Ver todos ({lowStockProducts.length})
-                  </Button>
-                </Link>
+              {lowStockProducts.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">Todos os produtos estão com estoque adequado</p>
+              ) : (
+                <div className="space-y-2">
+                  {lowStockProducts.slice(0, 5).map((product) => (
+                    <div
+                      key={product.id}
+                      className="flex justify-between items-center py-2 border-b border-border last:border-0"
+                    >
+                      <span className="font-medium">{product.name}</span>
+                      <span className="text-muted-foreground">
+                        {product.stock_current} / {product.min_stock} {product.unit}
+                      </span>
+                    </div>
+                  ))}
+                  {lowStockProducts.length > 5 && (
+                    <Link to="/stock">
+                      <Button variant="link" className="mt-2 p-0">
+                        Ver todos ({lowStockProducts.length})
+                      </Button>
+                    </Link>
+                  )}
+                </div>
               )}
             </CardContent>
           </Card>
-        )}
+        </div>
       </div>
     </AppLayout>
   );
