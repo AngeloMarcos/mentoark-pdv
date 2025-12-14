@@ -325,6 +325,27 @@ export type Database = {
           },
         ]
       }
+      system_users: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["system_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["system_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["system_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       tab_items: {
         Row: {
           added_at: string | null
@@ -551,10 +572,12 @@ export type Database = {
         Args: { p_product_id: string; p_quantity: number }
         Returns: undefined
       }
+      is_super_admin: { Args: { _user_id?: string }; Returns: boolean }
       user_belongs_to_tenant: { Args: { _tenant_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "operator"
+      system_role: "super_admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -683,6 +706,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "operator"],
+      system_role: ["super_admin", "user"],
     },
   },
 } as const
