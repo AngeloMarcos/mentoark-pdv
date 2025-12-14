@@ -14,18 +14,22 @@ import {
   LogOut,
   Menu,
   UtensilsCrossed,
+  Users,
+  Settings,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/tables", label: "Mesas", icon: UtensilsCrossed },
   { path: "/pdv", label: "PDV", icon: ShoppingCart },
+  { path: "/tables", label: "Mesas", icon: UtensilsCrossed },
   { path: "/products", label: "Produtos", icon: Package },
-  { path: "/sales-report", label: "Relatórios", icon: BarChart3 },
+  { path: "/customers", label: "Clientes", icon: Users },
   { path: "/stock", label: "Estoque", icon: Warehouse },
+  { path: "/sales-report", label: "Relatórios", icon: BarChart3 },
   { path: "/financial", label: "Financeiro", icon: Wallet },
+  { path: "/settings", label: "Configurações", icon: Settings },
 ];
 
 interface AppLayoutProps {

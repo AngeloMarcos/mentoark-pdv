@@ -52,3 +52,33 @@ export function useCreateTenant() {
     },
   });
 }
+
+export function useUpdateTenant() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: CreateTenantInput }) => {
+      const { data: updated, error } = await supabase
+        .from("tenants")
+        .update({
+          name: data.name,
+          document: data.document || null,
+          phone: data.phone || null,
+          segment: data.segment || null,
+        })
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return updated;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tenants"] });
+      toast.success("Empresa atualizada com sucesso!");
+    },
+    onError: (error) => {
+      toast.error(`Erro ao atualizar empresa: ${error.message}`);
+    },
+  });
+}
