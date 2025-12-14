@@ -4,6 +4,7 @@ import { useTenant } from "@/contexts/TenantContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { CreateSaleInputSchema, validateInput } from "@/lib/validations";
+import { getUserFriendlyError } from "@/lib/error-handler";
 
 export interface SaleItem {
   product_id: string;
@@ -229,7 +230,7 @@ export function useCreateSale() {
         });
 
         if (stockError) {
-          console.error("Stock update error:", stockError);
+          console.error("[Stock Update Error]", stockError);
           // Continue with sale even if stock update fails
         }
 
@@ -264,7 +265,7 @@ export function useCreateSale() {
       toast.success("Venda finalizada com sucesso!");
     },
     onError: (error) => {
-      toast.error(`Erro ao finalizar venda: ${error.message}`);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }

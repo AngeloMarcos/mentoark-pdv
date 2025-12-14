@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
 import { toast } from "sonner";
 import { ProductInputSchema, validateInput } from "@/lib/validations";
+import { getUserFriendlyError, sanitizeSearchTerm } from "@/lib/error-handler";
 
 export interface Product {
   id: string;
@@ -51,8 +52,10 @@ export function useProducts(searchTerm?: string) {
         .order("name");
 
       if (searchTerm) {
+        // Sanitize search input to prevent SQL wildcard manipulation
+        const sanitized = sanitizeSearchTerm(searchTerm);
         query = query.or(
-          `name.ilike.%${searchTerm}%,internal_code.ilike.%${searchTerm}%,barcode.ilike.%${searchTerm}%`
+          `name.ilike.%${sanitized}%,internal_code.ilike.%${sanitized}%,barcode.ilike.%${sanitized}%`
         );
       }
 
@@ -124,7 +127,7 @@ export function useCreateProduct() {
       toast.success("Produto criado com sucesso!");
     },
     onError: (error) => {
-      toast.error(`Erro ao criar produto: ${error.message}`);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }
@@ -163,7 +166,7 @@ export function useUpdateProduct() {
       toast.success("Produto atualizado com sucesso!");
     },
     onError: (error) => {
-      toast.error(`Erro ao atualizar produto: ${error.message}`);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }
@@ -181,7 +184,7 @@ export function useDeleteProduct() {
       toast.success("Produto excluído com sucesso!");
     },
     onError: (error) => {
-      toast.error(`Erro ao excluir produto: ${error.message}`);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }

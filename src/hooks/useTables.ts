@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useTenant } from '@/contexts/TenantContext';
 import { toast } from 'sonner';
 import { TableInputSchema, validateInput } from '@/lib/validations';
+import { getUserFriendlyError } from '@/lib/error-handler';
 
 export interface Table {
   id: string;
@@ -73,7 +74,7 @@ export function useCreateTable() {
       toast.success('Mesa criada com sucesso');
     },
     onError: (error: Error) => {
-      toast.error('Erro ao criar mesa: ' + error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }
@@ -105,7 +106,7 @@ export function useUpdateTable() {
       toast.success('Mesa atualizada com sucesso');
     },
     onError: (error: Error) => {
-      toast.error('Erro ao atualizar mesa: ' + error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }
@@ -127,7 +128,7 @@ export function useDeleteTable() {
       toast.success('Mesa excluída com sucesso');
     },
     onError: (error: Error) => {
-      toast.error('Erro ao excluir mesa: ' + error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }
@@ -151,7 +152,7 @@ export function useUpdateTableStatus() {
       queryClient.invalidateQueries({ queryKey: ['tables'] });
     },
     onError: (error: Error) => {
-      toast.error('Erro ao atualizar status: ' + error.message);
+      toast.error(getUserFriendlyError(error));
     },
   });
 }
