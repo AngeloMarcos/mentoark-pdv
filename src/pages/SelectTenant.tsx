@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Building2, Plus, LogOut } from "lucide-react";
+import { TenantSelectionSkeleton } from "@/components/ui/skeletons";
 
 const SEGMENTS = [
   { value: "farmacia", label: "Farmácia" },
@@ -61,11 +62,7 @@ const SelectTenant = () => {
   };
 
   if (authLoading || tenantsLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Carregando...</div>
-      </div>
-    );
+    return <TenantSelectionSkeleton />;
   }
 
   return (

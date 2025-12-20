@@ -24,6 +24,7 @@ import { useTables, useCreateTable, useUpdateTable, useUpdateTableStatus, type T
 import { useOpenTabs, useCreateTab, type Tab } from '@/hooks/useTabs';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { TableGridSkeleton } from '@/components/ui/skeletons';
 
 export default function Tables() {
   const navigate = useNavigate();
@@ -200,11 +201,7 @@ export default function Tables() {
 
         {/* Tables Grid */}
         {tablesLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-32 bg-muted animate-pulse rounded-lg" />
-            ))}
-          </div>
+          <TableGridSkeleton count={6} />
         ) : tables.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {tables.map((table) => {

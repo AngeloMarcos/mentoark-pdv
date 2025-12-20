@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { z } from "zod";
 import { ShoppingCart } from "lucide-react";
+import { AuthSkeleton } from "@/components/ui/skeletons";
 
 const authSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -63,11 +64,7 @@ const Auth = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-pulse text-muted-foreground">Carregando...</div>
-      </div>
-    );
+    return <AuthSkeleton />;
   }
 
   return (

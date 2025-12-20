@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Switch } from "@/components/ui/switch";
 import { Search, Plus, Edit, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ProductCardSkeleton } from "@/components/ui/skeletons";
 
 const Products = () => {
   const [search, setSearch] = useState("");
@@ -92,7 +93,11 @@ const Products = () => {
 
         {/* Product List */}
         {isLoading ? (
-          <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+          <div className="grid gap-3">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </div>
         ) : products.length === 0 ? (
           <Card><CardContent className="py-8 text-center text-muted-foreground">{search ? "Nenhum produto encontrado" : "Nenhum produto cadastrado"}</CardContent></Card>
         ) : (

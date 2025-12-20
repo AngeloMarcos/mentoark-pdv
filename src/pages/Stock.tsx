@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, AlertTriangle, Plus, ArrowUpCircle, ArrowDownCircle, TrendingUp, TrendingDown } from "lucide-react";
+import { SummaryCardSkeleton, EntryItemSkeleton } from "@/components/ui/skeletons";
 
 const MOVEMENT_TYPES = [
   { value: "purchase", label: "Entrada (Compra)", icon: ArrowUpCircle },
@@ -26,7 +27,7 @@ const Stock = () => {
   const [form, setForm] = useState<CreateStockMovementInput>({ product_id: "", movement_type: "purchase", quantity: 0, description: "" });
 
   const { data: summary, isLoading: summaryLoading } = useStockSummary();
-  const { data: movements = [] } = useStockMovements();
+  const { data: movements = [], isLoading: movementsLoading } = useStockMovements();
   const { data: products = [] } = useProducts();
   const createMovement = useCreateStockMovement();
 
@@ -47,10 +48,21 @@ const Stock = () => {
       <div className="space-y-6 animate-fade-in">
         {/* Summary Cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="stat-card"><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Produtos</CardTitle><Package className="w-4 h-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{summary?.totalProducts || 0}</div></CardContent></Card>
-          <Card className="stat-card"><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Valor em Estoque</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{formatCurrency(summary?.totalValue || 0)}</div></CardContent></Card>
-          <Card className={`stat-card ${(summary?.lowStockCount || 0) > 0 ? "border-warning/50" : ""}`}><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Estoque Baixo</CardTitle><AlertTriangle className="w-4 h-4 text-warning" /></CardHeader><CardContent><div className="text-2xl font-bold text-warning">{summary?.lowStockCount || 0}</div></CardContent></Card>
-          <Card className={`stat-card ${(summary?.outOfStockCount || 0) > 0 ? "border-destructive/50" : ""}`}><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Sem Estoque</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-destructive">{summary?.outOfStockCount || 0}</div></CardContent></Card>
+          {summaryLoading ? (
+            <>
+              <SummaryCardSkeleton />
+              <SummaryCardSkeleton />
+              <SummaryCardSkeleton />
+              <SummaryCardSkeleton />
+            </>
+          ) : (
+            <>
+              <Card className="stat-card"><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Produtos</CardTitle><Package className="w-4 h-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{summary?.totalProducts || 0}</div></CardContent></Card>
+              <Card className="stat-card"><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Valor em Estoque</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{formatCurrency(summary?.totalValue || 0)}</div></CardContent></Card>
+              <Card className={`stat-card ${(summary?.lowStockCount || 0) > 0 ? "border-warning/50" : ""}`}><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Estoque Baixo</CardTitle><AlertTriangle className="w-4 h-4 text-warning" /></CardHeader><CardContent><div className="text-2xl font-bold text-warning">{summary?.lowStockCount || 0}</div></CardContent></Card>
+              <Card className={`stat-card ${(summary?.outOfStockCount || 0) > 0 ? "border-destructive/50" : ""}`}><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Sem Estoque</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-destructive">{summary?.outOfStockCount || 0}</div></CardContent></Card>
+            </>
+          )}
         </div>
 
         <div className="flex justify-end">
@@ -80,15 +92,23 @@ const Stock = () => {
 
           <TabsContent value="movements" className="mt-4">
             <div className="grid gap-3">
-              {movements.slice(0, 50).map((m) => (
-                <Card key={m.id}>
-                  <CardContent className="flex items-center gap-4 p-4">
-                    {Number(m.quantity) > 0 ? <ArrowUpCircle className="w-5 h-5 text-success" /> : <ArrowDownCircle className="w-5 h-5 text-destructive" />}
-                    <div className="flex-1"><div className="font-medium">{m.product?.name || "Produto"}</div><div className="text-sm text-muted-foreground">{MOVEMENT_LABELS[m.movement_type] || m.movement_type} • {m.description || ""}</div></div>
-                    <div className={`font-semibold ${Number(m.quantity) > 0 ? "text-success" : "text-destructive"}`}>{Number(m.quantity) > 0 ? "+" : ""}{m.quantity} {m.product?.unit || ""}</div>
-                  </CardContent>
-                </Card>
-              ))}
+              {movementsLoading ? (
+                <>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <EntryItemSkeleton key={i} />
+                  ))}
+                </>
+              ) : (
+                movements.slice(0, 50).map((m) => (
+                  <Card key={m.id}>
+                    <CardContent className="flex items-center gap-4 p-4">
+                      {Number(m.quantity) > 0 ? <ArrowUpCircle className="w-5 h-5 text-success" /> : <ArrowDownCircle className="w-5 h-5 text-destructive" />}
+                      <div className="flex-1"><div className="font-medium">{m.product?.name || "Produto"}</div><div className="text-sm text-muted-foreground">{MOVEMENT_LABELS[m.movement_type] || m.movement_type} • {m.description || ""}</div></div>
+                      <div className={`font-semibold ${Number(m.quantity) > 0 ? "text-success" : "text-destructive"}`}>{Number(m.quantity) > 0 ? "+" : ""}{m.quantity} {m.product?.unit || ""}</div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </div>
           </TabsContent>
         </Tabs>

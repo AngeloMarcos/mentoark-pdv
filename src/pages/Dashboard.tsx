@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTodaySales } from "@/hooks/useSales";
 import { useLowStockProducts } from "@/hooks/useProducts";
 import { useSalesLast7Days, useRecentSales } from "@/hooks/useSalesChart";
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { format } from "date-fns";
+import { KPICardSkeleton, ChartSkeleton, ListItemSkeleton } from "@/components/ui/skeletons";
 
 const PAYMENT_LABELS_SHORT: Record<string, string> = {
   dinheiro: "Dinheiro",
@@ -31,9 +33,9 @@ const PAYMENT_LABELS_SHORT: Record<string, string> = {
 
 const Dashboard = () => {
   const { data: todaySales, isLoading: salesLoading } = useTodaySales();
-  const { data: lowStockProducts = [] } = useLowStockProducts();
-  const { data: chartData = [] } = useSalesLast7Days();
-  const { data: recentSales = [] } = useRecentSales();
+  const { data: lowStockProducts = [], isLoading: lowStockLoading } = useLowStockProducts();
+  const { data: chartData = [], isLoading: chartLoading } = useSalesLast7Days();
+  const { data: recentSales = [], isLoading: recentLoading } = useRecentSales();
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -68,48 +70,59 @@ const Dashboard = () => {
         <div>
           <h3 className="text-sm font-medium text-muted-foreground mb-3 uppercase tracking-wide">Resumo de Hoje</h3>
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Faturamento */}
-            <div className="kpi-card">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-muted-foreground">Faturamento</span>
-                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                  <DollarSign className="w-4 h-4 text-primary" />
+            {salesLoading ? (
+              <>
+                <KPICardSkeleton />
+                <KPICardSkeleton />
+                <KPICardSkeleton />
+              </>
+            ) : (
+              <>
+                {/* Faturamento */}
+                <div className="kpi-card">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-muted-foreground">Faturamento</span>
+                    <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
+                      <DollarSign className="w-4 h-4 text-primary" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-foreground">
+                    {formatCurrency(todaySales?.total || 0)}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Total do dia</p>
                 </div>
-              </div>
-              <div className="text-3xl font-bold text-foreground">
-                {salesLoading ? "..." : formatCurrency(todaySales?.total || 0)}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Total do dia</p>
-            </div>
 
-            {/* Número de Vendas */}
-            <div className="kpi-card">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-muted-foreground">Nº de Vendas</span>
-                <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
-                  <Receipt className="w-4 h-4 text-accent" />
+                {/* Número de Vendas */}
+                <div className="kpi-card">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-muted-foreground">Nº de Vendas</span>
+                    <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
+                      <Receipt className="w-4 h-4 text-accent" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-foreground">
+                    {todaySales?.count || 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Vendas realizadas</p>
                 </div>
-              </div>
-              <div className="text-3xl font-bold text-foreground">
-                {salesLoading ? "..." : todaySales?.count || 0}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Vendas realizadas</p>
-            </div>
 
-            {/* Ticket Médio */}
-            <div className="kpi-card sm:col-span-2 lg:col-span-1">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-muted-foreground">Ticket Médio</span>
-                <div className="w-8 h-8 rounded-lg bg-warning/20 flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-warning" />
+                {/* Ticket Médio */}
+                <div className="kpi-card sm:col-span-2 lg:col-span-1">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-muted-foreground">Ticket Médio</span>
+                    <div className="w-8 h-8 rounded-lg bg-warning/20 flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4 text-warning" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-foreground">
+                    {formatCurrency(ticketMedio)}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Valor por venda</p>
                 </div>
-              </div>
-              <div className="text-3xl font-bold text-foreground">
-                {salesLoading ? "..." : formatCurrency(ticketMedio)}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Valor por venda</p>
-            </div>
+              </>
+            )}
           </div>
+        </div>
         </div>
 
         {/* Sales Chart */}
@@ -121,48 +134,52 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-56 lg:h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(24, 95%, 53%)" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="hsl(24, 95%, 53%)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis 
-                    dataKey="label" 
-                    axisLine={false} 
-                    tickLine={false}
-                    tick={{ fill: 'hsl(215, 16%, 55%)', fontSize: 12 }}
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false}
-                    tick={{ fill: 'hsl(215, 16%, 55%)', fontSize: 12 }}
-                    tickFormatter={(value) => `R$${value}`}
-                    width={60}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(222, 47%, 9%)',
-                      border: '1px solid hsl(222, 47%, 16%)',
-                      borderRadius: '8px',
-                      color: 'hsl(210, 20%, 95%)',
-                    }}
-                    formatter={(value: number) => [formatCurrency(value), "Total"]}
-                    labelFormatter={(label) => `${label}`}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="total"
-                    stroke="hsl(24, 95%, 53%)"
-                    strokeWidth={2}
-                    fill="url(#colorTotal)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+            {chartLoading ? (
+              <ChartSkeleton />
+            ) : (
+              <div className="h-56 lg:h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(24, 95%, 53%)" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="hsl(24, 95%, 53%)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis 
+                      dataKey="label" 
+                      axisLine={false} 
+                      tickLine={false}
+                      tick={{ fill: 'hsl(215, 16%, 55%)', fontSize: 12 }}
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false}
+                      tick={{ fill: 'hsl(215, 16%, 55%)', fontSize: 12 }}
+                      tickFormatter={(value) => `R$${value}`}
+                      width={60}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(222, 47%, 9%)',
+                        border: '1px solid hsl(222, 47%, 16%)',
+                        borderRadius: '8px',
+                        color: 'hsl(210, 20%, 95%)',
+                      }}
+                      formatter={(value: number) => [formatCurrency(value), "Total"]}
+                      labelFormatter={(label) => `${label}`}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="total"
+                      stroke="hsl(24, 95%, 53%)"
+                      strokeWidth={2}
+                      fill="url(#colorTotal)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -177,7 +194,13 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {recentSales.length === 0 ? (
+              {recentLoading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <ListItemSkeleton key={i} />
+                  ))}
+                </div>
+              ) : recentSales.length === 0 ? (
                 <p className="text-muted-foreground text-center py-6 text-sm">Nenhuma venda recente</p>
               ) : (
                 <div className="space-y-2">
@@ -208,7 +231,13 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {lowStockProducts.length === 0 ? (
+              {lowStockLoading ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map((i) => (
+                    <ListItemSkeleton key={i} />
+                  ))}
+                </div>
+              ) : lowStockProducts.length === 0 ? (
                 <p className="text-muted-foreground text-center py-6 text-sm">Estoque adequado em todos os produtos</p>
               ) : (
                 <div className="space-y-2">
