@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenant } from "@/contexts/TenantContext";
+import { FullPageSkeleton } from "@/components/ui/skeletons";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -20,11 +21,7 @@ const Index = () => {
     }
   }, [user, currentTenant, authLoading, tenantLoading, navigate]);
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="animate-pulse text-muted-foreground">Carregando...</div>
-    </div>
-  );
+  return <FullPageSkeleton />;
 };
 
 export default Index;

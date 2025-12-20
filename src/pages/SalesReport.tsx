@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, DollarSign, TrendingUp, Package } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { SummaryCardSkeleton, ListItemSkeleton } from "@/components/ui/skeletons";
 
 const PAYMENT_LABELS: Record<string, string> = {
   dinheiro: "Dinheiro", cartao_credito: "Cartão Crédito", cartao_debito: "Cartão Débito", pix: "PIX", fiado: "Fiado",
@@ -50,7 +51,23 @@ const SalesReport = () => {
         </Card>
 
         {isLoading ? (
-          <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+          <div className="space-y-6">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <SummaryCardSkeleton key={i} />
+              ))}
+            </div>
+            <Card>
+              <CardHeader><CardTitle>Por Forma de Pagamento</CardTitle></CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <ListItemSkeleton key={i} />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         ) : report ? (
           <>
             {/* Summary Cards */}

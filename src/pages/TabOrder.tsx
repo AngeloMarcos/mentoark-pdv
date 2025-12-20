@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
   DialogContent,
@@ -42,61 +43,6 @@ const PAYMENT_METHODS = [
   { value: 'credito', label: 'Crédito' },
 ];
 
-export default function TabOrder() {
-  const { tabId } = useParams();
-  const navigate = useNavigate();
-
-  const { data: tab, isLoading: tabLoading } = useTab(tabId);
-  const { data: tabItems = [], isLoading: itemsLoading } = useTabItems(tabId);
-  const { data: products = [] } = useProducts();
-
-  const addItem = useAddTabItem();
-  const removeItem = useRemoveTabItem();
-  const closeTab = useCloseTab();
-  const cancelTab = useCancelTab();
-
-  const [search, setSearch] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [quantity, setQuantity] = useState(1);
-  const [notes, setNotes] = useState('');
-  const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('pix');
-
-  const filteredProducts = useMemo(() => {
-    if (!search) return products.filter(p => p.active);
-    const searchLower = search.toLowerCase();
-    return products.filter(
-      (p) =>
-        p.active &&
-        (p.name.toLowerCase().includes(searchLower) ||
-          p.internal_code?.toLowerCase().includes(searchLower) ||
-          p.barcode?.includes(search))
-    );
-  }, [products, search]);
-
-  const totals = useMemo(() => {
-    const gross = tabItems.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
-    const discount = tabItems.reduce((sum, item) => sum + item.discount, 0);
-    return { gross, discount, net: gross - discount };
-  }, [tabItems]);
-
-  const handleAddItem = async () => {
-    if (!selectedProduct || !tabId) return;
-
-    await addItem.mutateAsync({
-      tab_id: tabId,
-      product_id: selectedProduct.id,
-      quantity,
-      unit_price: selectedProduct.sale_price,
-      notes: notes || undefined,
-    });
-
-    setSelectedProduct(null);
-    setQuantity(1);
-    setNotes('');
-    setSearch('');
-  };
-
   const handleRemoveItem = async (itemId: string) => {
     if (!tabId) return;
     await removeItem.mutateAsync({ itemId, tabId });
@@ -129,9 +75,47 @@ export default function TabOrder() {
 
   if (tabLoading || itemsLoading) {
     return (
-      <AppLayout title="Carregando...">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <AppLayout title="">
+        <div className="space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Skeleton className="w-10 h-10 rounded" />
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-32" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-9 w-24" />
+              <Skeleton className="h-9 w-32" />
+            </div>
+          </div>
+          <div className="grid lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
+              <CardContent className="space-y-4">
+                <Skeleton className="h-10 w-full" />
+                <div className="space-y-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-5 w-16" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-20 w-full" />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </AppLayout>
     );

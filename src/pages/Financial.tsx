@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, TrendingUp, TrendingDown, Wallet, Trash2 } from "lucide-react";
 import { format } from "date-fns";
+import { SummaryCardSkeleton, EntryItemSkeleton } from "@/components/ui/skeletons";
 
 const PAYMENT_METHODS = [
   { value: "dinheiro", label: "Dinheiro" },
@@ -28,8 +29,8 @@ const Financial = () => {
     payment_method: "dinheiro",
   });
 
-  const { data: todaySummary } = useTodayFinancialSummary();
-  const { data: entries = [] } = useFinancialEntries();
+  const { data: todaySummary, isLoading: summaryLoading } = useTodayFinancialSummary();
+  const { data: entries = [], isLoading: entriesLoading } = useFinancialEntries();
   const createEntry = useCreateFinancialEntry();
   const deleteEntry = useDeleteFinancialEntry();
 
@@ -48,9 +49,19 @@ const Financial = () => {
       <div className="space-y-6 animate-fade-in">
         {/* Today Summary */}
         <div className="grid gap-4 sm:grid-cols-3">
-          <Card className="stat-card border-success/30"><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Entradas Hoje</CardTitle><TrendingUp className="w-4 h-4 text-success" /></CardHeader><CardContent><div className="text-2xl font-bold text-success">{formatCurrency(todaySummary?.income || 0)}</div></CardContent></Card>
-          <Card className="stat-card border-destructive/30"><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Saídas Hoje</CardTitle><TrendingDown className="w-4 h-4 text-destructive" /></CardHeader><CardContent><div className="text-2xl font-bold text-destructive">{formatCurrency(todaySummary?.expense || 0)}</div></CardContent></Card>
-          <Card className="stat-card"><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Saldo Hoje</CardTitle><Wallet className="w-4 h-4 text-muted-foreground" /></CardHeader><CardContent><div className={`text-2xl font-bold ${(todaySummary?.balance || 0) >= 0 ? "text-success" : "text-destructive"}`}>{formatCurrency(todaySummary?.balance || 0)}</div></CardContent></Card>
+          {summaryLoading ? (
+            <>
+              <SummaryCardSkeleton />
+              <SummaryCardSkeleton />
+              <SummaryCardSkeleton />
+            </>
+          ) : (
+            <>
+              <Card className="stat-card border-success/30"><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Entradas Hoje</CardTitle><TrendingUp className="w-4 h-4 text-success" /></CardHeader><CardContent><div className="text-2xl font-bold text-success">{formatCurrency(todaySummary?.income || 0)}</div></CardContent></Card>
+              <Card className="stat-card border-destructive/30"><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Saídas Hoje</CardTitle><TrendingDown className="w-4 h-4 text-destructive" /></CardHeader><CardContent><div className="text-2xl font-bold text-destructive">{formatCurrency(todaySummary?.expense || 0)}</div></CardContent></Card>
+              <Card className="stat-card"><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Saldo Hoje</CardTitle><Wallet className="w-4 h-4 text-muted-foreground" /></CardHeader><CardContent><div className={`text-2xl font-bold ${(todaySummary?.balance || 0) >= 0 ? "text-success" : "text-destructive"}`}>{formatCurrency(todaySummary?.balance || 0)}</div></CardContent></Card>
+            </>
+          )}
         </div>
 
         <div className="flex justify-end">
@@ -59,16 +70,24 @@ const Financial = () => {
 
         {/* Entries List */}
         <div className="grid gap-3">
-          {entries.slice(0, 50).map((e) => (
-            <Card key={e.id}>
-              <CardContent className="flex items-center gap-4 p-4">
-                {e.type === "income" ? <TrendingUp className="w-5 h-5 text-success" /> : <TrendingDown className="w-5 h-5 text-destructive" />}
-                <div className="flex-1"><div className="font-medium">{e.description}</div><div className="text-sm text-muted-foreground">{format(new Date(e.entry_date), "dd/MM/yyyy")} • {e.payment_method || ""}</div></div>
-                <div className={`font-semibold ${e.type === "income" ? "text-success" : "text-destructive"}`}>{e.type === "income" ? "+" : "-"}{formatCurrency(e.amount)}</div>
-                {!e.sale_id && <Button variant="ghost" size="icon" onClick={() => deleteEntry.mutate(e.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>}
-              </CardContent>
-            </Card>
-          ))}
+          {entriesLoading ? (
+            <>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <EntryItemSkeleton key={i} />
+              ))}
+            </>
+          ) : (
+            entries.slice(0, 50).map((e) => (
+              <Card key={e.id}>
+                <CardContent className="flex items-center gap-4 p-4">
+                  {e.type === "income" ? <TrendingUp className="w-5 h-5 text-success" /> : <TrendingDown className="w-5 h-5 text-destructive" />}
+                  <div className="flex-1"><div className="font-medium">{e.description}</div><div className="text-sm text-muted-foreground">{format(new Date(e.entry_date), "dd/MM/yyyy")} • {e.payment_method || ""}</div></div>
+                  <div className={`font-semibold ${e.type === "income" ? "text-success" : "text-destructive"}`}>{e.type === "income" ? "+" : "-"}{formatCurrency(e.amount)}</div>
+                  {!e.sale_id && <Button variant="ghost" size="icon" onClick={() => deleteEntry.mutate(e.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>}
+                </CardContent>
+              </Card>
+            ))
+          )}
         </div>
 
         {/* New Entry Dialog */}

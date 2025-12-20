@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer, CustomerInput } from "@/hooks/useCustomers";
 import { CustomerHistoryDialog } from "@/components/customers/CustomerHistoryDialog";
 import { Plus, Search, Pencil, Trash2, Users, History } from "lucide-react";
@@ -191,8 +192,35 @@ const Customers = () => {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-pulse text-muted-foreground">Carregando...</div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead><Skeleton className="h-4 w-20" /></TableHead>
+                      <TableHead><Skeleton className="h-4 w-24" /></TableHead>
+                      <TableHead className="hidden sm:table-cell"><Skeleton className="h-4 w-24" /></TableHead>
+                      <TableHead className="hidden md:table-cell"><Skeleton className="h-4 w-32" /></TableHead>
+                      <TableHead className="w-24"><Skeleton className="h-4 w-16" /></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <TableRow key={i}>
+                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                        <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-28" /></TableCell>
+                        <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-40" /></TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Skeleton className="w-8 h-8" />
+                            <Skeleton className="w-8 h-8" />
+                            <Skeleton className="w-8 h-8" />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             ) : customers.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">

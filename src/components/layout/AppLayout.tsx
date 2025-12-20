@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { AppLayoutSkeleton } from "@/components/ui/skeletons";
 
 const NAV_ITEMS = [
   { path: "/dashboard", label: "Painel", icon: LayoutDashboard },
@@ -67,14 +68,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
   };
 
   if (authLoading || !user || !currentTenant) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-muted-foreground text-sm">Carregando...</span>
-        </div>
-      </div>
-    );
+    return <AppLayoutSkeleton />;
   }
 
   const NavContent = () => (
