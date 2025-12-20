@@ -123,7 +123,6 @@ const Dashboard = () => {
             )}
           </div>
         </div>
-        </div>
 
         {/* Sales Chart */}
         <Card className="stat-card">
