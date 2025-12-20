@@ -43,6 +43,60 @@ const PAYMENT_METHODS = [
   { value: 'credito', label: 'Crédito' },
 ];
 
+const TabOrder = () => {
+  const { tabId } = useParams<{ tabId: string }>();
+  const navigate = useNavigate();
+  const [search, setSearch] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [notes, setNotes] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('dinheiro');
+  const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
+
+  const { data: tab, isLoading: tabLoading } = useTab(tabId);
+  const { data: tabItems = [], isLoading: itemsLoading } = useTabItems(tabId);
+  const { data: products = [] } = useProducts();
+  const addItem = useAddTabItem();
+  const removeItem = useRemoveTabItem();
+  const closeTab = useCloseTab();
+  const cancelTab = useCancelTab();
+
+  const filteredProducts = useMemo(() => {
+    if (!search) return products;
+    const term = search.toLowerCase();
+    return products.filter(
+      (p) =>
+        p.name.toLowerCase().includes(term) ||
+        p.internal_code?.toLowerCase().includes(term) ||
+        p.barcode?.includes(term)
+    );
+  }, [products, search]);
+
+  const totals = useMemo(() => {
+    return tabItems.reduce(
+      (acc, item) => ({
+        gross: acc.gross + item.total + (item.discount || 0),
+        discount: acc.discount + (item.discount || 0),
+        net: acc.net + item.total,
+      }),
+      { gross: 0, discount: 0, net: 0 }
+    );
+  }, [tabItems]);
+
+  const handleAddItem = async () => {
+    if (!selectedProduct || !tabId) return;
+    await addItem.mutateAsync({
+      tab_id: tabId,
+      product_id: selectedProduct.id,
+      quantity,
+      unit_price: selectedProduct.sale_price,
+      notes: notes || undefined,
+    });
+    setSelectedProduct(null);
+    setQuantity(1);
+    setNotes('');
+  };
+
   const handleRemoveItem = async (itemId: string) => {
     if (!tabId) return;
     await removeItem.mutateAsync({ itemId, tabId });
@@ -413,3 +467,5 @@ const PAYMENT_METHODS = [
     </AppLayout>
   );
 }
+
+export default TabOrder;
