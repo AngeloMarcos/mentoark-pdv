@@ -21,10 +21,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer, CustomerInput } from "@/hooks/useCustomers";
-import { Plus, Search, Pencil, Trash2, Users } from "lucide-react";
+import { CustomerHistoryDialog } from "@/components/customers/CustomerHistoryDialog";
+import { Plus, Search, Pencil, Trash2, Users, History } from "lucide-react";
 import { toast } from "sonner";
 
 const Customers = () => {
+  const [historyCustomer, setHistoryCustomer] = useState<{ id: string; name: string } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<{ id: string } & CustomerInput | null>(null);
@@ -220,6 +222,14 @@ const Customers = () => {
                             <Button
                               variant="ghost"
                               size="icon"
+                              title="Histórico de compras"
+                              onClick={() => setHistoryCustomer({ id: customer.id, name: customer.name })}
+                            >
+                              <History className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handleOpenDialog({
                                 id: customer.id,
                                 name: customer.name,
@@ -248,6 +258,13 @@ const Customers = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* History Dialog */}
+        <CustomerHistoryDialog
+          open={!!historyCustomer}
+          onOpenChange={(open) => !open && setHistoryCustomer(null)}
+          customer={historyCustomer}
+        />
       </div>
     </AppLayout>
   );
