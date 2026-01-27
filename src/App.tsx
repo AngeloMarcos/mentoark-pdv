@@ -19,6 +19,7 @@ import TabOrder from "./pages/TabOrder";
 import Customers from "./pages/Customers";
 import Settings from "./pages/Settings";
 import CashRegister from "./pages/CashRegister";
+import Inventory from "./pages/Inventory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
               <Route path="/customers" element={<Customers />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/cash-register" element={<CashRegister />} />
+              <Route path="/inventory" element={<Inventory />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

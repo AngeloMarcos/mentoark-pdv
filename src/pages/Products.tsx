@@ -9,12 +9,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Edit, Trash2, Barcode, Tag, Printer, Wand2 } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Barcode, Tag, Printer, Wand2, Upload, Download, Package } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ProductCardSkeleton } from "@/components/ui/skeletons";
 import { BarcodeGenerator } from "@/components/barcode/BarcodeGenerator";
 import { BarcodeLabelPrint } from "@/components/barcode/BarcodeLabelPrint";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ProductImporter } from "@/components/import/ProductImporter";
+import { ProductExporter } from "@/components/import/ProductExporter";
+import { LotManager } from "@/components/stock/LotManager";
+import { Badge } from "@/components/ui/badge";
+
+interface ExtendedProductInput extends ProductInput {
+  controls_lot?: boolean;
+  wholesale_price?: number | null;
+  wholesale_min_qty?: number | null;
+}
 
 const Products = () => {
   const [search, setSearch] = useState("");
@@ -22,12 +32,14 @@ const Products = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [barcodeDialogOpen, setBarcodeDialogOpen] = useState(false);
   const [labelPrintDialogOpen, setLabelPrintDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [newBarcode, setNewBarcode] = useState({ barcode: "", barcode_type: "EAN13" as "EAN8" | "EAN13" | "INTERNAL", is_primary: false });
-  const [form, setForm] = useState<ProductInput>({
+  const [form, setForm] = useState<ExtendedProductInput>({
     name: "",
     sale_price: 0,
     internal_code: "",
@@ -38,6 +50,9 @@ const Products = () => {
     unit: "UN",
     min_stock: null,
     active: true,
+    controls_lot: false,
+    wholesale_price: null,
+    wholesale_min_qty: null,
   });
 
   const { data: products = [], isLoading } = useProducts(search);
@@ -54,12 +69,13 @@ const Products = () => {
 
   const openCreateDialog = () => {
     setEditingProduct(null);
-    setForm({ name: "", sale_price: 0, internal_code: "", barcode: "", category: "", cost_price: null, stock_current: 0, unit: "UN", min_stock: null, active: true });
+    setForm({ name: "", sale_price: 0, internal_code: "", barcode: "", category: "", cost_price: null, stock_current: 0, unit: "UN", min_stock: null, active: true, controls_lot: false, wholesale_price: null, wholesale_min_qty: null });
     setDialogOpen(true);
   };
 
   const openEditDialog = (product: Product) => {
     setEditingProduct(product);
+    const extProduct = product as Product & { controls_lot?: boolean; wholesale_price?: number | null; wholesale_min_qty?: number | null };
     setForm({
       name: product.name,
       sale_price: product.sale_price,
@@ -71,6 +87,9 @@ const Products = () => {
       unit: product.unit,
       min_stock: product.min_stock,
       active: product.active,
+      controls_lot: extProduct.controls_lot || false,
+      wholesale_price: extProduct.wholesale_price || null,
+      wholesale_min_qty: extProduct.wholesale_min_qty || null,
     });
     setDialogOpen(true);
   };
@@ -142,7 +161,15 @@ const Products = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder="Buscar por nome, código ou código de barras..." className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+              <Upload className="w-4 h-4 mr-2" />
+              Importar
+            </Button>
+            <Button variant="outline" onClick={() => setExportDialogOpen(true)}>
+              <Download className="w-4 h-4 mr-2" />
+              Exportar
+            </Button>
             {selectedProducts.size > 0 && (
               <Button variant="outline" onClick={() => setLabelPrintDialogOpen(true)}>
                 <Printer className="w-4 h-4 mr-2" />
@@ -164,34 +191,46 @@ const Products = () => {
           <Card><CardContent className="py-8 text-center text-muted-foreground">{search ? "Nenhum produto encontrado" : "Nenhum produto cadastrado"}</CardContent></Card>
         ) : (
           <div className="grid gap-3">
-            {products.map((product) => (
-              <Card key={product.id} className={`${!product.active ? "opacity-60" : ""}`}>
-                <CardContent className="flex items-center gap-4 p-4">
-                  <Checkbox
-                    checked={selectedProducts.has(product.id)}
-                    onCheckedChange={() => toggleProductSelection(product.id)}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold truncate">{product.name}</h3>
-                      {!product.active && <span className="text-xs bg-muted px-2 py-0.5 rounded">Inativo</span>}
+            {products.map((product) => {
+              const extProduct = product as Product & { controls_lot?: boolean };
+              return (
+                <Card key={product.id} className={`${!product.active ? "opacity-60" : ""}`}>
+                  <CardContent className="flex items-center gap-4 p-4">
+                    <Checkbox
+                      checked={selectedProducts.has(product.id)}
+                      onCheckedChange={() => toggleProductSelection(product.id)}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold truncate">{product.name}</h3>
+                        {!product.active && <span className="text-xs bg-muted px-2 py-0.5 rounded">Inativo</span>}
+                        {extProduct.controls_lot && (
+                          <Badge variant="outline" className="text-xs">
+                            <Package className="w-3 h-3 mr-1" />
+                            Lote
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">{product.internal_code || product.barcode || "Sem código"} • {product.category || "Sem categoria"}</p>
                     </div>
-                    <p className="text-sm text-muted-foreground">{product.internal_code || product.barcode || "Sem código"} • {product.category || "Sem categoria"}</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-semibold">{formatCurrency(product.sale_price)}</div>
-                    <p className="text-sm text-muted-foreground">Estoque: {product.stock_current} {product.unit}</p>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => openBarcodeDialog(product)} title="Gerenciar códigos de barras">
-                      <Barcode className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => openEditDialog(product)}><Edit className="w-4 h-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => { setDeletingId(product.id); setDeleteDialogOpen(true); }}><Trash2 className="w-4 h-4 text-destructive" /></Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="text-right">
+                      <div className="font-semibold">{formatCurrency(product.sale_price)}</div>
+                      <p className="text-sm text-muted-foreground">Estoque: {product.stock_current} {product.unit}</p>
+                    </div>
+                    <div className="flex gap-1">
+                      {extProduct.controls_lot && (
+                        <LotManager productId={product.id} productName={product.name} />
+                      )}
+                      <Button variant="ghost" size="icon" onClick={() => openBarcodeDialog(product)} title="Gerenciar códigos de barras">
+                        <Barcode className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => openEditDialog(product)}><Edit className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => { setDeletingId(product.id); setDeleteDialogOpen(true); }}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
 
@@ -208,10 +247,15 @@ const Products = () => {
                 <div className="space-y-2"><Label>Unidade</Label><Input value={form.unit || "UN"} onChange={(e) => setForm({ ...form, unit: e.target.value })} /></div>
                 <div className="space-y-2"><Label>Preço de Venda *</Label><Input type="number" step="0.01" value={form.sale_price} onChange={(e) => setForm({ ...form, sale_price: parseFloat(e.target.value) || 0 })} /></div>
                 <div className="space-y-2"><Label>Preço de Custo</Label><Input type="number" step="0.01" value={form.cost_price || ""} onChange={(e) => setForm({ ...form, cost_price: parseFloat(e.target.value) || null })} /></div>
+                <div className="space-y-2"><Label>Preço Atacado</Label><Input type="number" step="0.01" value={form.wholesale_price || ""} onChange={(e) => setForm({ ...form, wholesale_price: parseFloat(e.target.value) || null })} /></div>
+                <div className="space-y-2"><Label>Qtd Mín. Atacado</Label><Input type="number" step="0.001" value={form.wholesale_min_qty || ""} onChange={(e) => setForm({ ...form, wholesale_min_qty: parseFloat(e.target.value) || null })} /></div>
                 <div className="space-y-2"><Label>Estoque Atual</Label><Input type="number" step="0.001" value={form.stock_current || 0} onChange={(e) => setForm({ ...form, stock_current: parseFloat(e.target.value) || 0 })} /></div>
                 <div className="space-y-2"><Label>Estoque Mínimo</Label><Input type="number" step="0.001" value={form.min_stock || ""} onChange={(e) => setForm({ ...form, min_stock: parseFloat(e.target.value) || null })} /></div>
               </div>
-              <div className="flex items-center gap-2"><Switch checked={form.active} onCheckedChange={(checked) => setForm({ ...form, active: checked })} /><Label>Produto ativo</Label></div>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2"><Switch checked={form.active} onCheckedChange={(checked) => setForm({ ...form, active: checked })} /><Label>Produto ativo</Label></div>
+                <div className="flex items-center gap-2"><Switch checked={form.controls_lot} onCheckedChange={(checked) => setForm({ ...form, controls_lot: checked })} /><Label>Controla lote/validade</Label></div>
+              </div>
               <Button className="w-full" onClick={handleSubmit} disabled={createProduct.isPending || updateProduct.isPending}>{editingProduct ? "Salvar" : "Criar Produto"}</Button>
             </div>
           </DialogContent>
@@ -326,6 +370,10 @@ const Products = () => {
             <AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">Excluir</AlertDialogAction></AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Import/Export Dialogs */}
+        <ProductImporter open={importDialogOpen} onOpenChange={setImportDialogOpen} />
+        <ProductExporter open={exportDialogOpen} onOpenChange={setExportDialogOpen} />
       </div>
     </AppLayout>
   );

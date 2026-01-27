@@ -322,6 +322,113 @@ export type Database = {
           },
         ]
       }
+      inventory_count_items: {
+        Row: {
+          adjustment_reason: string | null
+          count_id: string
+          counted_at: string | null
+          counted_by: string | null
+          counted_quantity: number | null
+          difference: number | null
+          difference_value: number | null
+          expected_quantity: number
+          id: string
+          product_id: string
+        }
+        Insert: {
+          adjustment_reason?: string | null
+          count_id: string
+          counted_at?: string | null
+          counted_by?: string | null
+          counted_quantity?: number | null
+          difference?: number | null
+          difference_value?: number | null
+          expected_quantity: number
+          id?: string
+          product_id: string
+        }
+        Update: {
+          adjustment_reason?: string | null
+          count_id?: string
+          counted_at?: string | null
+          counted_by?: string | null
+          counted_quantity?: number | null
+          difference?: number | null
+          difference_value?: number | null
+          expected_quantity?: number
+          id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_count_items_count_id_fkey"
+            columns: ["count_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_counts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_count_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_counts: {
+        Row: {
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string | null
+          created_by: string
+          id: string
+          name: string
+          notes: string | null
+          started_at: string | null
+          status: string
+          tenant_id: string
+          total_difference_value: number | null
+          total_products: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          created_by: string
+          id?: string
+          name: string
+          notes?: string | null
+          started_at?: string | null
+          status?: string
+          tenant_id: string
+          total_difference_value?: number | null
+          total_products?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          started_at?: string | null
+          status?: string
+          tenant_id?: string
+          total_difference_value?: number | null
+          total_products?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_counts_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_methods: {
         Row: {
           active: boolean | null
@@ -470,11 +577,72 @@ export type Database = {
           },
         ]
       }
+      product_lots: {
+        Row: {
+          cost_price: number | null
+          created_at: string | null
+          expiry_date: string | null
+          id: string
+          lot_number: string
+          manufacture_date: string | null
+          notes: string | null
+          product_id: string
+          quantity: number
+          status: string
+          supplier_info: string | null
+          tenant_id: string
+        }
+        Insert: {
+          cost_price?: number | null
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          lot_number: string
+          manufacture_date?: string | null
+          notes?: string | null
+          product_id: string
+          quantity?: number
+          status?: string
+          supplier_info?: string | null
+          tenant_id: string
+        }
+        Update: {
+          cost_price?: number | null
+          created_at?: string | null
+          expiry_date?: string | null
+          id?: string
+          lot_number?: string
+          manufacture_date?: string | null
+          notes?: string | null
+          product_id?: string
+          quantity?: number
+          status?: string
+          supplier_info?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_lots_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_lots_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           active: boolean | null
           barcode: string | null
           category: string | null
+          controls_lot: boolean | null
           cost_price: number | null
           created_at: string | null
           extra_attributes: Json | null
@@ -487,11 +655,15 @@ export type Database = {
           tenant_id: string
           unit: string | null
           updated_at: string | null
+          weighted_avg_cost: number | null
+          wholesale_min_qty: number | null
+          wholesale_price: number | null
         }
         Insert: {
           active?: boolean | null
           barcode?: string | null
           category?: string | null
+          controls_lot?: boolean | null
           cost_price?: number | null
           created_at?: string | null
           extra_attributes?: Json | null
@@ -504,11 +676,15 @@ export type Database = {
           tenant_id: string
           unit?: string | null
           updated_at?: string | null
+          weighted_avg_cost?: number | null
+          wholesale_min_qty?: number | null
+          wholesale_price?: number | null
         }
         Update: {
           active?: boolean | null
           barcode?: string | null
           category?: string | null
+          controls_lot?: boolean | null
           cost_price?: number | null
           created_at?: string | null
           extra_attributes?: Json | null
@@ -521,6 +697,9 @@ export type Database = {
           tenant_id?: string
           unit?: string | null
           updated_at?: string | null
+          weighted_avg_cost?: number | null
+          wholesale_min_qty?: number | null
+          wholesale_price?: number | null
         }
         Relationships: [
           {
@@ -994,6 +1173,19 @@ export type Database = {
         Returns: string
       }
       get_available_credit: { Args: { p_customer_id: string }; Returns: number }
+      get_expiring_products: {
+        Args: { p_days_ahead?: number; p_tenant_id: string }
+        Returns: {
+          days_until_expiry: number
+          expiry_date: string
+          lot_id: string
+          lot_number: string
+          product_id: string
+          product_name: string
+          quantity: number
+          status: string
+        }[]
+      }
       get_user_tenants: { Args: never; Returns: string[] }
       has_tenant_role: {
         Args: {
@@ -1010,6 +1202,14 @@ export type Database = {
       seed_default_payment_methods: {
         Args: { p_tenant_id: string }
         Returns: undefined
+      }
+      update_weighted_avg_cost: {
+        Args: {
+          p_incoming_cost: number
+          p_incoming_qty: number
+          p_product_id: string
+        }
+        Returns: number
       }
       user_belongs_to_tenant: { Args: { _tenant_id: string }; Returns: boolean }
       validate_ean: { Args: { barcode: string }; Returns: boolean }
