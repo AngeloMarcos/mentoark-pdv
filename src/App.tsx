@@ -18,6 +18,7 @@ import Tables from "./pages/Tables";
 import TabOrder from "./pages/TabOrder";
 import Customers from "./pages/Customers";
 import Settings from "./pages/Settings";
+import CashRegister from "./pages/CashRegister";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/tabs/:tabId" element={<TabOrder />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/cash-register" element={<CashRegister />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

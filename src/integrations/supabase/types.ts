@@ -14,6 +14,168 @@ export type Database = {
   }
   public: {
     Tables: {
+      cash_movements: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string | null
+          id: string
+          movement_type: string
+          payment_method: string | null
+          sale_id: string | null
+          session_id: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          movement_type: string
+          payment_method?: string | null
+          sale_id?: string | null
+          session_id: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          movement_type?: string
+          payment_method?: string | null
+          sale_id?: string | null
+          session_id?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_movements_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_movements_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_movements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_registers: {
+        Row: {
+          active: boolean | null
+          code: string
+          created_at: string | null
+          id: string
+          name: string
+          tenant_id: string
+        }
+        Insert: {
+          active?: boolean | null
+          code: string
+          created_at?: string | null
+          id?: string
+          name: string
+          tenant_id: string
+        }
+        Update: {
+          active?: boolean | null
+          code?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_registers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_sessions: {
+        Row: {
+          closed_at: string | null
+          closing_balance: number | null
+          created_at: string | null
+          difference: number | null
+          difference_reason: string | null
+          expected_balance: number | null
+          id: string
+          notes: string | null
+          opened_at: string
+          opening_balance: number
+          register_id: string
+          status: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closing_balance?: number | null
+          created_at?: string | null
+          difference?: number | null
+          difference_reason?: string | null
+          expected_balance?: number | null
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opening_balance?: number
+          register_id: string
+          status?: string
+          tenant_id: string
+          user_id: string
+        }
+        Update: {
+          closed_at?: string | null
+          closing_balance?: number | null
+          created_at?: string | null
+          difference?: number | null
+          difference_reason?: string | null
+          expected_balance?: number | null
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opening_balance?: number
+          register_id?: string
+          status?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_sessions_register_id_fkey"
+            columns: ["register_id"]
+            isOneToOne: false
+            referencedRelation: "cash_registers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_sessions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           created_at: string | null
@@ -99,6 +261,101 @@ export type Database = {
           },
           {
             foreignKeyName: "financial_entries_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      printer_configs: {
+        Row: {
+          active: boolean | null
+          connection_type: string
+          created_at: string | null
+          id: string
+          ip_address: string | null
+          is_default: boolean | null
+          name: string
+          paper_width: number | null
+          port: number | null
+          printer_type: string
+          tenant_id: string
+        }
+        Insert: {
+          active?: boolean | null
+          connection_type?: string
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          is_default?: boolean | null
+          name: string
+          paper_width?: number | null
+          port?: number | null
+          printer_type?: string
+          tenant_id: string
+        }
+        Update: {
+          active?: boolean | null
+          connection_type?: string
+          created_at?: string | null
+          id?: string
+          ip_address?: string | null
+          is_default?: boolean | null
+          name?: string
+          paper_width?: number | null
+          port?: number | null
+          printer_type?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "printer_configs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_barcodes: {
+        Row: {
+          barcode: string
+          barcode_type: string
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+          product_id: string
+          tenant_id: string
+        }
+        Insert: {
+          barcode: string
+          barcode_type?: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          product_id: string
+          tenant_id: string
+        }
+        Update: {
+          barcode?: string
+          barcode_type?: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          product_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_barcodes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_barcodes_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -224,6 +481,7 @@ export type Database = {
           net_total: number
           notes: string | null
           payment_method: string
+          session_id: string | null
           tenant_id: string
           user_id: string | null
         }
@@ -237,6 +495,7 @@ export type Database = {
           net_total: number
           notes?: string | null
           payment_method: string
+          session_id?: string | null
           tenant_id: string
           user_id?: string | null
         }
@@ -250,6 +509,7 @@ export type Database = {
           net_total?: number
           notes?: string | null
           payment_method?: string
+          session_id?: string | null
           tenant_id?: string
           user_id?: string | null
         }
@@ -259,6 +519,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_sessions"
             referencedColumns: ["id"]
           },
           {
@@ -556,9 +823,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_expected_balance: {
+        Args: { p_session_id: string }
+        Returns: number
+      }
       decrement_stock: {
         Args: { p_product_id: string; p_quantity: number }
         Returns: undefined
+      }
+      generate_internal_barcode: {
+        Args: { p_tenant_id: string }
+        Returns: string
       }
       get_user_tenants: { Args: never; Returns: string[] }
       has_tenant_role: {
@@ -574,6 +849,7 @@ export type Database = {
       }
       is_super_admin: { Args: { _user_id?: string }; Returns: boolean }
       user_belongs_to_tenant: { Args: { _tenant_id: string }; Returns: boolean }
+      validate_ean: { Args: { barcode: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "operator"
