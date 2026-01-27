@@ -79,6 +79,25 @@ export function useCreateStockMovement() {
           ? Math.abs(input.quantity)
           : -Math.abs(input.quantity);
 
+      // For negative adjustments, check available stock first
+      if (input.movement_type === "adjustment_minus") {
+        const { data: product, error: productError } = await supabase
+          .from("products")
+          .select("stock_current, name")
+          .eq("id", input.product_id)
+          .maybeSingle();
+
+        if (productError) throw productError;
+        if (!product) throw new Error("Produto não encontrado");
+
+        const currentStock = Number(product.stock_current) || 0;
+        if (currentStock < input.quantity) {
+          throw new Error(
+            `Estoque insuficiente para "${product.name}". Disponível: ${currentStock}`
+          );
+        }
+      }
+
       // Create movement
       const { data: movement, error: movementError } = await supabase
         .from("stock_movements")
@@ -94,25 +113,35 @@ export function useCreateStockMovement() {
 
       if (movementError) throw movementError;
 
-      // Use atomic stock update via RPC
-      if (quantityDelta > 0) {
-        const { error: stockError } = await supabase.rpc("increment_stock", {
-          p_product_id: input.product_id,
-          p_quantity: Math.abs(quantityDelta),
-        });
-        if (stockError) throw stockError;
-      } else {
-        const { error: stockError } = await supabase.rpc("decrement_stock", {
-          p_product_id: input.product_id,
-          p_quantity: Math.abs(quantityDelta),
-        });
-        if (stockError) throw stockError;
+      // Use atomic stock update via RPC with rollback on failure
+      try {
+        if (quantityDelta > 0) {
+          const { error: stockError } = await supabase.rpc("increment_stock", {
+            p_product_id: input.product_id,
+            p_quantity: Math.abs(quantityDelta),
+          });
+          if (stockError) throw stockError;
+        } else {
+          const { error: stockError } = await supabase.rpc("decrement_stock", {
+            p_product_id: input.product_id,
+            p_quantity: Math.abs(quantityDelta),
+          });
+          if (stockError) throw stockError;
+        }
+      } catch (stockError) {
+        // ROLLBACK: Delete the movement record if stock update fails
+        await supabase
+          .from("stock_movements")
+          .delete()
+          .eq("id", movement.id);
+        throw stockError;
       }
 
       return movement;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["stock_movements"] });
+      queryClient.invalidateQueries({ queryKey: ["stock", "summary"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("Movimentação registrada com sucesso!");
     },
