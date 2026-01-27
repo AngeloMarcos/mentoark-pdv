@@ -176,6 +176,60 @@ export type Database = {
           },
         ]
       }
+      customer_credits: {
+        Row: {
+          amount: number
+          created_at: string | null
+          customer_id: string
+          description: string | null
+          expires_at: string | null
+          id: string
+          origin_id: string | null
+          origin_type: string
+          tenant_id: string
+          used_amount: number | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          customer_id: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          origin_id?: string | null
+          origin_type: string
+          tenant_id: string
+          used_amount?: number | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          customer_id?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          origin_id?: string | null
+          origin_type?: string
+          tenant_id?: string
+          used_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_credits_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_credits_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           created_at: string | null
@@ -261,6 +315,59 @@ export type Database = {
           },
           {
             foreignKeyName: "financial_entries_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_methods: {
+        Row: {
+          active: boolean | null
+          allows_installments: boolean | null
+          code: string
+          created_at: string | null
+          display_order: number | null
+          fee_percentage: number | null
+          id: string
+          max_installments: number | null
+          name: string
+          requires_change: boolean | null
+          tenant_id: string
+          type: string
+        }
+        Insert: {
+          active?: boolean | null
+          allows_installments?: boolean | null
+          code: string
+          created_at?: string | null
+          display_order?: number | null
+          fee_percentage?: number | null
+          id?: string
+          max_installments?: number | null
+          name: string
+          requires_change?: boolean | null
+          tenant_id: string
+          type: string
+        }
+        Update: {
+          active?: boolean | null
+          allows_installments?: boolean | null
+          code?: string
+          created_at?: string | null
+          display_order?: number | null
+          fee_percentage?: number | null
+          id?: string
+          max_installments?: number | null
+          name?: string
+          requires_change?: boolean | null
+          tenant_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_methods_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -463,6 +570,57 @@ export type Database = {
           },
           {
             foreignKeyName: "sale_items_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sale_payments: {
+        Row: {
+          amount: number
+          authorization_code: string | null
+          change_amount: number | null
+          created_at: string | null
+          id: string
+          installments: number | null
+          payment_method_code: string
+          payment_method_id: string | null
+          sale_id: string
+        }
+        Insert: {
+          amount: number
+          authorization_code?: string | null
+          change_amount?: number | null
+          created_at?: string | null
+          id?: string
+          installments?: number | null
+          payment_method_code: string
+          payment_method_id?: string | null
+          sale_id: string
+        }
+        Update: {
+          amount?: number
+          authorization_code?: string | null
+          change_amount?: number | null
+          created_at?: string | null
+          id?: string
+          installments?: number | null
+          payment_method_code?: string
+          payment_method_id?: string | null
+          sale_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_payments_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_payments_sale_id_fkey"
             columns: ["sale_id"]
             isOneToOne: false
             referencedRelation: "sales"
@@ -835,6 +993,7 @@ export type Database = {
         Args: { p_tenant_id: string }
         Returns: string
       }
+      get_available_credit: { Args: { p_customer_id: string }; Returns: number }
       get_user_tenants: { Args: never; Returns: string[] }
       has_tenant_role: {
         Args: {
@@ -848,6 +1007,10 @@ export type Database = {
         Returns: undefined
       }
       is_super_admin: { Args: { _user_id?: string }; Returns: boolean }
+      seed_default_payment_methods: {
+        Args: { p_tenant_id: string }
+        Returns: undefined
+      }
       user_belongs_to_tenant: { Args: { _tenant_id: string }; Returns: boolean }
       validate_ean: { Args: { barcode: string }; Returns: boolean }
     }
