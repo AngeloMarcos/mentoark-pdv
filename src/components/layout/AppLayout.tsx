@@ -16,6 +16,7 @@ import {
   UtensilsCrossed,
   Users,
   Settings,
+  BarChart3,
   Zap,
   DollarSign,
 } from "lucide-react";
@@ -31,7 +32,7 @@ const NAV_ITEMS = [
   { path: "/products", label: "Produtos", icon: Package },
   { path: "/customers", label: "Clientes", icon: Users },
   { path: "/stock", label: "Estoque", icon: Warehouse },
-  { path: "/sales-report", label: "Relatórios", icon: FileBarChart },
+  { path: "/reports", label: "Relatórios", icon: BarChart3 },
   { path: "/financial", label: "Financeiro", icon: Wallet },
   { path: "/settings", label: "Configurações", icon: Settings },
 ];
