@@ -5,13 +5,15 @@ import { useProducts, Product } from "@/hooks/useProducts";
 import { useCreateSale, SaleItem } from "@/hooks/useSales";
 import { useFindByBarcode } from "@/hooks/useBarcodes";
 import { useActiveSession } from "@/hooks/useCashRegister";
+import { SalePayment } from "@/hooks/usePaymentMethods";
+import { PaymentDialog } from "@/components/pdv/PaymentDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Search, Plus, Minus, Trash2, ShoppingCart, Check, Barcode, Printer, AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Search, Plus, Minus, Trash2, ShoppingCart, Check, Barcode, Printer, AlertCircle, DollarSign, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { ReceiptPreview } from "@/components/print/ReceiptPreview";
 import { useTenant } from "@/contexts/TenantContext";
@@ -20,21 +22,13 @@ interface CartItem extends SaleItem {
   product_name: string;
 }
 
-const PAYMENT_METHODS = [
-  { value: "dinheiro", label: "Dinheiro" },
-  { value: "cartao_credito", label: "Cartão Crédito" },
-  { value: "cartao_debito", label: "Cartão Débito" },
-  { value: "pix", label: "PIX" },
-  { value: "fiado", label: "Fiado" },
-];
-
 const PDV = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState("dinheiro");
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [lastSale, setLastSale] = useState<{ id: string; netTotal: number } | null>(null);
+  const [lastSale, setLastSale] = useState<{ id: string; netTotal: number; payments: SalePayment[] } | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const barcodeBufferRef = useRef("");
@@ -136,10 +130,14 @@ const PDV = () => {
   // Atalhos de teclado
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // F2 - Finalizar venda
+      // F2 - Abrir pagamento
       if (e.key === "F2" && cart.length > 0 && !createSale.isPending) {
         e.preventDefault();
-        handleFinalizeSale();
+        if (!activeSession) {
+          toast.error("Abra o caixa antes de realizar vendas");
+          return;
+        }
+        setShowPaymentDialog(true);
       }
       // F3 - Limpar carrinho
       if (e.key === "F3") {
@@ -152,16 +150,20 @@ const PDV = () => {
         e.preventDefault();
         searchRef.current?.focus();
       }
-      // Escape - Limpar busca
+      // Escape - Limpar busca ou fechar dialog
       if (e.key === "Escape") {
-        setSearch("");
-        searchRef.current?.focus();
+        if (showPaymentDialog) {
+          setShowPaymentDialog(false);
+        } else {
+          setSearch("");
+          searchRef.current?.focus();
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [cart, createSale.isPending]);
+  }, [cart, createSale.isPending, activeSession, showPaymentDialog]);
 
   const updateQuantity = (productId: string, delta: number) => {
     setCart((prev) =>
@@ -184,7 +186,7 @@ const PDV = () => {
   const discountTotal = cart.reduce((sum, item) => sum + item.discount, 0);
   const netTotal = grossTotal - discountTotal;
 
-  const handleFinalizeSale = async () => {
+  const handlePaymentConfirm = async (payments: SalePayment[]) => {
     if (cart.length === 0) {
       toast.error("Adicione produtos ao carrinho");
       return;
@@ -197,16 +199,16 @@ const PDV = () => {
 
     const sale = await createSale.mutateAsync({
       items: cart,
-      payment_method: paymentMethod,
+      payments,
       session_id: activeSession.id,
     });
 
-    setLastSale({ id: sale.id, netTotal });
+    setLastSale({ id: sale.id, netTotal, payments });
+    setShowPaymentDialog(false);
     setShowSuccess(true);
     setTimeout(() => {
       setShowSuccess(false);
       setCart([]);
-      setPaymentMethod("dinheiro");
       searchRef.current?.focus();
     }, 1500);
   };
@@ -222,10 +224,19 @@ const PDV = () => {
             <h2 className="text-2xl font-bold text-success mb-2">Venda Finalizada!</h2>
             <p className="text-muted-foreground mb-4">{formatCurrency(netTotal)}</p>
             {lastSale && (
-              <Button variant="outline" onClick={() => setShowReceipt(true)}>
-                <Printer className="mr-2 h-4 w-4" />
-                Imprimir Cupom
-              </Button>
+              <div className="space-y-2">
+                <div className="flex flex-wrap justify-center gap-1">
+                  {lastSale.payments.map((p, i) => (
+                    <Badge key={i} variant="secondary">
+                      {p.payment_method_code}: {formatCurrency(p.amount)}
+                    </Badge>
+                  ))}
+                </div>
+                <Button variant="outline" onClick={() => setShowReceipt(true)}>
+                  <Printer className="mr-2 h-4 w-4" />
+                  Imprimir Cupom
+                </Button>
+              </div>
             )}
           </Card>
         </div>
@@ -245,7 +256,7 @@ const PDV = () => {
                   grossTotal,
                   discountTotal,
                   netTotal: lastSale.netTotal,
-                  paymentMethod: PAYMENT_METHODS.find(m => m.value === paymentMethod)?.label || paymentMethod,
+                  paymentMethod: lastSale.payments.map(p => p.payment_method_code).join(", "),
                   tenantName: currentTenant?.name || "Loja",
                   tenantDocument: currentTenant?.document || undefined,
                   tenantPhone: currentTenant?.phone || undefined,
@@ -264,6 +275,17 @@ const PDV = () => {
       <div className="grid lg:grid-cols-[1fr,400px] gap-4 h-[calc(100vh-8rem)]">
         {/* Left: Search & Products */}
         <div className="flex flex-col gap-4 min-h-0">
+          {/* Session indicator */}
+          {activeSession && (
+            <div className="flex items-center gap-2 p-2 bg-success/10 rounded-lg text-sm">
+              <Wallet className="w-4 h-4 text-success" />
+              <span>Caixa aberto: <strong>{activeSession.register?.name}</strong></span>
+              <span className="ml-auto text-muted-foreground">
+                Saldo inicial: {formatCurrency(activeSession.opening_balance)}
+              </span>
+            </div>
+          )}
+
           {/* Cash register warning */}
           {!sessionLoading && !activeSession && (
             <Alert variant="destructive" className="mb-2">
@@ -276,6 +298,7 @@ const PDV = () => {
               </AlertDescription>
             </Alert>
           )}
+
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input 
@@ -291,10 +314,10 @@ const PDV = () => {
 
           {/* Atalhos de teclado */}
           <div className="flex gap-2 text-xs text-muted-foreground">
-            <span className="px-2 py-1 bg-muted rounded">F2 Finalizar</span>
+            <span className="px-2 py-1 bg-muted rounded">F2 Pagamento</span>
             <span className="px-2 py-1 bg-muted rounded">F3 Limpar</span>
             <span className="px-2 py-1 bg-muted rounded">F4 Buscar</span>
-            <span className="px-2 py-1 bg-muted rounded">ESC Limpar busca</span>
+            <span className="px-2 py-1 bg-muted rounded">ESC Fechar</span>
           </div>
 
           {search && products.length > 0 && (
@@ -372,20 +395,27 @@ const PDV = () => {
                 <div className="flex justify-between text-xl font-bold"><span>Total</span><span>{formatCurrency(netTotal)}</span></div>
               </div>
 
-              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {PAYMENT_METHODS.map((m) => (<SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>))}
-                </SelectContent>
-              </Select>
-
-              <Button className="w-full h-14 text-lg touch-target sale-button" disabled={cart.length === 0 || createSale.isPending} onClick={handleFinalizeSale}>
-                {createSale.isPending ? "Finalizando..." : "Finalizar Venda (F2)"}
+              <Button
+                className="w-full h-14 text-lg touch-target sale-button"
+                disabled={cart.length === 0 || createSale.isPending || !activeSession}
+                onClick={() => setShowPaymentDialog(true)}
+              >
+                <DollarSign className="mr-2 h-5 w-5" />
+                {createSale.isPending ? "Finalizando..." : "Pagamento (F2)"}
               </Button>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Payment Dialog */}
+      <PaymentDialog
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        total={netTotal}
+        onConfirm={handlePaymentConfirm}
+        isProcessing={createSale.isPending}
+      />
     </AppLayout>
   );
 };

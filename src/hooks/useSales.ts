@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { CreateSaleInputSchema, validateInput } from "@/lib/validations";
 import { getUserFriendlyError } from "@/lib/error-handler";
+import { SalePayment } from "@/hooks/usePaymentMethods";
 
 export interface SaleItem {
   product_id: string;
@@ -32,11 +33,13 @@ export interface Sale {
 
 export interface CreateSaleInput {
   items: SaleItem[];
+  payments: SalePayment[];
   customer_id?: string | null;
-  payment_method: string;
   discount_total?: number;
   notes?: string;
   session_id?: string | null;
+  // Legacy support
+  payment_method?: string;
 }
 
 export function useTodaySales() {
@@ -179,8 +182,21 @@ export function useCreateSale() {
       if (!currentTenant) throw new Error("Nenhuma empresa selecionada");
       if (!user) throw new Error("Usuário não autenticado");
 
+      // Normaliza input para suportar legacy (payment_method) e novo (payments)
+      const payments: SalePayment[] = input.payments?.length > 0
+        ? input.payments
+        : input.payment_method
+          ? [{ payment_method_code: input.payment_method, amount: 0 }]
+          : [];
+
+      if (payments.length === 0) throw new Error("Selecione uma forma de pagamento");
+
       // Validate input
-      validateInput(CreateSaleInputSchema, input);
+      const validationInput = {
+        ...input,
+        payment_method: payments[0].payment_method_code,
+      };
+      validateInput(CreateSaleInputSchema, validationInput);
 
       const grossTotal = input.items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
       const itemDiscounts = input.items.reduce((sum, item) => sum + item.discount, 0);
@@ -190,6 +206,13 @@ export function useCreateSale() {
       // Validate calculated totals
       if (netTotal < 0) throw new Error("Total líquido não pode ser negativo");
       if (discountTotal > grossTotal) throw new Error("Desconto não pode ser maior que o valor bruto");
+
+      // Validate payments total
+      const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
+      if (totalPayments < netTotal) throw new Error("Valor dos pagamentos insuficiente");
+
+      // Primary payment method for legacy field
+      const primaryPaymentMethod = payments[0].payment_method_code;
 
       // Create sale
       const { data: sale, error: saleError } = await supabase
@@ -202,7 +225,7 @@ export function useCreateSale() {
           gross_total: grossTotal,
           discount_total: discountTotal,
           net_total: netTotal,
-          payment_method: input.payment_method,
+          payment_method: primaryPaymentMethod,
           notes: input.notes || null,
         })
         .select()
@@ -222,6 +245,23 @@ export function useCreateSale() {
 
       const { error: itemsError } = await supabase.from("sale_items").insert(saleItems);
       if (itemsError) throw itemsError;
+
+      // Create sale payments
+      const salePaymentsData = payments.map((p) => ({
+        sale_id: sale.id,
+        payment_method_id: p.payment_method_id || null,
+        payment_method_code: p.payment_method_code,
+        amount: p.amount,
+        change_amount: p.change_amount || 0,
+        installments: p.installments || 1,
+        authorization_code: p.authorization_code || null,
+      }));
+
+      const { error: paymentsError } = await supabase.from("sale_payments").insert(salePaymentsData);
+      if (paymentsError) {
+        console.error("[Sale Payments Error]", paymentsError);
+        // Continue - não crítico
+      }
 
       // Update stock atomically using RPC and create movements
       for (const item of input.items) {
@@ -253,22 +293,27 @@ export function useCreateSale() {
         type: "income",
         description: `Venda #${sale.id.slice(0, 8)}`,
         amount: netTotal,
-        payment_method: input.payment_method,
+        payment_method: primaryPaymentMethod,
         sale_id: sale.id,
       });
 
-      // Register cash movement if session is active
+      // Register cash movements for each payment method
       if (input.session_id) {
-        await supabase.from("cash_movements").insert({
+        const cashMovements = payments.map((p) => ({
           tenant_id: currentTenant.id,
-          session_id: input.session_id,
+          session_id: input.session_id!,
           movement_type: "sale",
-          payment_method: input.payment_method,
-          amount: netTotal,
+          payment_method: p.payment_method_code,
+          amount: p.amount,
           description: `Venda #${sale.id.slice(0, 8)}`,
           sale_id: sale.id,
           user_id: user.id,
-        });
+        }));
+
+        const { error: movError } = await supabase.from("cash_movements").insert(cashMovements);
+        if (movError) {
+          console.error("[Cash Movement Error]", movError);
+        }
       }
 
       return sale;
@@ -280,6 +325,7 @@ export function useCreateSale() {
       queryClient.invalidateQueries({ queryKey: ["financial_entries"] });
       queryClient.invalidateQueries({ queryKey: ["cash_movements"] });
       queryClient.invalidateQueries({ queryKey: ["cash_sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["sale_payments"] });
       toast.success("Venda finalizada com sucesso!");
     },
     onError: (error) => {

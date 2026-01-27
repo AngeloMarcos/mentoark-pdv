@@ -24,11 +24,22 @@ export const SaleItemSchema = z.object({
   product_name: z.string().optional(),
 });
 
+// Sale payment validation schema
+export const SalePaymentSchema = z.object({
+  payment_method_id: z.string().uuid("ID da forma de pagamento inválido").optional(),
+  payment_method_code: z.string().min(1, "Código da forma de pagamento é obrigatório").max(50, "Código muito longo"),
+  amount: z.number().positive("Valor deve ser positivo").max(9999999.99, "Valor muito alto"),
+  change_amount: z.number().nonnegative("Troco não pode ser negativo").max(999999.99, "Troco muito alto").optional(),
+  installments: z.number().int().positive("Parcelas devem ser positivas").max(48, "Máximo 48 parcelas").optional(),
+  authorization_code: z.string().max(50, "Código de autorização muito longo").optional(),
+});
+
 // Create sale input validation schema
 export const CreateSaleInputSchema = z.object({
   items: z.array(SaleItemSchema).min(1, "Venda deve ter pelo menos um item"),
   customer_id: z.string().uuid("ID do cliente inválido").nullable().optional(),
-  payment_method: z.string().min(1, "Forma de pagamento é obrigatória").max(50, "Forma de pagamento muito longa"),
+  payment_method: z.string().max(50, "Forma de pagamento muito longa").optional(),
+  payments: z.array(SalePaymentSchema).optional(),
   discount_total: z.number().nonnegative("Desconto não pode ser negativo").max(999999.99, "Desconto muito alto").optional(),
   notes: z.string().max(1000, "Observações muito longas").optional(),
   session_id: z.string().uuid("ID da sessão inválido").nullable().optional(),
