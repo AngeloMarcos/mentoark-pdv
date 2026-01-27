@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import PDV from "./pages/PDV";
 import SalesReport from "./pages/SalesReport";
+import Reports from "./pages/Reports";
 import Stock from "./pages/Stock";
 import Financial from "./pages/Financial";
 import Tables from "./pages/Tables";
@@ -40,6 +41,7 @@ const App = () => (
               <Route path="/products" element={<Products />} />
               <Route path="/pdv" element={<PDV />} />
               <Route path="/sales-report" element={<SalesReport />} />
+              <Route path="/reports" element={<Reports />} />
               <Route path="/stock" element={<Stock />} />
               <Route path="/financial" element={<Financial />} />
               <Route path="/tables" element={<Tables />} />
