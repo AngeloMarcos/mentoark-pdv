@@ -1,14 +1,17 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useProducts, Product } from "@/hooks/useProducts";
 import { useCreateSale, SaleItem } from "@/hooks/useSales";
 import { useFindByBarcode } from "@/hooks/useBarcodes";
+import { useActiveSession } from "@/hooks/useCashRegister";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Plus, Minus, Trash2, ShoppingCart, Check, Barcode, Printer } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Search, Plus, Minus, Trash2, ShoppingCart, Check, Barcode, Printer, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { ReceiptPreview } from "@/components/print/ReceiptPreview";
 import { useTenant } from "@/contexts/TenantContext";
@@ -26,6 +29,7 @@ const PAYMENT_METHODS = [
 ];
 
 const PDV = () => {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState("dinheiro");
@@ -40,6 +44,7 @@ const PDV = () => {
   const { data: products = [] } = useProducts(search);
   const createSale = useCreateSale();
   const findByBarcode = useFindByBarcode();
+  const { data: activeSession, isLoading: sessionLoading } = useActiveSession();
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -185,9 +190,15 @@ const PDV = () => {
       return;
     }
 
+    if (!activeSession) {
+      toast.error("Abra o caixa antes de realizar vendas");
+      return;
+    }
+
     const sale = await createSale.mutateAsync({
       items: cart,
       payment_method: paymentMethod,
+      session_id: activeSession.id,
     });
 
     setLastSale({ id: sale.id, netTotal });
@@ -253,6 +264,18 @@ const PDV = () => {
       <div className="grid lg:grid-cols-[1fr,400px] gap-4 h-[calc(100vh-8rem)]">
         {/* Left: Search & Products */}
         <div className="flex flex-col gap-4 min-h-0">
+          {/* Cash register warning */}
+          {!sessionLoading && !activeSession && (
+            <Alert variant="destructive" className="mb-2">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="flex items-center justify-between">
+                <span>Nenhum caixa aberto. Abra o caixa para realizar vendas.</span>
+                <Button variant="outline" size="sm" onClick={() => navigate("/cash-register")}>
+                  Abrir Caixa
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input 

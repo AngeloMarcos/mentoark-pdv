@@ -36,6 +36,7 @@ export interface CreateSaleInput {
   payment_method: string;
   discount_total?: number;
   notes?: string;
+  session_id?: string | null;
 }
 
 export function useTodaySales() {
@@ -197,6 +198,7 @@ export function useCreateSale() {
           tenant_id: currentTenant.id,
           user_id: user.id,
           customer_id: input.customer_id || null,
+          session_id: input.session_id || null,
           gross_total: grossTotal,
           discount_total: discountTotal,
           net_total: netTotal,
@@ -255,6 +257,20 @@ export function useCreateSale() {
         sale_id: sale.id,
       });
 
+      // Register cash movement if session is active
+      if (input.session_id) {
+        await supabase.from("cash_movements").insert({
+          tenant_id: currentTenant.id,
+          session_id: input.session_id,
+          movement_type: "sale",
+          payment_method: input.payment_method,
+          amount: netTotal,
+          description: `Venda #${sale.id.slice(0, 8)}`,
+          sale_id: sale.id,
+          user_id: user.id,
+        });
+      }
+
       return sale;
     },
     onSuccess: () => {
@@ -262,6 +278,8 @@ export function useCreateSale() {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["stock_movements"] });
       queryClient.invalidateQueries({ queryKey: ["financial_entries"] });
+      queryClient.invalidateQueries({ queryKey: ["cash_movements"] });
+      queryClient.invalidateQueries({ queryKey: ["cash_sessions"] });
       toast.success("Venda finalizada com sucesso!");
     },
     onError: (error) => {

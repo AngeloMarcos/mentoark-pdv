@@ -17,6 +17,7 @@ import {
   Users,
   Settings,
   Zap,
+  DollarSign,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ import { AppLayoutSkeleton } from "@/components/ui/skeletons";
 const NAV_ITEMS = [
   { path: "/dashboard", label: "Painel", icon: LayoutDashboard },
   { path: "/pdv", label: "PDV", icon: ShoppingBag },
+  { path: "/cash-register", label: "Caixa", icon: DollarSign },
   { path: "/tables", label: "Mesas", icon: UtensilsCrossed },
   { path: "/products", label: "Produtos", icon: Package },
   { path: "/customers", label: "Clientes", icon: Users },
