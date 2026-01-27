@@ -19,7 +19,8 @@ export function useCreateTenant() {
     mutationFn: async (input: CreateTenantInput) => {
       if (!user) throw new Error("Usuário não autenticado");
 
-      // Create tenant
+      // Create tenant - the auto_add_tenant_creator trigger automatically
+      // adds the authenticated user as admin in tenant_users
       const { data: tenant, error: tenantError } = await supabase
         .from("tenants")
         .insert({
@@ -32,15 +33,6 @@ export function useCreateTenant() {
         .single();
 
       if (tenantError) throw tenantError;
-
-      // Link user to tenant as admin
-      const { error: linkError } = await supabase.from("tenant_users").insert({
-        tenant_id: tenant.id,
-        user_id: user.id,
-        role: "admin",
-      });
-
-      if (linkError) throw linkError;
 
       return tenant;
     },
