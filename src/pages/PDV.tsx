@@ -1,13 +1,17 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useProducts, Product } from "@/hooks/useProducts";
 import { useCreateSale, SaleItem } from "@/hooks/useSales";
+import { useFindByBarcode } from "@/hooks/useBarcodes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Plus, Minus, Trash2, ShoppingCart, Check } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Search, Plus, Minus, Trash2, ShoppingCart, Check, Barcode, Printer } from "lucide-react";
 import { toast } from "sonner";
+import { ReceiptPreview } from "@/components/print/ReceiptPreview";
+import { useTenant } from "@/contexts/TenantContext";
 
 interface CartItem extends SaleItem {
   product_name: string;
@@ -26,10 +30,16 @@ const PDV = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState("dinheiro");
   const [showSuccess, setShowSuccess] = useState(false);
+  const [lastSale, setLastSale] = useState<{ id: string; netTotal: number } | null>(null);
+  const [showReceipt, setShowReceipt] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const barcodeBufferRef = useRef("");
+  const barcodeTimeoutRef = useRef<NodeJS.Timeout>();
 
+  const { currentTenant } = useTenant();
   const { data: products = [] } = useProducts(search);
   const createSale = useCreateSale();
+  const findByBarcode = useFindByBarcode();
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -38,7 +48,7 @@ const PDV = () => {
     searchRef.current?.focus();
   }, []);
 
-  const addToCart = (product: Product) => {
+  const addToCart = useCallback((product: Product) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.product_id === product.id);
       if (existing) {
@@ -59,7 +69,94 @@ const PDV = () => {
     });
     setSearch("");
     searchRef.current?.focus();
-  };
+  }, []);
+
+  // Handler para busca por código de barras
+  const handleBarcodeSearch = useCallback(async (barcode: string) => {
+    try {
+      const product = await findByBarcode.mutateAsync(barcode);
+      if (product) {
+        addToCart(product as Product);
+        toast.success(`${(product as Product).name} adicionado`);
+      } else {
+        toast.error("Produto não encontrado");
+      }
+    } catch {
+      toast.error("Erro ao buscar produto");
+    }
+  }, [findByBarcode, addToCart]);
+
+  // Detecta leitura de código de barras (input rápido)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignora se não está focado no input de busca ou teclas especiais
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+      // Enter submete o código
+      if (e.key === "Enter" && barcodeBufferRef.current.length >= 8) {
+        e.preventDefault();
+        handleBarcodeSearch(barcodeBufferRef.current);
+        barcodeBufferRef.current = "";
+        return;
+      }
+
+      // Apenas dígitos para código de barras
+      if (e.key.length === 1 && /^\d$/.test(e.key)) {
+        barcodeBufferRef.current += e.key;
+
+        // Reset do timeout
+        if (barcodeTimeoutRef.current) {
+          clearTimeout(barcodeTimeoutRef.current);
+        }
+
+        // Se parou de digitar por 50ms, pode ser fim da leitura
+        barcodeTimeoutRef.current = setTimeout(() => {
+          if (barcodeBufferRef.current.length >= 8) {
+            handleBarcodeSearch(barcodeBufferRef.current);
+          }
+          barcodeBufferRef.current = "";
+        }, 100);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      if (barcodeTimeoutRef.current) {
+        clearTimeout(barcodeTimeoutRef.current);
+      }
+    };
+  }, [handleBarcodeSearch]);
+
+  // Atalhos de teclado
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // F2 - Finalizar venda
+      if (e.key === "F2" && cart.length > 0 && !createSale.isPending) {
+        e.preventDefault();
+        handleFinalizeSale();
+      }
+      // F3 - Limpar carrinho
+      if (e.key === "F3") {
+        e.preventDefault();
+        setCart([]);
+        searchRef.current?.focus();
+      }
+      // F4 - Focar busca
+      if (e.key === "F4") {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+      // Escape - Limpar busca
+      if (e.key === "Escape") {
+        setSearch("");
+        searchRef.current?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [cart, createSale.isPending]);
 
   const updateQuantity = (productId: string, delta: number) => {
     setCart((prev) =>
@@ -88,11 +185,12 @@ const PDV = () => {
       return;
     }
 
-    await createSale.mutateAsync({
+    const sale = await createSale.mutateAsync({
       items: cart,
       payment_method: paymentMethod,
     });
 
+    setLastSale({ id: sale.id, netTotal });
     setShowSuccess(true);
     setTimeout(() => {
       setShowSuccess(false);
@@ -111,9 +209,41 @@ const PDV = () => {
               <Check className="w-10 h-10 text-success-foreground" />
             </div>
             <h2 className="text-2xl font-bold text-success mb-2">Venda Finalizada!</h2>
-            <p className="text-muted-foreground">{formatCurrency(netTotal)}</p>
+            <p className="text-muted-foreground mb-4">{formatCurrency(netTotal)}</p>
+            {lastSale && (
+              <Button variant="outline" onClick={() => setShowReceipt(true)}>
+                <Printer className="mr-2 h-4 w-4" />
+                Imprimir Cupom
+              </Button>
+            )}
           </Card>
         </div>
+
+        {/* Dialog de impressão do cupom */}
+        <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Cupom da Venda</DialogTitle>
+            </DialogHeader>
+            {lastSale && (
+              <ReceiptPreview
+                data={{
+                  saleId: lastSale.id,
+                  datetime: new Date(),
+                  items: cart,
+                  grossTotal,
+                  discountTotal,
+                  netTotal: lastSale.netTotal,
+                  paymentMethod: PAYMENT_METHODS.find(m => m.value === paymentMethod)?.label || paymentMethod,
+                  tenantName: currentTenant?.name || "Loja",
+                  tenantDocument: currentTenant?.document || undefined,
+                  tenantPhone: currentTenant?.phone || undefined,
+                }}
+                onPrint={() => setShowReceipt(false)}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </AppLayout>
     );
   }
@@ -125,7 +255,23 @@ const PDV = () => {
         <div className="flex flex-col gap-4 min-h-0">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input ref={searchRef} placeholder="Buscar produto (nome, código ou código de barras)..." className="pl-10 h-12 text-lg" value={search} onChange={(e) => setSearch(e.target.value)} autoFocus />
+            <Input 
+              ref={searchRef} 
+              placeholder="Buscar produto ou ler código de barras... (F4)" 
+              className="pl-10 pr-10 h-12 text-lg" 
+              value={search} 
+              onChange={(e) => setSearch(e.target.value)} 
+              autoFocus 
+            />
+            <Barcode className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          </div>
+
+          {/* Atalhos de teclado */}
+          <div className="flex gap-2 text-xs text-muted-foreground">
+            <span className="px-2 py-1 bg-muted rounded">F2 Finalizar</span>
+            <span className="px-2 py-1 bg-muted rounded">F3 Limpar</span>
+            <span className="px-2 py-1 bg-muted rounded">F4 Buscar</span>
+            <span className="px-2 py-1 bg-muted rounded">ESC Limpar busca</span>
           </div>
 
           {search && products.length > 0 && (
@@ -156,7 +302,8 @@ const PDV = () => {
             <Card className="flex-1 flex items-center justify-center">
               <div className="text-center text-muted-foreground p-8">
                 <ShoppingCart className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                <p className="text-lg">Digite o nome ou código do produto para começar</p>
+                <p className="text-lg">Digite o nome ou leia o código de barras</p>
+                <p className="text-sm mt-2">Use um leitor de código de barras para busca rápida</p>
               </div>
             </Card>
           )}
@@ -173,21 +320,25 @@ const PDV = () => {
           <CardContent className="flex-1 flex flex-col min-h-0 gap-4">
             {/* Cart Items */}
             <div className="flex-1 overflow-auto space-y-2">
-              {cart.map((item) => (
-                <div key={item.product_id} className="pdv-item">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{item.product_name}</div>
-                    <div className="text-sm text-muted-foreground">{formatCurrency(item.unit_price)} × {item.quantity}</div>
+              {cart.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">Carrinho vazio</p>
+              ) : (
+                cart.map((item) => (
+                  <div key={item.product_id} className="pdv-item">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{item.product_name}</div>
+                      <div className="text-sm text-muted-foreground">{formatCurrency(item.unit_price)} × {item.quantity}</div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product_id, -1)}><Minus className="w-3 h-3" /></Button>
+                      <span className="w-8 text-center font-medium">{item.quantity}</span>
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product_id, 1)}><Plus className="w-3 h-3" /></Button>
+                    </div>
+                    <div className="font-semibold w-20 text-right">{formatCurrency(item.total)}</div>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeFromCart(item.product_id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product_id, -1)}><Minus className="w-3 h-3" /></Button>
-                    <span className="w-8 text-center font-medium">{item.quantity}</span>
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product_id, 1)}><Plus className="w-3 h-3" /></Button>
-                  </div>
-                  <div className="font-semibold w-20 text-right">{formatCurrency(item.total)}</div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeFromCart(item.product_id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
-                </div>
-              ))}
+                ))
+              )}
             </div>
 
             {/* Summary & Payment */}
@@ -206,7 +357,7 @@ const PDV = () => {
               </Select>
 
               <Button className="w-full h-14 text-lg touch-target sale-button" disabled={cart.length === 0 || createSale.isPending} onClick={handleFinalizeSale}>
-                {createSale.isPending ? "Finalizando..." : "Finalizar Venda"}
+                {createSale.isPending ? "Finalizando..." : "Finalizar Venda (F2)"}
               </Button>
             </div>
           </CardContent>
