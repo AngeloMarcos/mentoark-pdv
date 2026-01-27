@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, AlertTriangle, Plus, ArrowUpCircle, ArrowDownCircle, TrendingUp, TrendingDown } from "lucide-react";
+import { Package, AlertTriangle, Plus, ArrowUpCircle, ArrowDownCircle, TrendingUp, TrendingDown, DollarSign, PackageX } from "lucide-react";
 import { SummaryCardSkeleton, EntryItemSkeleton } from "@/components/ui/skeletons";
 
 const MOVEMENT_TYPES = [
@@ -22,6 +22,14 @@ const MOVEMENT_LABELS: Record<string, string> = {
   sale: "Venda", purchase: "Compra", adjustment_plus: "Ajuste +", adjustment_minus: "Ajuste -",
 };
 
+const formatDate = (dateStr: string) =>
+  new Date(dateStr).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
 const Stock = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<CreateStockMovementInput>({ product_id: "", movement_type: "purchase", quantity: 0, description: "" });
@@ -31,6 +39,9 @@ const Stock = () => {
   const { data: products = [] } = useProducts();
   const createMovement = useCreateStockMovement();
 
+  // Filter only active products for the select dropdown
+  const activeProducts = products.filter((p) => p.active !== false);
+
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
@@ -38,11 +49,15 @@ const Stock = () => {
 
   const handleSubmit = async () => {
     if (!form.product_id || form.quantity <= 0) return;
-    await createMovement.mutateAsync(form);
-    setDialogOpen(false);
-    setForm({ product_id: "", movement_type: "purchase", quantity: 0, description: "" });
+    try {
+      await createMovement.mutateAsync(form);
+      setDialogOpen(false);
+      setForm({ product_id: "", movement_type: "purchase", quantity: 0, description: "" });
+    } catch {
+      // Error is already handled by the mutation's onError
+      // Don't close dialog or reset form on error
+    }
   };
-
   return (
     <AppLayout title="Estoque">
       <div className="space-y-6 animate-fade-in">
@@ -58,9 +73,9 @@ const Stock = () => {
           ) : (
             <>
               <Card className="stat-card"><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Produtos</CardTitle><Package className="w-4 h-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{summary?.totalProducts || 0}</div></CardContent></Card>
-              <Card className="stat-card"><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Valor em Estoque</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{formatCurrency(summary?.totalValue || 0)}</div></CardContent></Card>
+              <Card className="stat-card"><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Valor em Estoque</CardTitle><DollarSign className="w-4 h-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{formatCurrency(summary?.totalValue || 0)}</div></CardContent></Card>
               <Card className={`stat-card ${(summary?.lowStockCount || 0) > 0 ? "border-warning/50" : ""}`}><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Estoque Baixo</CardTitle><AlertTriangle className="w-4 h-4 text-warning" /></CardHeader><CardContent><div className="text-2xl font-bold text-warning">{summary?.lowStockCount || 0}</div></CardContent></Card>
-              <Card className={`stat-card ${(summary?.outOfStockCount || 0) > 0 ? "border-destructive/50" : ""}`}><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Sem Estoque</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-destructive">{summary?.outOfStockCount || 0}</div></CardContent></Card>
+              <Card className={`stat-card ${(summary?.outOfStockCount || 0) > 0 ? "border-destructive/50" : ""}`}><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Sem Estoque</CardTitle><PackageX className="w-4 h-4 text-destructive" /></CardHeader><CardContent><div className="text-2xl font-bold text-destructive">{summary?.outOfStockCount || 0}</div></CardContent></Card>
             </>
           )}
         </div>
@@ -98,12 +113,18 @@ const Stock = () => {
                     <EntryItemSkeleton key={i} />
                   ))}
                 </>
+              ) : movements.length === 0 ? (
+                <Card><CardContent className="py-8 text-center text-muted-foreground">Nenhuma movimentação registrada</CardContent></Card>
               ) : (
                 movements.slice(0, 50).map((m) => (
                   <Card key={m.id}>
                     <CardContent className="flex items-center gap-4 p-4">
                       {Number(m.quantity) > 0 ? <ArrowUpCircle className="w-5 h-5 text-success" /> : <ArrowDownCircle className="w-5 h-5 text-destructive" />}
-                      <div className="flex-1"><div className="font-medium">{m.product?.name || "Produto"}</div><div className="text-sm text-muted-foreground">{MOVEMENT_LABELS[m.movement_type] || m.movement_type} • {m.description || ""}</div></div>
+                      <div className="flex-1">
+                        <div className="font-medium">{m.product?.name || "Produto"}</div>
+                        <div className="text-sm text-muted-foreground">{MOVEMENT_LABELS[m.movement_type] || m.movement_type}{m.description ? ` • ${m.description}` : ""}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{formatDate(m.created_at)}</div>
+                      </div>
                       <div className={`font-semibold ${Number(m.quantity) > 0 ? "text-success" : "text-destructive"}`}>{Number(m.quantity) > 0 ? "+" : ""}{m.quantity} {m.product?.unit || ""}</div>
                     </CardContent>
                   </Card>
@@ -121,7 +142,7 @@ const Stock = () => {
               <div className="space-y-2"><Label>Produto *</Label>
                 <Select value={form.product_id} onValueChange={(v) => setForm({ ...form, product_id: v })}>
                   <SelectTrigger><SelectValue placeholder="Selecione o produto" /></SelectTrigger>
-                  <SelectContent>{products.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
+                  <SelectContent>{activeProducts.map((p) => (<SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>))}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2"><Label>Tipo *</Label>
