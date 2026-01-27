@@ -31,6 +31,7 @@ export const CreateSaleInputSchema = z.object({
   payment_method: z.string().min(1, "Forma de pagamento é obrigatória").max(50, "Forma de pagamento muito longa"),
   discount_total: z.number().nonnegative("Desconto não pode ser negativo").max(999999.99, "Desconto muito alto").optional(),
   notes: z.string().max(1000, "Observações muito longas").optional(),
+  session_id: z.string().uuid("ID da sessão inválido").nullable().optional(),
 });
 
 // Tab item validation schema
