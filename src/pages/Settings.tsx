@@ -13,6 +13,7 @@ import { usePaymentMethods, useSeedDefaultPaymentMethods, useTogglePaymentMethod
 import { TeamMemberList } from "@/components/team/TeamMemberList";
 import { InviteMemberDialog } from "@/components/team/InviteMemberDialog";
 import { PendingInvitations } from "@/components/team/PendingInvitations";
+import { LoyaltySettingsCard } from "@/components/loyalty/LoyaltySettingsCard";
 import { Building2, Users, Palette, Save, CreditCard, Banknote, QrCode, Loader2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
@@ -269,6 +270,9 @@ const Settings = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Loyalty Program */}
+        <LoyaltySettingsCard />
 
         {/* Theme Settings */}
         <Card>

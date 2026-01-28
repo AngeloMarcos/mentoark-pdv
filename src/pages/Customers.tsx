@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -23,8 +24,26 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer, CustomerInput } from "@/hooks/useCustomers";
 import { CustomerHistoryDialog } from "@/components/customers/CustomerHistoryDialog";
-import { Plus, Search, Pencil, Trash2, Users, History } from "lucide-react";
+import { useCustomerPoints, useLoyaltySettings, calculatePointsValue } from "@/hooks/useLoyalty";
+import { Plus, Search, Pencil, Trash2, Users, History, Gift } from "lucide-react";
 import { toast } from "sonner";
+
+// Componente inline para mostrar pontos de cada cliente
+function CustomerPointsBadge({ customerId }: { customerId: string }) {
+  const { data: points = 0, isLoading } = useCustomerPoints(customerId);
+  const { data: settings } = useLoyaltySettings();
+
+  if (!settings?.loyalty_enabled) return null;
+  if (isLoading) return <Skeleton className="h-5 w-16 inline-block" />;
+  if (points === 0) return <span className="text-muted-foreground text-sm">-</span>;
+
+  return (
+    <Badge variant="secondary" className="gap-1">
+      <Gift className="w-3 h-3" />
+      {points.toLocaleString("pt-BR")}
+    </Badge>
+  );
+}
 
 const Customers = () => {
   const [historyCustomer, setHistoryCustomer] = useState<{ id: string; name: string } | null>(null);
@@ -233,7 +252,7 @@ const Customers = () => {
                     <TableRow>
                       <TableHead>Nome</TableHead>
                       <TableHead>Telefone</TableHead>
-                      <TableHead className="hidden sm:table-cell">Documento</TableHead>
+                      <TableHead className="hidden sm:table-cell">Pontos</TableHead>
                       <TableHead className="hidden md:table-cell">Email</TableHead>
                       <TableHead className="w-24">Ações</TableHead>
                     </TableRow>
@@ -243,7 +262,9 @@ const Customers = () => {
                       <TableRow key={customer.id}>
                         <TableCell className="font-medium">{customer.name}</TableCell>
                         <TableCell>{customer.phone || "-"}</TableCell>
-                        <TableCell className="hidden sm:table-cell">{customer.document || "-"}</TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          <CustomerPointsBadge customerId={customer.id} />
+                        </TableCell>
                         <TableCell className="hidden md:table-cell">{customer.email || "-"}</TableCell>
                         <TableCell>
                           <div className="flex gap-1">

@@ -316,9 +316,28 @@ export function useCreateSale() {
         }
       }
 
+      // Credit loyalty points if customer is identified
+      if (input.customer_id) {
+        try {
+          const { data: pointsCredited } = await supabase.rpc("credit_loyalty_points", {
+            p_tenant_id: currentTenant.id,
+            p_customer_id: input.customer_id,
+            p_sale_id: sale.id,
+            p_sale_amount: netTotal,
+          });
+          
+          if (pointsCredited && pointsCredited > 0) {
+            // Toast will be shown on success
+          }
+        } catch (error) {
+          console.error("[Loyalty Points Error]", error);
+          // Continue - não crítico
+        }
+      }
+
       return sale;
     },
-    onSuccess: () => {
+    onSuccess: (sale, variables) => {
       queryClient.invalidateQueries({ queryKey: ["sales"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["stock_movements"] });
@@ -326,6 +345,13 @@ export function useCreateSale() {
       queryClient.invalidateQueries({ queryKey: ["cash_movements"] });
       queryClient.invalidateQueries({ queryKey: ["cash_sessions"] });
       queryClient.invalidateQueries({ queryKey: ["sale_payments"] });
+      
+      // Invalidate customer points if customer was identified
+      if (variables.customer_id) {
+        queryClient.invalidateQueries({ queryKey: ["customer-points", variables.customer_id] });
+        queryClient.invalidateQueries({ queryKey: ["points-history", variables.customer_id] });
+      }
+      
       toast.success("Venda finalizada com sucesso!");
     },
     onError: (error) => {
