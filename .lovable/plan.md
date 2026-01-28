@@ -1,548 +1,357 @@
 
-
-# Sprint 5: Relatorios Essenciais
+# Plano de Melhoria do Sistema Multi-Tenant
 
 ## Resumo Executivo
 
-Este sprint implementa um sistema completo de relatorios gerenciais com analise de margem de lucro, ranking de produtos por varios criterios, exportacao para Excel/CSV e PDF, filtros avancados por periodo e categoria, e graficos interativos.
+Este plano propoe melhorias significativas no sistema multi-tenant, incluindo gestao completa de equipe, sistema de convites por email, configuracoes avancadas por tenant, e enriquecimento do modelo de dados.
 
 ---
 
-## Arquitetura da Solucao
+## Analise do Estado Atual
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│                    Central de Relatorios                        │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│   ┌──────────────┐   ┌──────────────┐   ┌──────────────┐       │
-│   │   Vendas     │   │  Produtos    │   │ Financeiro   │       │
-│   │  Detalhado   │   │  Ranking     │   │   DRE        │       │
-│   └──────────────┘   └──────────────┘   └──────────────┘       │
-│          │                  │                  │                │
-│          ▼                  ▼                  ▼                │
-│   ┌──────────────────────────────────────────────────┐         │
-│   │              Filtros Avancados                    │         │
-│   │   Periodo | Categoria | Pagamento | Vendedor     │         │
-│   └──────────────────────────────────────────────────┘         │
-│                           │                                     │
-│   ┌──────────────────────────────────────────────────┐         │
-│   │              Exportacao                           │         │
-│   │          CSV  |  Excel  |  PDF                   │         │
-│   └──────────────────────────────────────────────────┘         │
-└─────────────────────────────────────────────────────────────────┘
+### Pontos Fortes
+- Isolamento de dados via RLS funcionando corretamente
+- Funcoes SECURITY DEFINER evitando recursao
+- Hierarquia de roles (super_admin > admin > operator)
+- Trigger automatico para criacao de admins
+
+### Areas de Melhoria Identificadas
+1. **Gestao de Equipe**: Nao ha UI para gerenciar membros
+2. **Sistema de Convites**: Nao existe forma de convidar usuarios
+3. **Configuracoes do Tenant**: Apenas dados basicos (nome, documento)
+4. **Auditoria**: Sem log de acoes importantes
+5. **Permissoes Granulares**: Apenas admin/operator sem detalhamento
+
+---
+
+## 1. Nova Tabela: Convites de Usuarios
+
+```sql
+CREATE TABLE public.tenant_invitations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
+  role app_role NOT NULL DEFAULT 'operator',
+  invited_by UUID NOT NULL REFERENCES auth.users(id),
+  token TEXT NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex'),
+  expires_at TIMESTAMPTZ NOT NULL DEFAULT (now() + interval '7 days'),
+  accepted_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(tenant_id, email)
+);
+```
+
+### Politicas RLS
+- Admins podem gerenciar convites do seu tenant
+- Super admins podem ver todos os convites
+
+---
+
+## 2. Expansao da Tabela Tenants
+
+```sql
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS 
+  settings JSONB DEFAULT '{
+    "currency": "BRL",
+    "timezone": "America/Sao_Paulo",
+    "fiscal_enabled": false,
+    "logo_url": null,
+    "address": null,
+    "email": null,
+    "receipt_footer": null,
+    "low_stock_alert_threshold": 10,
+    "allow_negative_stock": false
+  }'::jsonb;
+
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS 
+  subscription_status TEXT DEFAULT 'trial';
+
+ALTER TABLE tenants ADD COLUMN IF NOT EXISTS 
+  subscription_expires_at TIMESTAMPTZ;
 ```
 
 ---
 
-## 1. Novos Hooks de Relatorios
+## 3. Nova Tabela: Log de Auditoria
 
-### src/hooks/useReports.ts
+```sql
+CREATE TABLE public.audit_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id),
+  action TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  entity_id UUID,
+  old_data JSONB,
+  new_data JSONB,
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX idx_audit_logs_tenant_created 
+  ON audit_logs(tenant_id, created_at DESC);
+```
+
+---
+
+## 4. Novos Hooks
+
+### src/hooks/useTenantUsers.ts
 
 ```typescript
-// Funcionalidades principais:
-- useSalesDetailedReport(filters): Vendas detalhadas com itens
-- useProductProfitReport(filters): Ranking por margem de lucro
-- useProductRevenueReport(filters): Ranking por faturamento
-- useProductQuantityReport(filters): Ranking por quantidade vendida
-- useCategoryReport(filters): Vendas agrupadas por categoria
-- usePaymentMethodReport(filters): Analise por forma de pagamento
-- useDailyReport(filters): Resumo diario com comparativos
-- useFinancialDRE(filters): Demonstrativo de resultado simplificado
+// CRUD de membros do tenant
+- useTenantUsers(): Lista usuarios do tenant atual
+- useAddTenantUser(): Adicionar usuario existente
+- useRemoveTenantUser(): Remover usuario do tenant
+- useUpdateUserRole(): Alterar role do usuario
+
+// Sistema de convites
+- useTenantInvitations(): Lista convites pendentes
+- useCreateInvitation(): Criar convite por email
+- useCancelInvitation(): Cancelar convite
+- useAcceptInvitation(): Aceitar convite (via token)
+- useResendInvitation(): Reenviar email de convite
 ```
 
-### Interfaces de Filtros
+### src/hooks/useTenantSettings.ts
 
 ```typescript
-interface ReportFilters {
-  startDate: Date;
-  endDate: Date;
-  category?: string;
-  paymentMethod?: string;
-  userId?: string;  // Vendedor
-  limit?: number;   // Top N produtos
-}
-
-interface ProductProfitReport {
-  product_id: string;
-  product_name: string;
-  category: string | null;
-  quantity_sold: number;
-  revenue: number;         // Receita total
-  cost: number;            // Custo total (CMV)
-  gross_profit: number;    // Lucro bruto
-  profit_margin: number;   // Margem % = (receita - custo) / receita
-}
+- useTenantSettings(): Retorna settings do tenant
+- useUpdateTenantSettings(): Atualiza configuracoes
+- useUploadTenantLogo(): Upload de logo
 ```
 
 ---
 
-## 2. Utilitarios de Exportacao
-
-### src/lib/export-utils.ts
+## 5. Edge Function: Envio de Convites
 
 ```typescript
-// Exportacao CSV
-- exportToCSV(data, columns, filename): Gera e baixa CSV
-- formatCSVRow(row, columns): Formata linha com escape correto
-
-// Exportacao PDF (usando jsPDF)
-- exportToPDF(title, data, columns, options): Gera PDF
-- addTableToPDF(doc, data, columns): Adiciona tabela ao PDF
-- addSummaryToPDF(doc, summary): Adiciona resumo/totais
-
-// Helpers de formatacao
-- formatCurrency(value): Formata moeda BRL
-- formatPercent(value): Formata percentual
-- formatDate(date): Formata data pt-BR
-```
-
-### Nova Dependencia
-
-```bash
-npm install jspdf jspdf-autotable
-# ou usar html2canvas para PDF mais simples
+// supabase/functions/send-invitation/index.ts
+// Envia email de convite usando Resend ou Sendgrid
+// Valida autorizacao do usuario que convida
+// Gera link com token unico
 ```
 
 ---
 
-## 3. Componentes de UI
+## 6. Novos Componentes de UI
 
-### src/components/reports/ReportFilters.tsx
+### src/components/team/TeamMemberList.tsx
+- Lista de membros com avatar/email
+- Badge de role (Admin/Operador)
+- Acoes: alterar role, remover
+- Botao para convidar novo membro
 
-Barra de filtros reutilizavel:
-- Seletor de periodo com presets (Hoje, Esta Semana, Este Mes, Ultimo Mes, Personalizado)
-- Filtro por categoria (dropdown)
-- Filtro por forma de pagamento (dropdown)
-- Botao de aplicar filtros
-- Indicador de filtros ativos
+### src/components/team/InviteMemberDialog.tsx
+- Form com email e selecao de role
+- Validacao de email
+- Feedback de sucesso/erro
 
-### src/components/reports/DateRangePicker.tsx
+### src/components/team/PendingInvitations.tsx
+- Lista de convites pendentes
+- Status (pendente/expirado)
+- Acoes: reenviar, cancelar
 
-Seletor de periodo avancado:
-- Dois calendarios lado a lado
-- Presets rapidos (7 dias, 30 dias, etc.)
-- Validacao de range maximo
-
-### src/components/reports/ExportButtons.tsx
-
-Grupo de botoes de exportacao:
-- Botao CSV (icone FileSpreadsheet)
-- Botao PDF (icone FileText)
-- Loading state durante geracao
-- Desabilitado se sem dados
-
-### src/components/reports/ReportTable.tsx
-
-Tabela padronizada para relatorios:
-- Headers fixos
-- Ordenacao por coluna
-- Paginacao client-side
-- Totalizadores no footer
-- Responsivo com scroll horizontal
-
-### src/components/reports/ProfitMarginCard.tsx
-
-Card de margem de lucro:
-- Nome do produto
-- Barra de progresso colorida (margem)
-- Valores de receita, custo, lucro
-- Indicador visual (verde >30%, amarelo 15-30%, vermelho <15%)
-
-### src/components/reports/SummaryCards.tsx
-
-Cards de resumo para topo dos relatorios:
-- Total de vendas
-- Ticket medio
-- Lucro bruto total
-- Margem media
+### src/components/settings/TenantSettingsForm.tsx
+- Configuracoes avancadas do tenant
+- Upload de logo
+- Configuracoes fiscais
+- Preferencias de estoque
 
 ---
 
-## 4. Nova Pagina: Central de Relatorios
+## 7. Modificacao na Pagina Settings.tsx
 
-### src/pages/Reports.tsx
-
-Pagina hub com acesso a todos os relatorios:
+Substituir a secao "Equipe (Read-only)" por:
 
 ```text
-┌─────────────────────────────────────────┐
-│  Central de Relatorios                  │
-├─────────────────────────────────────────┤
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐   │
-│  │ Vendas  │ │Produtos │ │Financeiro│   │
-│  │Detalhado│ │ Ranking │ │   DRE   │   │
-│  └─────────┘ └─────────┘ └─────────┘   │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐   │
-│  │Por      │ │ Por     │ │Fechamento│   │
-│  │Categoria│ │Pagamento│ │  Caixa  │   │
-│  └─────────┘ └─────────┘ └─────────┘   │
-└─────────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│  Equipe                         [+ Convidar]│
+├─────────────────────────────────────────────┤
+│  👤 usuario@email.com           Admin    ⋮  │
+│  👤 operador@email.com          Operador ⋮  │
+├─────────────────────────────────────────────┤
+│  Convites Pendentes                         │
+│  📧 novo@email.com    Expira em 5 dias   ⋮ │
+└─────────────────────────────────────────────┘
 ```
 
 ---
 
-## 5. Modificacoes na Pagina SalesReport.tsx
+## 8. Nova Pagina: Aceitar Convite
 
-### Melhorias
+### src/pages/AcceptInvitation.tsx
 
-1. **Filtros avancados**: Adicionar filtro por categoria e forma de pagamento
-2. **Presets de periodo**: Botoes rapidos (Hoje, Semana, Mes)
-3. **Exportacao**: Botoes para CSV e PDF
-4. **Graficos adicionais**: 
-   - Grafico de pizza por forma de pagamento
-   - Grafico de barras por categoria
-5. **Margem de lucro**: Nova secao mostrando lucro e margem
+- Rota: `/invite/:token`
+- Se usuario nao logado: redireciona para login/cadastro
+- Se logado: processa aceitacao do convite
+- Adiciona usuario ao tenant com role especificado
+- Redireciona para select-tenant
 
-### Novo Layout
+---
 
-```text
-┌─────────────────────────────────────────┐
-│  [Filtros Avancados]  [Exportar ▼]      │
-├─────────────────────────────────────────┤
-│  Cards: Total | Lucro | Margem | Ticket │
-├─────────────────────────────────────────┤
-│  Tabs: Resumo | Por Produto | Por Dia   │
-└─────────────────────────────────────────┘
+## 9. Seguranca Adicional
+
+### Funcao RPC para Aceitar Convite
+
+```sql
+CREATE OR REPLACE FUNCTION public.accept_invitation(p_token TEXT)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_invitation tenant_invitations%ROWTYPE;
+  v_user_id UUID;
+BEGIN
+  v_user_id := auth.uid();
+  
+  -- Busca convite valido
+  SELECT * INTO v_invitation
+  FROM tenant_invitations
+  WHERE token = p_token
+    AND accepted_at IS NULL
+    AND expires_at > now();
+    
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Convite invalido ou expirado';
+  END IF;
+  
+  -- Adiciona usuario ao tenant
+  INSERT INTO tenant_users (tenant_id, user_id, role)
+  VALUES (v_invitation.tenant_id, v_user_id, v_invitation.role)
+  ON CONFLICT (tenant_id, user_id) DO UPDATE SET role = v_invitation.role;
+  
+  -- Marca convite como aceito
+  UPDATE tenant_invitations
+  SET accepted_at = now()
+  WHERE id = v_invitation.id;
+  
+  RETURN v_invitation.tenant_id;
+END;
+$$;
 ```
 
 ---
 
-## 6. Estrutura de Arquivos
+## 10. Estrutura de Arquivos
 
 ```text
 src/
 ├── hooks/
-│   └── useReports.ts              # NOVO
-├── lib/
-│   └── export-utils.ts            # NOVO
+│   ├── useTenantUsers.ts          # NOVO
+│   └── useTenantSettings.ts       # NOVO
 ├── components/
-│   └── reports/
-│       ├── ReportFilters.tsx      # NOVO
-│       ├── DateRangePicker.tsx    # NOVO
-│       ├── ExportButtons.tsx      # NOVO
-│       ├── ReportTable.tsx        # NOVO
-│       ├── ProfitMarginCard.tsx   # NOVO
-│       └── SummaryCards.tsx       # NOVO
+│   └── team/
+│       ├── TeamMemberList.tsx     # NOVO
+│       ├── InviteMemberDialog.tsx # NOVO
+│       └── PendingInvitations.tsx # NOVO
 ├── pages/
-│   ├── Reports.tsx                # NOVO (hub central)
-│   └── SalesReport.tsx            # MODIFICAR
+│   ├── Settings.tsx               # MODIFICAR
+│   └── AcceptInvitation.tsx       # NOVO
 └── App.tsx                        # MODIFICAR (nova rota)
+
+supabase/
+├── functions/
+│   └── send-invitation/
+│       └── index.ts               # NOVO
+└── migrations/
+    └── [timestamp]_multitenant_improvements.sql
 ```
 
 ---
 
-## 7. Detalhes Tecnicos
+## 11. Migracao SQL Completa
 
-### Calculo de Margem de Lucro
+A migracao incluira:
 
-```typescript
-// Para cada produto vendido no periodo:
-interface ProductSaleData {
-  product_id: string;
-  quantity: number;       // Soma de quantidades vendidas
-  revenue: number;        // Soma de totais (sale_items.total)
-  cost: number;           // Soma de (quantity * cost_price ou weighted_avg_cost)
-}
-
-// Calculo:
-grossProfit = revenue - cost;
-profitMargin = revenue > 0 ? ((grossProfit / revenue) * 100) : 0;
-```
-
-### Query para Ranking de Produtos
-
-```typescript
-// 1. Buscar vendas no periodo
-const salesInRange = await supabase
-  .from("sales")
-  .select("id")
-  .eq("tenant_id", tenantId)
-  .gte("datetime", startDate)
-  .lte("datetime", endDate);
-
-// 2. Buscar itens das vendas com dados do produto
-const saleItems = await supabase
-  .from("sale_items")
-  .select(`
-    quantity,
-    total,
-    unit_price,
-    product_id,
-    products:product_id (
-      name,
-      category,
-      cost_price,
-      weighted_avg_cost
-    )
-  `)
-  .in("sale_id", salesIds);
-
-// 3. Agregar por produto e calcular margem
-```
-
-### Exportacao CSV
-
-```typescript
-function exportToCSV(data: any[], columns: Column[], filename: string) {
-  const BOM = "\uFEFF";
-  const headers = columns.map(c => c.label).join(";");
-  const rows = data.map(row => 
-    columns.map(c => formatCell(row[c.key], c.format)).join(";")
-  );
-  const content = [headers, ...rows].join("\n");
-  
-  const blob = new Blob([BOM + content], { type: "text/csv;charset=utf-8;" });
-  // Trigger download
-}
-```
-
-### Exportacao PDF com jsPDF
-
-```typescript
-import { jsPDF } from "jspdf";
-import "jspdf-autotable";
-
-function exportToPDF(
-  title: string, 
-  data: any[], 
-  columns: Column[],
-  summary?: Summary
-) {
-  const doc = new jsPDF();
-  
-  // Header
-  doc.setFontSize(18);
-  doc.text(title, 14, 22);
-  doc.setFontSize(10);
-  doc.text(`Gerado em: ${formatDate(new Date())}`, 14, 30);
-  
-  // Table
-  doc.autoTable({
-    head: [columns.map(c => c.label)],
-    body: data.map(row => columns.map(c => formatCell(row[c.key], c.format))),
-    startY: 40,
-    styles: { fontSize: 9 },
-    headStyles: { fillColor: [24, 95, 53] },
-  });
-  
-  // Summary (se houver)
-  if (summary) {
-    const finalY = doc.lastAutoTable.finalY + 10;
-    doc.text(`Total: ${formatCurrency(summary.total)}`, 14, finalY);
-  }
-  
-  doc.save(`${filename}.pdf`);
-}
-```
+1. Criacao da tabela `tenant_invitations`
+2. Expansao da tabela `tenants` com `settings` JSONB
+3. Criacao da tabela `audit_logs`
+4. Funcao `accept_invitation`
+5. Funcao `log_audit_event` para triggers
+6. RLS policies para novas tabelas
+7. Indices de performance
 
 ---
 
-## 8. Relatorios Disponiveis
-
-### 8.1 Vendas Detalhado
-
-Colunas:
-- Data/Hora
-- Venda #
-- Cliente
-- Forma Pagamento
-- Valor Bruto
-- Desconto
-- Valor Liquido
-
-### 8.2 Ranking de Produtos (por Faturamento)
-
-Colunas:
-- Posicao
-- Produto
-- Categoria
-- Qtd Vendida
-- Faturamento
-- % do Total
-
-### 8.3 Ranking de Produtos (por Margem)
-
-Colunas:
-- Posicao
-- Produto
-- Categoria
-- Faturamento
-- Custo (CMV)
-- Lucro Bruto
-- Margem %
-
-Cards de Alerta:
-- Produtos com margem negativa
-- Produtos com margem abaixo de 15%
-
-### 8.4 Vendas por Categoria
-
-Colunas:
-- Categoria
-- Qtd Produtos
-- Qtd Vendas
-- Faturamento
-- % do Total
-
-Grafico de pizza visual
-
-### 8.5 Vendas por Forma de Pagamento
-
-Colunas:
-- Forma
-- Qtd Vendas
-- Valor Total
-- % do Total
-
-Grafico de barras horizontal
-
-### 8.6 DRE Simplificado
+## 12. Fluxo de Convite
 
 ```text
-(+) Receita Bruta de Vendas
-(-) Descontos Concedidos
-(=) Receita Liquida
-(-) Custo dos Produtos Vendidos (CMV)
-(=) Lucro Bruto
-(-) Despesas Operacionais
-(=) Resultado Operacional
+  Admin                              Convidado
+    │                                    │
+    │  1. Cria convite (email + role)    │
+    │───────────────────────────────────▶│
+    │                                    │
+    │        2. Email enviado            │
+    │                                    │
+    │                           3. Clica link
+    │                                    │
+    │                      4. Faz login/cadastro
+    │                                    │
+    │                      5. Aceita convite (RPC)
+    │◀───────────────────────────────────│
+    │                                    │
+    │     6. Acesso ao tenant liberado   │
+    │                                    │
 ```
 
 ---
 
-## 9. Presets de Periodo
+## 13. Consideracoes de UX
 
-```typescript
-const periodPresets = [
-  { label: "Hoje", getValue: () => ({ start: today, end: today }) },
-  { label: "Ontem", getValue: () => ({ start: yesterday, end: yesterday }) },
-  { label: "Esta Semana", getValue: () => ({ start: startOfWeek, end: today }) },
-  { label: "Semana Passada", getValue: () => ({ start: lastWeekStart, end: lastWeekEnd }) },
-  { label: "Este Mes", getValue: () => ({ start: startOfMonth, end: today }) },
-  { label: "Mes Passado", getValue: () => ({ start: lastMonthStart, end: lastMonthEnd }) },
-  { label: "Ultimos 30 dias", getValue: () => ({ start: subDays(today, 30), end: today }) },
-  { label: "Ultimos 90 dias", getValue: () => ({ start: subDays(today, 90), end: today }) },
-];
-```
+- **Feedback Visual**: Toast de sucesso ao convidar
+- **Validacao de Email**: Impedir emails invalidos
+- **Confirmacao de Remocao**: Dialog antes de remover membro
+- **Auto-refresh**: Lista atualiza apos acoes
+- **Empty States**: Mensagem amigavel quando sem membros
+- **Permissoes**: Ocultar acoes para usuarios sem permissao
 
 ---
 
-## 10. Consideracoes de UX
+## 14. Ordem de Implementacao
 
-1. **Performance**: Limitar queries a 1000 registros maximo
-2. **Loading states**: Skeleton durante carregamento de dados
-3. **Empty states**: Mensagem amigavel quando nao houver dados
-4. **Responsivo**: Tabelas com scroll horizontal em mobile
-5. **Feedback de exportacao**: Toast de sucesso/erro
-6. **Cores consistentes**: 
-   - Verde para lucro/positivo
-   - Vermelho para prejuizo/negativo
-   - Amarelo para alertas
-
----
-
-## 11. Ordem de Implementacao
-
-1. **Instalar jsPDF** - Dependencia para PDF
-2. **src/lib/export-utils.ts** - Utilitarios de exportacao
-3. **src/hooks/useReports.ts** - Hooks de dados
-4. **Componentes de UI** - ReportFilters, ExportButtons, etc.
-5. **Modificar SalesReport.tsx** - Adicionar funcionalidades
-6. **Nova pagina Reports.tsx** - Hub central de relatorios
-7. **Atualizar App.tsx** - Nova rota /reports
-8. **Atualizar navegacao** - Link no menu lateral
-9. **Testes e ajustes** - Validar calculos e exportacoes
+1. **Migracao SQL** - Novas tabelas e funcoes
+2. **Hook useTenantUsers** - CRUD de membros
+3. **Hook useTenantSettings** - Configuracoes
+4. **Componentes Team** - UI de gerenciamento
+5. **Modificar Settings.tsx** - Integrar componentes
+6. **Edge Function** - Envio de emails
+7. **Pagina AcceptInvitation** - Fluxo de aceite
+8. **Atualizar App.tsx** - Nova rota
+9. **Testes e ajustes**
 
 ---
 
-## 12. Estimativa
+## 15. Beneficios Esperados
 
-| Tarefa | Complexidade | Tempo |
-|--------|-------------|-------|
-| Instalar dependencias | Baixa | 10 min |
-| export-utils.ts | Media | 2h |
-| useReports.ts | Alta | 3h |
-| Componentes reports/ | Media | 3h |
-| Modificar SalesReport.tsx | Alta | 3h |
-| Nova pagina Reports.tsx | Media | 2h |
-| Graficos adicionais | Media | 2h |
-| Testes e ajustes | Media | 2h |
-
-**Total estimado: 17-19 horas**
+| Melhoria | Impacto |
+|----------|---------|
+| Gestao de equipe | Permite colaboracao multi-usuario |
+| Sistema de convites | Onboarding simplificado |
+| Configuracoes avancadas | Personalizacao por empresa |
+| Log de auditoria | Rastreabilidade e compliance |
+| Permissoes granulares | Maior controle de acesso |
 
 ---
 
-## 13. Secao Tecnica: Implementacao PDF
+## 16. Consideracoes Tecnicas
 
-### Instalacao
+### Envio de Email
+- Utilizar Edge Function com servico externo (Resend/Sendgrid)
+- Rate limiting para prevenir abuso
+- Template de email responsivo
 
-```bash
-npm install jspdf jspdf-autotable @types/jspdf
-```
+### Seguranca
+- Tokens de convite com expiracao (7 dias)
+- Funcao SECURITY DEFINER para aceite
+- Validacao de email unico por tenant
+- Logs de auditoria para acoes sensiveis
 
-### Estrutura do PDF
-
-```typescript
-// Configuracao do documento
-const doc = new jsPDF({
-  orientation: "portrait",  // ou "landscape" para tabelas largas
-  unit: "mm",
-  format: "a4",
-});
-
-// Adicionar logo (opcional)
-// doc.addImage(logoBase64, "PNG", 14, 10, 30, 10);
-
-// Titulo
-doc.setFontSize(16);
-doc.setFont("helvetica", "bold");
-doc.text("Relatorio de Vendas", 14, 25);
-
-// Subtitulo com periodo
-doc.setFontSize(10);
-doc.setFont("helvetica", "normal");
-doc.text(`Periodo: ${formatDate(startDate)} a ${formatDate(endDate)}`, 14, 32);
-
-// Tabela com autoTable
-(doc as any).autoTable({
-  head: [["Produto", "Qtd", "Faturamento", "Margem"]],
-  body: data.map(row => [
-    row.name,
-    row.quantity.toString(),
-    formatCurrency(row.revenue),
-    formatPercent(row.margin),
-  ]),
-  startY: 40,
-  theme: "striped",
-  headStyles: { 
-    fillColor: [24, 95, 53],  // Cor primaria
-    textColor: 255,
-  },
-  alternateRowStyles: { fillColor: [245, 245, 245] },
-  margin: { left: 14, right: 14 },
-});
-
-// Rodape com totais
-const finalY = (doc as any).lastAutoTable.finalY + 10;
-doc.setFont("helvetica", "bold");
-doc.text(`Total Faturamento: ${formatCurrency(totalRevenue)}`, 14, finalY);
-doc.text(`Lucro Bruto: ${formatCurrency(totalProfit)}`, 14, finalY + 7);
-
-// Salvar
-doc.save(`relatorio-vendas-${formatDate(new Date())}.pdf`);
-```
-
----
-
-## 14. Atualizacoes no Menu de Navegacao
-
-Adicionar no AppLayout.tsx:
-
-```typescript
-const navLinks = [
-  // ... existentes ...
-  { to: "/reports", label: "Relatórios", icon: BarChart3 },
-];
-```
+### Performance
+- Indices em `tenant_invitations(token)`
+- Indices em `audit_logs(tenant_id, created_at)`
+- Cache de settings no frontend
 
