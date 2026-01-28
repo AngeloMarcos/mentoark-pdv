@@ -1,357 +1,404 @@
 
-# Plano de Melhoria do Sistema Multi-Tenant
+
+# Plano: Sistema de Fidelidade e Pontos
 
 ## Resumo Executivo
 
-Este plano propoe melhorias significativas no sistema multi-tenant, incluindo gestao completa de equipe, sistema de convites por email, configuracoes avancadas por tenant, e enriquecimento do modelo de dados.
+Implementar um programa de fidelidade completo com acumulo automatico de pontos por compra, resgate de pontos como desconto, configuracao de regras por tenant, e visualizacao do saldo de pontos na ficha do cliente.
 
 ---
 
 ## Analise do Estado Atual
 
-### Pontos Fortes
-- Isolamento de dados via RLS funcionando corretamente
-- Funcoes SECURITY DEFINER evitando recursao
-- Hierarquia de roles (super_admin > admin > operator)
-- Trigger automatico para criacao de admins
+### Ja Implementado
+- Sistema de **creditos de loja** (vouchers/troca) via `customer_credits`
+- Historico de compras por cliente com total gasto e ticket medio
+- Estrutura de clientes com CRUD completo
 
-### Areas de Melhoria Identificadas
-1. **Gestao de Equipe**: Nao ha UI para gerenciar membros
-2. **Sistema de Convites**: Nao existe forma de convidar usuarios
-3. **Configuracoes do Tenant**: Apenas dados basicos (nome, documento)
-4. **Auditoria**: Sem log de acoes importantes
-5. **Permissoes Granulares**: Apenas admin/operator sem detalhamento
-
----
-
-## 1. Nova Tabela: Convites de Usuarios
-
-```sql
-CREATE TABLE public.tenant_invitations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  email TEXT NOT NULL,
-  role app_role NOT NULL DEFAULT 'operator',
-  invited_by UUID NOT NULL REFERENCES auth.users(id),
-  token TEXT NOT NULL UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex'),
-  expires_at TIMESTAMPTZ NOT NULL DEFAULT (now() + interval '7 days'),
-  accepted_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(tenant_id, email)
-);
-```
-
-### Politicas RLS
-- Admins podem gerenciar convites do seu tenant
-- Super admins podem ver todos os convites
+### Falta Implementar
+- Acumulo automatico de pontos por vendas
+- Configuracao de regras: R$ 1 = X pontos
+- Regras de resgate: Y pontos = R$ 1 desconto
+- Exibicao de saldo de pontos na ficha do cliente
+- Uso de pontos como forma de pagamento no PDV
 
 ---
 
-## 2. Expansao da Tabela Tenants
+## Arquitetura da Solucao
 
-```sql
-ALTER TABLE tenants ADD COLUMN IF NOT EXISTS 
-  settings JSONB DEFAULT '{
-    "currency": "BRL",
-    "timezone": "America/Sao_Paulo",
-    "fiscal_enabled": false,
-    "logo_url": null,
-    "address": null,
-    "email": null,
-    "receipt_footer": null,
-    "low_stock_alert_threshold": 10,
-    "allow_negative_stock": false
-  }'::jsonb;
-
-ALTER TABLE tenants ADD COLUMN IF NOT EXISTS 
-  subscription_status TEXT DEFAULT 'trial';
-
-ALTER TABLE tenants ADD COLUMN IF NOT EXISTS 
-  subscription_expires_at TIMESTAMPTZ;
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                  Sistema de Fidelidade                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   ┌──────────────────┐          ┌──────────────────┐            │
+│   │   Configuracao   │          │  Saldo Cliente   │            │
+│   │   (Settings)     │          │   (Customers)    │            │
+│   │                  │          │                  │            │
+│   │ R$1 = 10 pts     │          │  Pontos: 1.250   │            │
+│   │ 100 pts = R$1    │          │  = R$ 12,50      │            │
+│   └──────────────────┘          └──────────────────┘            │
+│                                                                  │
+│   ┌──────────────────────────────────────────────────┐          │
+│   │              Fluxo de Pontos                      │          │
+│   │                                                   │          │
+│   │   Venda → Acumula Pontos → Saldo Atualizado      │          │
+│   │   PDV → Resgata Pontos → Desconto Aplicado       │          │
+│   └──────────────────────────────────────────────────┘          │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Nova Tabela: Log de Auditoria
+## 1. Estrutura de Dados
+
+### Nova Tabela: customer_points
 
 ```sql
-CREATE TABLE public.audit_logs (
+CREATE TABLE public.customer_points (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id),
-  action TEXT NOT NULL,
-  entity_type TEXT NOT NULL,
-  entity_id UUID,
-  old_data JSONB,
-  new_data JSONB,
-  ip_address TEXT,
-  user_agent TEXT,
+  customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+  points INTEGER NOT NULL,
+  movement_type TEXT NOT NULL CHECK (movement_type IN ('earn', 'redeem', 'expire', 'manual')),
+  sale_id UUID REFERENCES sales(id),
+  description TEXT,
+  expires_at DATE,
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
-CREATE INDEX idx_audit_logs_tenant_created 
-  ON audit_logs(tenant_id, created_at DESC);
+CREATE INDEX idx_customer_points_customer ON customer_points(customer_id);
+CREATE INDEX idx_customer_points_tenant ON customer_points(tenant_id);
+```
+
+### Expansao da Tabela tenants.settings
+
+Adicionar campos de configuracao do programa de fidelidade:
+
+```json
+{
+  "loyalty_enabled": true,
+  "loyalty_points_per_currency": 10,
+  "loyalty_currency_per_points": 100,
+  "loyalty_min_redeem_points": 100,
+  "loyalty_points_expiration_days": 365
+}
 ```
 
 ---
 
-## 4. Novos Hooks
+## 2. Funcoes de Banco de Dados
 
-### src/hooks/useTenantUsers.ts
-
-```typescript
-// CRUD de membros do tenant
-- useTenantUsers(): Lista usuarios do tenant atual
-- useAddTenantUser(): Adicionar usuario existente
-- useRemoveTenantUser(): Remover usuario do tenant
-- useUpdateUserRole(): Alterar role do usuario
-
-// Sistema de convites
-- useTenantInvitations(): Lista convites pendentes
-- useCreateInvitation(): Criar convite por email
-- useCancelInvitation(): Cancelar convite
-- useAcceptInvitation(): Aceitar convite (via token)
-- useResendInvitation(): Reenviar email de convite
-```
-
-### src/hooks/useTenantSettings.ts
-
-```typescript
-- useTenantSettings(): Retorna settings do tenant
-- useUpdateTenantSettings(): Atualiza configuracoes
-- useUploadTenantLogo(): Upload de logo
-```
-
----
-
-## 5. Edge Function: Envio de Convites
-
-```typescript
-// supabase/functions/send-invitation/index.ts
-// Envia email de convite usando Resend ou Sendgrid
-// Valida autorizacao do usuario que convida
-// Gera link com token unico
-```
-
----
-
-## 6. Novos Componentes de UI
-
-### src/components/team/TeamMemberList.tsx
-- Lista de membros com avatar/email
-- Badge de role (Admin/Operador)
-- Acoes: alterar role, remover
-- Botao para convidar novo membro
-
-### src/components/team/InviteMemberDialog.tsx
-- Form com email e selecao de role
-- Validacao de email
-- Feedback de sucesso/erro
-
-### src/components/team/PendingInvitations.tsx
-- Lista de convites pendentes
-- Status (pendente/expirado)
-- Acoes: reenviar, cancelar
-
-### src/components/settings/TenantSettingsForm.tsx
-- Configuracoes avancadas do tenant
-- Upload de logo
-- Configuracoes fiscais
-- Preferencias de estoque
-
----
-
-## 7. Modificacao na Pagina Settings.tsx
-
-Substituir a secao "Equipe (Read-only)" por:
-
-```text
-┌─────────────────────────────────────────────┐
-│  Equipe                         [+ Convidar]│
-├─────────────────────────────────────────────┤
-│  👤 usuario@email.com           Admin    ⋮  │
-│  👤 operador@email.com          Operador ⋮  │
-├─────────────────────────────────────────────┤
-│  Convites Pendentes                         │
-│  📧 novo@email.com    Expira em 5 dias   ⋮ │
-└─────────────────────────────────────────────┘
-```
-
----
-
-## 8. Nova Pagina: Aceitar Convite
-
-### src/pages/AcceptInvitation.tsx
-
-- Rota: `/invite/:token`
-- Se usuario nao logado: redireciona para login/cadastro
-- Se logado: processa aceitacao do convite
-- Adiciona usuario ao tenant com role especificado
-- Redireciona para select-tenant
-
----
-
-## 9. Seguranca Adicional
-
-### Funcao RPC para Aceitar Convite
+### Calcular Saldo de Pontos
 
 ```sql
-CREATE OR REPLACE FUNCTION public.accept_invitation(p_token TEXT)
-RETURNS UUID
+CREATE OR REPLACE FUNCTION public.get_customer_points(p_customer_id UUID)
+RETURNS INTEGER
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE(SUM(
+    CASE 
+      WHEN movement_type = 'earn' THEN points
+      WHEN movement_type = 'redeem' THEN -points
+      WHEN movement_type = 'expire' THEN -points
+      WHEN movement_type = 'manual' THEN points
+      ELSE 0
+    END
+  ), 0)::INTEGER
+  FROM public.customer_points
+  WHERE customer_id = p_customer_id
+  AND (expires_at IS NULL OR expires_at >= CURRENT_DATE);
+$$;
+```
+
+### Creditar Pontos em Venda
+
+```sql
+CREATE OR REPLACE FUNCTION public.credit_loyalty_points(
+  p_tenant_id UUID,
+  p_customer_id UUID,
+  p_sale_id UUID,
+  p_sale_amount NUMERIC
+)
+RETURNS INTEGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-  v_invitation tenant_invitations%ROWTYPE;
-  v_user_id UUID;
+  v_settings JSONB;
+  v_points_per_currency INTEGER;
+  v_points_to_credit INTEGER;
+  v_expiration_days INTEGER;
 BEGIN
-  v_user_id := auth.uid();
+  -- Busca configuracoes do tenant
+  SELECT settings INTO v_settings FROM tenants WHERE id = p_tenant_id;
   
-  -- Busca convite valido
-  SELECT * INTO v_invitation
-  FROM tenant_invitations
-  WHERE token = p_token
-    AND accepted_at IS NULL
-    AND expires_at > now();
-    
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'Convite invalido ou expirado';
+  -- Verifica se fidelidade esta habilitada
+  IF NOT COALESCE((v_settings->>'loyalty_enabled')::BOOLEAN, FALSE) THEN
+    RETURN 0;
   END IF;
   
-  -- Adiciona usuario ao tenant
-  INSERT INTO tenant_users (tenant_id, user_id, role)
-  VALUES (v_invitation.tenant_id, v_user_id, v_invitation.role)
-  ON CONFLICT (tenant_id, user_id) DO UPDATE SET role = v_invitation.role;
+  v_points_per_currency := COALESCE((v_settings->>'loyalty_points_per_currency')::INTEGER, 10);
+  v_expiration_days := COALESCE((v_settings->>'loyalty_points_expiration_days')::INTEGER, 365);
   
-  -- Marca convite como aceito
-  UPDATE tenant_invitations
-  SET accepted_at = now()
-  WHERE id = v_invitation.id;
+  -- Calcula pontos: arredonda para baixo
+  v_points_to_credit := FLOOR(p_sale_amount * v_points_per_currency / 100);
   
-  RETURN v_invitation.tenant_id;
+  IF v_points_to_credit > 0 THEN
+    INSERT INTO customer_points (tenant_id, customer_id, points, movement_type, sale_id, description, expires_at)
+    VALUES (
+      p_tenant_id, 
+      p_customer_id, 
+      v_points_to_credit, 
+      'earn', 
+      p_sale_id,
+      'Pontos por compra',
+      CURRENT_DATE + v_expiration_days
+    );
+  END IF;
+  
+  RETURN v_points_to_credit;
 END;
 $$;
 ```
 
 ---
 
-## 10. Estrutura de Arquivos
+## 3. Novos Hooks
+
+### src/hooks/useLoyalty.ts
+
+```typescript
+// Buscar saldo de pontos do cliente
+export function useCustomerPoints(customerId?: string)
+
+// Buscar historico de movimentacoes de pontos
+export function usePointsHistory(customerId?: string)
+
+// Resgatar pontos (criar movimento de resgate)
+export function useRedeemPoints()
+
+// Adicionar pontos manualmente (admin)
+export function useAddManualPoints()
+
+// Buscar configuracoes de fidelidade do tenant
+export function useLoyaltySettings()
+
+// Atualizar configuracoes de fidelidade
+export function useUpdateLoyaltySettings()
+```
+
+---
+
+## 4. Modificacoes no Fluxo de Venda
+
+### Integracao com useSales.ts
+
+Ao finalizar uma venda com cliente identificado:
+
+```typescript
+// Apos criar a venda com sucesso
+if (input.customer_id && loyaltyEnabled) {
+  await supabase.rpc("credit_loyalty_points", {
+    p_tenant_id: currentTenant.id,
+    p_customer_id: input.customer_id,
+    p_sale_id: sale.id,
+    p_sale_amount: input.net_total,
+  });
+}
+```
+
+---
+
+## 5. Componentes de UI
+
+### src/components/loyalty/PointsBalance.tsx
+
+Card que mostra saldo de pontos:
+- Total de pontos disponiveis
+- Valor equivalente em R$
+- Botao para ver historico
+
+### src/components/loyalty/PointsHistoryDialog.tsx
+
+Modal com historico de movimentacoes:
+- Data, tipo (ganhou/resgatou), quantidade
+- Venda associada (se houver)
+- Filtros por periodo
+
+### src/components/loyalty/RedeemPointsDialog.tsx
+
+Modal para resgate de pontos:
+- Saldo disponivel
+- Quantidade a resgatar
+- Valor de desconto equivalente
+- Validacao de minimo
+
+### src/components/loyalty/LoyaltySettingsCard.tsx
+
+Card para configurar programa (em Settings):
+- Toggle habilitar/desabilitar
+- Pontos por R$ gasto
+- Valor do resgate
+- Validade dos pontos
+
+---
+
+## 6. Modificacoes em Paginas Existentes
+
+### Customers.tsx
+
+Adicionar coluna/badge com saldo de pontos:
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ Nome        │ Telefone     │ Pontos   │ Acoes              │
+├─────────────────────────────────────────────────────────────┤
+│ Joao Silva  │ 11 99999     │ 1.250 🎁│ [📜] [✏️] [🗑️]   │
+│ Maria...    │ 11 88888     │ 350 🎁  │ [📜] [✏️] [🗑️]   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### CustomerHistoryDialog.tsx
+
+Adicionar aba ou secao de pontos:
+- Saldo atual
+- Historico de pontos
+- Botao para adicionar pontos manualmente
+
+### Settings.tsx
+
+Nova secao "Programa de Fidelidade":
+- Ativar/desativar
+- Configurar regras de acumulo e resgate
+
+### PDV.tsx (PaymentDialog)
+
+Adicionar opcao de pagamento com pontos:
+- Mostrar saldo se cliente selecionado
+- Permitir usar pontos como parte do pagamento
+- Calcular desconto automaticamente
+
+---
+
+## 7. Estrutura de Arquivos
 
 ```text
 src/
 ├── hooks/
-│   ├── useTenantUsers.ts          # NOVO
-│   └── useTenantSettings.ts       # NOVO
+│   └── useLoyalty.ts                    # NOVO
 ├── components/
-│   └── team/
-│       ├── TeamMemberList.tsx     # NOVO
-│       ├── InviteMemberDialog.tsx # NOVO
-│       └── PendingInvitations.tsx # NOVO
+│   └── loyalty/
+│       ├── PointsBalance.tsx            # NOVO
+│       ├── PointsHistoryDialog.tsx      # NOVO
+│       ├── RedeemPointsDialog.tsx       # NOVO
+│       └── LoyaltySettingsCard.tsx      # NOVO
 ├── pages/
-│   ├── Settings.tsx               # MODIFICAR
-│   └── AcceptInvitation.tsx       # NOVO
-└── App.tsx                        # MODIFICAR (nova rota)
+│   ├── Customers.tsx                    # MODIFICAR
+│   └── Settings.tsx                     # MODIFICAR
+└── components/
+    ├── customers/
+    │   └── CustomerHistoryDialog.tsx    # MODIFICAR
+    └── pdv/
+        └── PaymentDialog.tsx            # MODIFICAR
 
 supabase/
-├── functions/
-│   └── send-invitation/
-│       └── index.ts               # NOVO
 └── migrations/
-    └── [timestamp]_multitenant_improvements.sql
+    └── [timestamp]_loyalty_points.sql   # NOVO
 ```
 
 ---
 
-## 11. Migracao SQL Completa
+## 8. Fluxo de Uso
 
-A migracao incluira:
-
-1. Criacao da tabela `tenant_invitations`
-2. Expansao da tabela `tenants` com `settings` JSONB
-3. Criacao da tabela `audit_logs`
-4. Funcao `accept_invitation`
-5. Funcao `log_audit_event` para triggers
-6. RLS policies para novas tabelas
-7. Indices de performance
-
----
-
-## 12. Fluxo de Convite
+### Acumulo de Pontos
 
 ```text
-  Admin                              Convidado
-    │                                    │
-    │  1. Cria convite (email + role)    │
-    │───────────────────────────────────▶│
-    │                                    │
-    │        2. Email enviado            │
-    │                                    │
-    │                           3. Clica link
-    │                                    │
-    │                      4. Faz login/cadastro
-    │                                    │
-    │                      5. Aceita convite (RPC)
-    │◀───────────────────────────────────│
-    │                                    │
-    │     6. Acesso ao tenant liberado   │
-    │                                    │
+  Cliente faz compra de R$ 100
+           │
+           ▼
+  Venda finalizada com customer_id
+           │
+           ▼
+  Funcao credit_loyalty_points() 
+           │
+  R$ 100 × 10 pts/R$ = 1.000 pts
+           │
+           ▼
+  Registro em customer_points
+           │
+           ▼
+  Saldo do cliente atualizado
+```
+
+### Resgate de Pontos
+
+```text
+  Cliente no PDV com 2.000 pontos
+           │
+           ▼
+  Seleciona "Usar Pontos" no pagamento
+           │
+           ▼
+  Escolhe resgatar 1.000 pts
+           │
+  1.000 pts ÷ 100 = R$ 10 desconto
+           │
+           ▼
+  Desconto aplicado no total
+           │
+           ▼
+  Registro de resgate em customer_points
 ```
 
 ---
 
-## 13. Consideracoes de UX
+## 9. Configuracoes Padrao
 
-- **Feedback Visual**: Toast de sucesso ao convidar
-- **Validacao de Email**: Impedir emails invalidos
-- **Confirmacao de Remocao**: Dialog antes de remover membro
-- **Auto-refresh**: Lista atualiza apos acoes
-- **Empty States**: Mensagem amigavel quando sem membros
-- **Permissoes**: Ocultar acoes para usuarios sem permissao
+| Parametro | Valor Padrao | Descricao |
+|-----------|--------------|-----------|
+| loyalty_enabled | false | Programa ativo |
+| loyalty_points_per_currency | 10 | Pontos por R$ 1 gasto |
+| loyalty_currency_per_points | 100 | Pontos para R$ 1 desconto |
+| loyalty_min_redeem_points | 100 | Minimo para resgate |
+| loyalty_points_expiration_days | 365 | Validade em dias |
 
 ---
 
-## 14. Ordem de Implementacao
+## 10. Ordem de Implementacao
 
-1. **Migracao SQL** - Novas tabelas e funcoes
-2. **Hook useTenantUsers** - CRUD de membros
-3. **Hook useTenantSettings** - Configuracoes
-4. **Componentes Team** - UI de gerenciamento
-5. **Modificar Settings.tsx** - Integrar componentes
-6. **Edge Function** - Envio de emails
-7. **Pagina AcceptInvitation** - Fluxo de aceite
-8. **Atualizar App.tsx** - Nova rota
+1. **Migracao SQL** - Criar tabela e funcoes
+2. **src/hooks/useLoyalty.ts** - Hooks de dados
+3. **Componentes loyalty/** - UI de exibicao
+4. **Modificar Customers.tsx** - Mostrar pontos
+5. **Modificar CustomerHistoryDialog** - Aba de pontos
+6. **Modificar Settings.tsx** - Configuracoes
+7. **Modificar useSales.ts** - Creditacao automatica
+8. **Modificar PaymentDialog** - Resgate no PDV
 9. **Testes e ajustes**
 
 ---
 
-## 15. Beneficios Esperados
+## 11. Consideracoes de UX
 
-| Melhoria | Impacto |
-|----------|---------|
-| Gestao de equipe | Permite colaboracao multi-usuario |
-| Sistema de convites | Onboarding simplificado |
-| Configuracoes avancadas | Personalizacao por empresa |
-| Log de auditoria | Rastreabilidade e compliance |
-| Permissoes granulares | Maior controle de acesso |
+- **Feedback Visual**: Toast ao ganhar/resgatar pontos
+- **Clareza**: Sempre mostrar equivalencia pts ↔ R$
+- **Validacoes**: Impedir resgate abaixo do minimo
+- **Expiracao**: Alertar sobre pontos proximos de expirar
+- **Historico**: Permitir ver todas movimentacoes
 
 ---
 
-## 16. Consideracoes Tecnicas
+## 12. Beneficios Esperados
 
-### Envio de Email
-- Utilizar Edge Function com servico externo (Resend/Sendgrid)
-- Rate limiting para prevenir abuso
-- Template de email responsivo
-
-### Seguranca
-- Tokens de convite com expiracao (7 dias)
-- Funcao SECURITY DEFINER para aceite
-- Validacao de email unico por tenant
-- Logs de auditoria para acoes sensiveis
-
-### Performance
-- Indices em `tenant_invitations(token)`
-- Indices em `audit_logs(tenant_id, created_at)`
-- Cache de settings no frontend
+| Melhoria | Impacto |
+|----------|---------|
+| Fidelizacao | Incentiva retorno do cliente |
+| Ticket medio | Estimula compras maiores |
+| Dados | Melhora rastreamento de clientes |
+| Competitividade | Recurso comum em varejo |
 
