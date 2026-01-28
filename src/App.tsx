@@ -22,6 +22,7 @@ import Settings from "./pages/Settings";
 import CashRegister from "./pages/CashRegister";
 import Inventory from "./pages/Inventory";
 import NotFound from "./pages/NotFound";
+import AcceptInvitation from "./pages/AcceptInvitation";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/cash-register" element={<CashRegister />} />
               <Route path="/inventory" element={<Inventory />} />
+              <Route path="/invite/:token" element={<AcceptInvitation />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

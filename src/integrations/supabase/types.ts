@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          ip_address: string | null
+          new_data: Json | null
+          old_data: Json | null
+          tenant_id: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          ip_address?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          tenant_id: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          ip_address?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          tenant_id?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_movements: {
         Row: {
           amount: number
@@ -1096,6 +1146,50 @@ export type Database = {
           },
         ]
       }
+      tenant_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string | null
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          role: Database["public"]["Enums"]["app_role"]
+          tenant_id: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string | null
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          role?: Database["public"]["Enums"]["app_role"]
+          tenant_id: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          tenant_id?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_invitations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_users: {
         Row: {
           created_at: string | null
@@ -1136,6 +1230,9 @@ export type Database = {
           name: string
           phone: string | null
           segment: string | null
+          settings: Json | null
+          subscription_expires_at: string | null
+          subscription_status: string | null
         }
         Insert: {
           created_at?: string | null
@@ -1144,6 +1241,9 @@ export type Database = {
           name: string
           phone?: string | null
           segment?: string | null
+          settings?: Json | null
+          subscription_expires_at?: string | null
+          subscription_status?: string | null
         }
         Update: {
           created_at?: string | null
@@ -1152,6 +1252,9 @@ export type Database = {
           name?: string
           phone?: string | null
           segment?: string | null
+          settings?: Json | null
+          subscription_expires_at?: string | null
+          subscription_status?: string | null
         }
         Relationships: []
       }
@@ -1160,6 +1263,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invitation: { Args: { p_token: string }; Returns: string }
       calculate_expected_balance: {
         Args: { p_session_id: string }
         Returns: number
@@ -1186,6 +1290,16 @@ export type Database = {
           status: string
         }[]
       }
+      get_invitation_info: {
+        Args: { p_token: string }
+        Returns: {
+          email: string
+          expires_at: string
+          is_valid: boolean
+          role: Database["public"]["Enums"]["app_role"]
+          tenant_name: string
+        }[]
+      }
       get_user_tenants: { Args: never; Returns: string[] }
       has_tenant_role: {
         Args: {
@@ -1199,6 +1313,17 @@ export type Database = {
         Returns: undefined
       }
       is_super_admin: { Args: { _user_id?: string }; Returns: boolean }
+      log_audit_event: {
+        Args: {
+          p_action: string
+          p_entity_id?: string
+          p_entity_type: string
+          p_new_data?: Json
+          p_old_data?: Json
+          p_tenant_id: string
+        }
+        Returns: string
+      }
       seed_default_payment_methods: {
         Args: { p_tenant_id: string }
         Returns: undefined

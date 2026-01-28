@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useTenant } from "@/contexts/TenantContext";
 import { useUpdateTenant } from "@/hooks/useTenants";
 import { usePaymentMethods, useSeedDefaultPaymentMethods, useTogglePaymentMethod, useUpdatePaymentMethod, PAYMENT_TYPE_LABELS } from "@/hooks/usePaymentMethods";
-import { Building2, Users, Palette, Save, CreditCard, Banknote, QrCode, Loader2 } from "lucide-react";
+import { TeamMemberList } from "@/components/team/TeamMemberList";
+import { InviteMemberDialog } from "@/components/team/InviteMemberDialog";
+import { PendingInvitations } from "@/components/team/PendingInvitations";
+import { Building2, Users, Palette, Save, CreditCard, Banknote, QrCode, Loader2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "next-themes";
 
@@ -295,32 +297,33 @@ const Settings = () => {
           </CardContent>
         </Card>
 
-        {/* Team Info (Read-only for now) */}
+        {/* Team Management */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Equipe
-            </CardTitle>
-            <CardDescription>
-              Informações sobre os usuários do sistema
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50">
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium">
-                {currentTenant?.name?.charAt(0).toUpperCase() || "U"}
-              </div>
+            <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">{currentTenant?.name}</p>
-                <p className="text-sm text-muted-foreground capitalize">
-                  {currentTenant?.role === "admin" ? "Administrador" : "Operador"}
-                </p>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Equipe
+                </CardTitle>
+                <CardDescription>
+                  Gerencie os membros da sua empresa
+                </CardDescription>
               </div>
+              {currentTenant?.role === "admin" && <InviteMemberDialog />}
             </div>
-            <p className="text-sm text-muted-foreground mt-4">
-              O gerenciamento de equipe estará disponível em breve.
-            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <h4 className="text-sm font-medium mb-3">Membros</h4>
+              <TeamMemberList />
+            </div>
+            {currentTenant?.role === "admin" && (
+              <div>
+                <h4 className="text-sm font-medium mb-3">Convites Pendentes</h4>
+                <PendingInvitations />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
