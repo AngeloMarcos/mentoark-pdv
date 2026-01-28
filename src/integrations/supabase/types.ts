@@ -280,6 +280,64 @@ export type Database = {
           },
         ]
       }
+      customer_points: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          description: string | null
+          expires_at: string | null
+          id: string
+          movement_type: string
+          points: number
+          sale_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          movement_type: string
+          points: number
+          sale_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          movement_type?: string
+          points?: number
+          sale_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_points_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_points_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_points_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           created_at: string | null
@@ -1268,6 +1326,15 @@ export type Database = {
         Args: { p_session_id: string }
         Returns: number
       }
+      credit_loyalty_points: {
+        Args: {
+          p_customer_id: string
+          p_sale_amount: number
+          p_sale_id: string
+          p_tenant_id: string
+        }
+        Returns: number
+      }
       decrement_stock: {
         Args: { p_product_id: string; p_quantity: number }
         Returns: undefined
@@ -1277,6 +1344,7 @@ export type Database = {
         Returns: string
       }
       get_available_credit: { Args: { p_customer_id: string }; Returns: number }
+      get_customer_points: { Args: { p_customer_id: string }; Returns: number }
       get_expiring_products: {
         Args: { p_days_ahead?: number; p_tenant_id: string }
         Returns: {
@@ -1323,6 +1391,15 @@ export type Database = {
           p_tenant_id: string
         }
         Returns: string
+      }
+      redeem_loyalty_points: {
+        Args: {
+          p_customer_id: string
+          p_description?: string
+          p_points: number
+          p_tenant_id: string
+        }
+        Returns: number
       }
       seed_default_payment_methods: {
         Args: { p_tenant_id: string }
