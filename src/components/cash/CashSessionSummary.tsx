@@ -1,11 +1,29 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useCashMovements, CashSession, CashRegister, useSessionSummary } from "@/hooks/useCashRegister";
-import { ArrowDownCircle, ArrowUpCircle, ShoppingCart, DollarSign, Lock } from "lucide-react";
+import { 
+  ArrowDownCircle, 
+  ArrowUpCircle, 
+  ShoppingCart, 
+  DollarSign, 
+  Lock, 
+  Banknote, 
+  CreditCard, 
+  Smartphone,
+  Wallet 
+} from "lucide-react";
 
 interface CashSessionSummaryProps {
   session: CashSession & { register: CashRegister };
 }
+
+const PAYMENT_METHOD_CONFIG: Record<string, { label: string; icon: React.ReactNode }> = {
+  dinheiro: { label: "Dinheiro", icon: <Banknote className="w-4 h-4" /> },
+  cartao_debito: { label: "Cartão Débito", icon: <CreditCard className="w-4 h-4" /> },
+  cartao_credito: { label: "Cartão Crédito", icon: <CreditCard className="w-4 h-4" /> },
+  pix: { label: "PIX", icon: <Smartphone className="w-4 h-4" /> },
+  fiado: { label: "Fiado/Crediário", icon: <Wallet className="w-4 h-4" /> },
+};
 
 export function CashSessionSummary({ session }: CashSessionSummaryProps) {
   const { data: movements = [] } = useCashMovements(session.id);
@@ -52,6 +70,7 @@ export function CashSessionSummary({ session }: CashSessionSummaryProps) {
   };
 
   const expectedBalance = session.opening_balance + summary.totalSales + summary.totalSupply - summary.totalWithdrawal;
+  const hasPaymentBreakdown = Object.keys(summary.byPaymentMethod).length > 0;
 
   return (
     <Card>
@@ -90,6 +109,34 @@ export function CashSessionSummary({ session }: CashSessionSummaryProps) {
           </div>
         </div>
 
+        {/* Detalhamento por forma de pagamento */}
+        {hasPaymentBreakdown && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              Vendas por Forma de Pagamento
+            </h4>
+            <div className="grid gap-2">
+              {Object.entries(summary.byPaymentMethod).map(([code, amount]) => {
+                const config = PAYMENT_METHOD_CONFIG[code] || { 
+                  label: code.replace("_", " ").replace(/^\w/, c => c.toUpperCase()), 
+                  icon: <CreditCard className="w-4 h-4" /> 
+                };
+                return (
+                  <div key={code} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-background flex items-center justify-center">
+                        {config.icon}
+                      </div>
+                      <span className="text-sm font-medium">{config.label}</span>
+                    </div>
+                    <span className="font-semibold">{formatCurrency(amount)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Saldo */}
         <div className="p-4 bg-primary/10 rounded-lg">
           <div className="flex justify-between items-center">
@@ -111,8 +158,8 @@ export function CashSessionSummary({ session }: CashSessionSummaryProps) {
                 </div>
               )}
               {session.difference_reason && (
-                <p className="text-xs text-muted-foreground mt-2 italic">
-                  Motivo: {session.difference_reason}
+                <p className="text-xs text-muted-foreground mt-2 italic border-t pt-2">
+                  <span className="font-medium">Motivo:</span> {session.difference_reason}
                 </p>
               )}
             </>
@@ -122,15 +169,23 @@ export function CashSessionSummary({ session }: CashSessionSummaryProps) {
         {/* Movimentações */}
         {movements.length > 0 && (
           <div className="space-y-2">
-            <h4 className="text-sm font-medium text-muted-foreground">Movimentações</h4>
+            <h4 className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+              Movimentações
+              <Badge variant="outline" className="text-xs">{movements.length}</Badge>
+            </h4>
             <div className="max-h-48 overflow-y-auto space-y-1">
               {movements.map((mov) => (
                 <div key={mov.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded text-sm">
                   {getMovementIcon(mov.movement_type)}
                   <div className="flex-1 min-w-0">
                     <span className="font-medium">{getMovementLabel(mov.movement_type)}</span>
-                    {mov.description && (
-                      <span className="text-muted-foreground"> - {mov.description}</span>
+                    {mov.payment_method && (
+                      <Badge variant="secondary" className="ml-1 text-xs">
+                        {PAYMENT_METHOD_CONFIG[mov.payment_method]?.label || mov.payment_method}
+                      </Badge>
+                    )}
+                    {mov.description && mov.movement_type !== "sale" && (
+                      <span className="text-muted-foreground block truncate text-xs">{mov.description}</span>
                     )}
                   </div>
                   <span className="text-xs text-muted-foreground">{formatTime(mov.created_at)}</span>
@@ -148,7 +203,7 @@ export function CashSessionSummary({ session }: CashSessionSummaryProps) {
         )}
 
         {session.notes && (
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground border-t pt-3">
             <span className="font-medium">Observações:</span> {session.notes}
           </div>
         )}
