@@ -16,14 +16,13 @@ import { OpenCashDialog } from "@/components/cash/OpenCashDialog";
 import { CloseCashDialog } from "@/components/cash/CloseCashDialog";
 import { CashMovementDialog } from "@/components/cash/CashMovementDialog";
 import { CashSessionSummary } from "@/components/cash/CashSessionSummary";
+import { CashSessionHistory } from "@/components/cash/CashSessionHistory";
 import { 
   DollarSign, 
   Lock, 
   ArrowDownCircle, 
   ArrowUpCircle, 
   Clock,
-  CheckCircle,
-  ShoppingCart
 } from "lucide-react";
 
 const CashRegister = () => {
@@ -31,7 +30,7 @@ const CashRegister = () => {
   const [selectedSession, setSelectedSession] = useState<(CashSession & { register: CashRegisterType }) | null>(null);
 
   const { data: activeSession, isLoading: loadingActive } = useActiveSession();
-  const { data: sessions = [], isLoading: loadingHistory } = useCashSessions(50);
+  const { data: sessions = [], isLoading: loadingHistory } = useCashSessions(200); // Aumentado para melhor filtragem
   const summary = useSessionSummary(activeSession?.id);
 
   const formatCurrency = (value: number) =>
@@ -157,76 +156,14 @@ const CashRegister = () => {
           </TabsContent>
 
           <TabsContent value="history" className="mt-4">
-            {loadingHistory ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <Card key={i}>
-                    <CardContent className="py-4">
-                      <div className="animate-pulse h-20 bg-muted rounded" />
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : sessions.length === 0 ? (
-              <Card>
-                <CardContent className="py-8 text-center text-muted-foreground">
-                  Nenhum histórico de caixa
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {sessions.map((session) => (
-                  <Card 
-                    key={session.id} 
-                    className="cursor-pointer hover:border-primary transition-colors"
-                    onClick={() => {
-                      setSelectedSession(session);
-                      setOpenDialog("history");
-                    }}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          session.status === "open" ? "bg-success/20" : "bg-muted"
-                        }`}>
-                          {session.status === "open" ? (
-                            <DollarSign className="w-5 h-5 text-success" />
-                          ) : (
-                            <CheckCircle className="w-5 h-5 text-muted-foreground" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium">{session.register.name}</h4>
-                            <Badge variant={session.status === "open" ? "default" : "secondary"}>
-                              {session.status === "open" ? "Aberto" : "Fechado"}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {formatDateTime(session.opened_at)}
-                            {session.closed_at && ` - ${formatDateTime(session.closed_at)}`}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          {session.closing_balance !== null ? (
-                            <>
-                              <p className="font-semibold">{formatCurrency(session.closing_balance)}</p>
-                              {session.difference !== null && Math.abs(session.difference) >= 0.01 && (
-                                <p className={`text-xs ${session.difference > 0 ? "text-success" : "text-destructive"}`}>
-                                  {session.difference > 0 ? "+" : ""}{formatCurrency(session.difference)}
-                                </p>
-                              )}
-                            </>
-                          ) : (
-                            <p className="font-semibold">{formatCurrency(session.opening_balance)}</p>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+            <CashSessionHistory
+              sessions={sessions}
+              isLoading={loadingHistory}
+              onSelectSession={(session) => {
+                setSelectedSession(session);
+                setOpenDialog("history");
+              }}
+            />
           </TabsContent>
         </Tabs>
 
