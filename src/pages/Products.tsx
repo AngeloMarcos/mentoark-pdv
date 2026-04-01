@@ -40,21 +40,7 @@ const Products = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [newBarcode, setNewBarcode] = useState({ barcode: "", barcode_type: "EAN13" as "EAN8" | "EAN13" | "INTERNAL", is_primary: false });
-  const [form, setForm] = useState<ExtendedProductInput>({
-    name: "",
-    sale_price: 0,
-    internal_code: "",
-    barcode: "",
-    category: "",
-    cost_price: null,
-    stock_current: 0,
-    unit: "UN",
-    min_stock: null,
-    active: true,
-    controls_lot: false,
-    wholesale_price: null,
-    wholesale_min_qty: null,
-  });
+  
 
   const { data: products = [], isLoading } = useProducts(search);
   const { data: productBarcodes = [] } = useProductBarcodes(selectedProduct?.id);
