@@ -19,6 +19,7 @@ import { ProductImporter } from "@/components/import/ProductImporter";
 import { ProductExporter } from "@/components/import/ProductExporter";
 import { LotManager } from "@/components/stock/LotManager";
 import { Badge } from "@/components/ui/badge";
+import { ProductFormDialog } from "@/components/products/ProductFormDialog";
 
 interface ExtendedProductInput extends ProductInput {
   controls_lot?: boolean;
