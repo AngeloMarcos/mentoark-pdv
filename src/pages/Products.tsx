@@ -203,31 +203,13 @@ const Products = () => {
         )}
 
         {/* Create/Edit Dialog */}
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>{editingProduct ? "Editar Produto" : "Novo Produto"}</DialogTitle></DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2 sm:col-span-2"><Label>Nome *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-                <div className="space-y-2"><Label>Código Interno</Label><Input value={form.internal_code || ""} onChange={(e) => setForm({ ...form, internal_code: e.target.value })} /></div>
-                <div className="space-y-2"><Label>Código de Barras</Label><Input value={form.barcode || ""} onChange={(e) => setForm({ ...form, barcode: e.target.value })} /></div>
-                <div className="space-y-2"><Label>Categoria</Label><Input value={form.category || ""} onChange={(e) => setForm({ ...form, category: e.target.value })} /></div>
-                <div className="space-y-2"><Label>Unidade</Label><Input value={form.unit || "UN"} onChange={(e) => setForm({ ...form, unit: e.target.value })} /></div>
-                <div className="space-y-2"><Label>Preço de Venda *</Label><Input type="number" step="0.01" value={form.sale_price} onChange={(e) => setForm({ ...form, sale_price: parseFloat(e.target.value) || 0 })} /></div>
-                <div className="space-y-2"><Label>Preço de Custo</Label><Input type="number" step="0.01" value={form.cost_price || ""} onChange={(e) => setForm({ ...form, cost_price: parseFloat(e.target.value) || null })} /></div>
-                <div className="space-y-2"><Label>Preço Atacado</Label><Input type="number" step="0.01" value={form.wholesale_price || ""} onChange={(e) => setForm({ ...form, wholesale_price: parseFloat(e.target.value) || null })} /></div>
-                <div className="space-y-2"><Label>Qtd Mín. Atacado</Label><Input type="number" step="0.001" value={form.wholesale_min_qty || ""} onChange={(e) => setForm({ ...form, wholesale_min_qty: parseFloat(e.target.value) || null })} /></div>
-                <div className="space-y-2"><Label>Estoque Atual</Label><Input type="number" step="0.001" value={form.stock_current || 0} onChange={(e) => setForm({ ...form, stock_current: parseFloat(e.target.value) || 0 })} /></div>
-                <div className="space-y-2"><Label>Estoque Mínimo</Label><Input type="number" step="0.001" value={form.min_stock || ""} onChange={(e) => setForm({ ...form, min_stock: parseFloat(e.target.value) || null })} /></div>
-              </div>
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2"><Switch checked={form.active} onCheckedChange={(checked) => setForm({ ...form, active: checked })} /><Label>Produto ativo</Label></div>
-                <div className="flex items-center gap-2"><Switch checked={form.controls_lot} onCheckedChange={(checked) => setForm({ ...form, controls_lot: checked })} /><Label>Controla lote/validade</Label></div>
-              </div>
-              <Button className="w-full" onClick={handleSubmit} disabled={createProduct.isPending || updateProduct.isPending}>{editingProduct ? "Salvar" : "Criar Produto"}</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <ProductFormDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          editingProduct={editingProduct}
+          onSubmit={handleSubmit}
+          isPending={createProduct.isPending || updateProduct.isPending}
+        />
 
         {/* Barcode Management Dialog */}
         <Dialog open={barcodeDialogOpen} onOpenChange={setBarcodeDialogOpen}>
