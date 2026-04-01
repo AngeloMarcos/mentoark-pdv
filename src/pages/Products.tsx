@@ -70,9 +70,7 @@ const Products = () => {
     setBarcodeDialogOpen(true);
   };
 
-  const handleSubmit = async () => {
-    if (!form.name || form.sale_price <= 0) return;
-
+  const handleSubmit = async (form: ProductInput & { controls_lot?: boolean; wholesale_price?: number | null; wholesale_min_qty?: number | null }) => {
     if (editingProduct) {
       await updateProduct.mutateAsync({ ...form, id: editingProduct.id });
     } else {
