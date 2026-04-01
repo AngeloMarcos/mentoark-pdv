@@ -56,28 +56,11 @@ const Products = () => {
 
   const openCreateDialog = () => {
     setEditingProduct(null);
-    setForm({ name: "", sale_price: 0, internal_code: "", barcode: "", category: "", cost_price: null, stock_current: 0, unit: "UN", min_stock: null, active: true, controls_lot: false, wholesale_price: null, wholesale_min_qty: null });
     setDialogOpen(true);
   };
 
   const openEditDialog = (product: Product) => {
     setEditingProduct(product);
-    const extProduct = product as Product & { controls_lot?: boolean; wholesale_price?: number | null; wholesale_min_qty?: number | null };
-    setForm({
-      name: product.name,
-      sale_price: product.sale_price,
-      internal_code: product.internal_code,
-      barcode: product.barcode,
-      category: product.category,
-      cost_price: product.cost_price,
-      stock_current: product.stock_current,
-      unit: product.unit,
-      min_stock: product.min_stock,
-      active: product.active,
-      controls_lot: extProduct.controls_lot || false,
-      wholesale_price: extProduct.wholesale_price || null,
-      wholesale_min_qty: extProduct.wholesale_min_qty || null,
-    });
     setDialogOpen(true);
   };
 
