@@ -1364,6 +1364,31 @@ export type Database = {
         Args: { p_session_id: string }
         Returns: number
       }
+      create_tenant_for_user: {
+        Args: {
+          p_document?: string
+          p_name: string
+          p_phone?: string
+          p_segment?: string
+        }
+        Returns: {
+          created_at: string | null
+          document: string | null
+          id: string
+          name: string
+          phone: string | null
+          segment: string | null
+          settings: Json | null
+          subscription_expires_at: string | null
+          subscription_status: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tenants"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       credit_loyalty_points: {
         Args: {
           p_customer_id: string
