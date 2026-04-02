@@ -5,6 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TenantProvider } from "@/contexts/TenantContext";
+import { CompanyProvider } from "@/contexts/CompanyContext";
+import { OnboardingGuard } from "@/components/onboarding/OnboardingGuard";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import SelectTenant from "./pages/SelectTenant";
@@ -30,32 +32,34 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TenantProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/select-tenant" element={<SelectTenant />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/products" element={<Products />} />
-              <Route path="/pdv" element={<PDV />} />
-              <Route path="/sales-report" element={<SalesReport />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/stock" element={<Stock />} />
-              <Route path="/financial" element={<Financial />} />
-              <Route path="/tables" element={<Tables />} />
-              <Route path="/tabs/:tabId" element={<TabOrder />} />
-              <Route path="/customers" element={<Customers />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/cash-register" element={<CashRegister />} />
-              <Route path="/inventory" element={<Inventory />} />
-              <Route path="/invite/:token" element={<AcceptInvitation />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+        <CompanyProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/select-tenant" element={<SelectTenant />} />
+                <Route path="/dashboard" element={<OnboardingGuard><Dashboard /></OnboardingGuard>} />
+                <Route path="/products" element={<OnboardingGuard><Products /></OnboardingGuard>} />
+                <Route path="/pdv" element={<OnboardingGuard><PDV /></OnboardingGuard>} />
+                <Route path="/sales-report" element={<OnboardingGuard><SalesReport /></OnboardingGuard>} />
+                <Route path="/reports" element={<OnboardingGuard><Reports /></OnboardingGuard>} />
+                <Route path="/stock" element={<OnboardingGuard><Stock /></OnboardingGuard>} />
+                <Route path="/financial" element={<OnboardingGuard><Financial /></OnboardingGuard>} />
+                <Route path="/tables" element={<OnboardingGuard><Tables /></OnboardingGuard>} />
+                <Route path="/tabs/:tabId" element={<OnboardingGuard><TabOrder /></OnboardingGuard>} />
+                <Route path="/customers" element={<OnboardingGuard><Customers /></OnboardingGuard>} />
+                <Route path="/settings" element={<OnboardingGuard><Settings /></OnboardingGuard>} />
+                <Route path="/cash-register" element={<OnboardingGuard><CashRegister /></OnboardingGuard>} />
+                <Route path="/inventory" element={<OnboardingGuard><Inventory /></OnboardingGuard>} />
+                <Route path="/invite/:token" element={<AcceptInvitation />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </CompanyProvider>
       </TenantProvider>
     </AuthProvider>
   </QueryClientProvider>

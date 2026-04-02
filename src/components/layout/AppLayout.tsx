@@ -1,7 +1,8 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useMemo } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTenant } from "@/contexts/TenantContext";
+import { useCompany } from "@/contexts/CompanyContext";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -24,17 +25,17 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { AppLayoutSkeleton } from "@/components/ui/skeletons";
 
-const NAV_ITEMS = [
-  { path: "/dashboard", label: "Painel", icon: LayoutDashboard },
-  { path: "/pdv", label: "PDV", icon: ShoppingBag },
-  { path: "/cash-register", label: "Caixa", icon: DollarSign },
-  { path: "/tables", label: "Mesas", icon: UtensilsCrossed },
-  { path: "/products", label: "Produtos", icon: Package },
-  { path: "/customers", label: "Clientes", icon: Users },
-  { path: "/stock", label: "Estoque", icon: Warehouse },
-  { path: "/reports", label: "Relatórios", icon: BarChart3 },
-  { path: "/financial", label: "Financeiro", icon: Wallet },
-  { path: "/settings", label: "Configurações", icon: Settings },
+const ALL_NAV_ITEMS = [
+  { path: "/dashboard", label: "Painel", icon: LayoutDashboard, feature: null },
+  { path: "/pdv", label: "PDV", icon: ShoppingBag, feature: null },
+  { path: "/cash-register", label: "Caixa", icon: DollarSign, feature: "cash_register" },
+  { path: "/tables", label: "Mesas", icon: UtensilsCrossed, feature: "tables" },
+  { path: "/products", label: "Produtos", icon: Package, feature: null },
+  { path: "/customers", label: "Clientes", icon: Users, feature: null },
+  { path: "/stock", label: "Estoque", icon: Warehouse, feature: null },
+  { path: "/reports", label: "Relatórios", icon: BarChart3, feature: null },
+  { path: "/financial", label: "Financeiro", icon: Wallet, feature: null },
+  { path: "/settings", label: "Configurações", icon: Settings, feature: null },
 ];
 
 interface AppLayoutProps {
@@ -47,6 +48,14 @@ export function AppLayout({ children, title }: AppLayoutProps) {
   const location = useLocation();
   const { user, isLoading: authLoading, signOut } = useAuth();
   const { currentTenant, setCurrentTenant } = useTenant();
+  const { hasFeature, isOnboardingCompleted } = useCompany();
+
+  const NAV_ITEMS = useMemo(() => {
+    if (!isOnboardingCompleted) return ALL_NAV_ITEMS;
+    return ALL_NAV_ITEMS.filter(
+      (item) => item.feature === null || hasFeature(item.feature)
+    );
+  }, [isOnboardingCompleted, hasFeature]);
 
   useEffect(() => {
     if (!authLoading && !user) {
