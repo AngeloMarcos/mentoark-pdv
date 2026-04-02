@@ -7,6 +7,7 @@ import { useFindByBarcode } from "@/hooks/useBarcodes";
 import { useActiveSession } from "@/hooks/useCashRegister";
 import { SalePayment } from "@/hooks/usePaymentMethods";
 import { PaymentDialog } from "@/components/pdv/PaymentDialog";
+import { EmployeeSelector } from "@/components/pdv/EmployeeSelector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,7 @@ import { Search, Plus, Minus, Trash2, ShoppingCart, Check, Barcode, Printer, Ale
 import { toast } from "sonner";
 import { ReceiptPreview } from "@/components/print/ReceiptPreview";
 import { useTenant } from "@/contexts/TenantContext";
+import { useCompany } from "@/contexts/CompanyContext";
 
 interface CartItem extends SaleItem {
   product_name: string;
