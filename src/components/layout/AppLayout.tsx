@@ -48,6 +48,14 @@ export function AppLayout({ children, title }: AppLayoutProps) {
   const location = useLocation();
   const { user, isLoading: authLoading, signOut } = useAuth();
   const { currentTenant, setCurrentTenant } = useTenant();
+  const { hasFeature, isOnboardingCompleted } = useCompany();
+
+  const NAV_ITEMS = useMemo(() => {
+    if (!isOnboardingCompleted) return ALL_NAV_ITEMS;
+    return ALL_NAV_ITEMS.filter(
+      (item) => item.feature === null || hasFeature(item.feature)
+    );
+  }, [isOnboardingCompleted, hasFeature]);
 
   useEffect(() => {
     if (!authLoading && !user) {
