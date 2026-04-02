@@ -32,11 +32,13 @@ const PDV = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [lastSale, setLastSale] = useState<{ id: string; netTotal: number; payments: SalePayment[] } | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [employee, setEmployee] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const barcodeBufferRef = useRef("");
   const barcodeTimeoutRef = useRef<NodeJS.Timeout>();
 
   const { currentTenant } = useTenant();
+  const { hasFeature } = useCompany();
   const { data: products = [] } = useProducts(search);
   const createSale = useCreateSale();
   const findByBarcode = useFindByBarcode();
