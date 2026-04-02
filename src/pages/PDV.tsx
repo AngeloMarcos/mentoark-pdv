@@ -7,6 +7,7 @@ import { useFindByBarcode } from "@/hooks/useBarcodes";
 import { useActiveSession } from "@/hooks/useCashRegister";
 import { SalePayment } from "@/hooks/usePaymentMethods";
 import { PaymentDialog } from "@/components/pdv/PaymentDialog";
+import { EmployeeSelector } from "@/components/pdv/EmployeeSelector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,7 @@ import { Search, Plus, Minus, Trash2, ShoppingCart, Check, Barcode, Printer, Ale
 import { toast } from "sonner";
 import { ReceiptPreview } from "@/components/print/ReceiptPreview";
 import { useTenant } from "@/contexts/TenantContext";
+import { useCompany } from "@/contexts/CompanyContext";
 
 interface CartItem extends SaleItem {
   product_name: string;
@@ -30,11 +32,13 @@ const PDV = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [lastSale, setLastSale] = useState<{ id: string; netTotal: number; payments: SalePayment[] } | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
+  const [employee, setEmployee] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const barcodeBufferRef = useRef("");
   const barcodeTimeoutRef = useRef<NodeJS.Timeout>();
 
   const { currentTenant } = useTenant();
+  const { hasFeature } = useCompany();
   const { data: products = [] } = useProducts(search);
   const createSale = useCreateSale();
   const findByBarcode = useFindByBarcode();
@@ -284,6 +288,11 @@ const PDV = () => {
                 Saldo inicial: {formatCurrency(activeSession.opening_balance)}
               </span>
             </div>
+          )}
+
+          {/* Employee selector */}
+          {hasFeature('employee_selection') && (
+            <EmployeeSelector employee={employee} onSelect={setEmployee} />
           )}
 
           {/* Cash register warning */}
