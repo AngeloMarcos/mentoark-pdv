@@ -65,14 +65,10 @@ export function StepBusinessInfo({ data, onChange }: StepBusinessInfoProps) {
               placeholder="Ex: Borracharia do João"
               value={data.name}
               onChange={(e) => onChange({ ...data, name: e.target.value })}
-              className={
-                isNameValid
-                  ? "border-green-500/50 pr-10"
-                  : ""
-              }
+              className={isNameValid ? "border-primary/50 pr-10" : ""}
             />
             {isNameValid && (
-              <CheckCircle2 className="w-4 h-4 text-green-500 absolute right-3 top-1/2 -translate-y-1/2" />
+              <CheckCircle2 className="w-4 h-4 text-primary absolute right-3 top-1/2 -translate-y-1/2" />
             )}
           </div>
         </div>
