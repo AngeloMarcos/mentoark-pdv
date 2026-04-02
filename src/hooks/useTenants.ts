@@ -20,7 +20,7 @@ export function useCreateTenant() {
       if (!user) throw new Error("Usuário não autenticado");
 
       const { data: tenant, error: tenantError } = await supabase
-        .rpc("create_tenant_for_user", {
+        .rpc("create_tenant_for_user" as any, {
           p_name: input.name,
           p_document: input.document || null,
           p_phone: input.phone || null,
