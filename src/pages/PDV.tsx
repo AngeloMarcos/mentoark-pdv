@@ -290,6 +290,11 @@ const PDV = () => {
             </div>
           )}
 
+          {/* Employee selector */}
+          {hasFeature('employee_selection') && (
+            <EmployeeSelector employee={employee} onSelect={setEmployee} />
+          )}
+
           {/* Cash register warning */}
           {!sessionLoading && !activeSession && (
             <Alert variant="destructive" className="mb-2">
