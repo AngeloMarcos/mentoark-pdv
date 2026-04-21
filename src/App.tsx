@@ -23,6 +23,7 @@ import Customers from "./pages/Customers";
 import Settings from "./pages/Settings";
 import CashRegister from "./pages/CashRegister";
 import Inventory from "./pages/Inventory";
+import Returns from "./pages/Returns";
 import NotFound from "./pages/NotFound";
 import AcceptInvitation from "./pages/AcceptInvitation";
 
@@ -54,6 +55,7 @@ const App = () => (
                 <Route path="/settings" element={<OnboardingGuard><Settings /></OnboardingGuard>} />
                 <Route path="/cash-register" element={<OnboardingGuard><CashRegister /></OnboardingGuard>} />
                 <Route path="/inventory" element={<OnboardingGuard><Inventory /></OnboardingGuard>} />
+                <Route path="/returns" element={<OnboardingGuard><Returns /></OnboardingGuard>} />
                 <Route path="/invite/:token" element={<AcceptInvitation />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
