@@ -24,6 +24,8 @@ import Settings from "./pages/Settings";
 import CashRegister from "./pages/CashRegister";
 import Inventory from "./pages/Inventory";
 import Returns from "./pages/Returns";
+import Suppliers from "./pages/Suppliers";
+import PurchaseOrders from "./pages/PurchaseOrders";
 import NotFound from "./pages/NotFound";
 import AcceptInvitation from "./pages/AcceptInvitation";
 
@@ -56,6 +58,8 @@ const App = () => (
                 <Route path="/cash-register" element={<OnboardingGuard><CashRegister /></OnboardingGuard>} />
                 <Route path="/inventory" element={<OnboardingGuard><Inventory /></OnboardingGuard>} />
                 <Route path="/returns" element={<OnboardingGuard><Returns /></OnboardingGuard>} />
+                <Route path="/suppliers" element={<OnboardingGuard><Suppliers /></OnboardingGuard>} />
+                <Route path="/purchase-orders" element={<OnboardingGuard><PurchaseOrders /></OnboardingGuard>} />
                 <Route path="/invite/:token" element={<AcceptInvitation />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
