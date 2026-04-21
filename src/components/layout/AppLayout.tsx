@@ -23,6 +23,7 @@ import {
   RotateCcw,
   Truck,
   ClipboardList,
+  Tag,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,7 @@ const ALL_NAV_ITEMS = [
   { path: "/stock", label: "Estoque", icon: Warehouse, feature: null },
   { path: "/suppliers", label: "Fornecedores", icon: Truck, feature: null },
   { path: "/purchase-orders", label: "Pedidos de Compra", icon: ClipboardList, feature: null },
+  { path: "/promotions", label: "Promoções", icon: Tag, feature: null },
   { path: "/reports", label: "Relatórios", icon: BarChart3, feature: null },
   { path: "/financial", label: "Financeiro", icon: Wallet, feature: null },
   { path: "/settings", label: "Configurações", icon: Settings, feature: null },
