@@ -444,6 +444,51 @@ const PDV = () => {
         onConfirm={handlePaymentConfirm}
         isProcessing={createSale.isPending}
       />
+
+      {/* Apply Promotion Dialog */}
+      {promoTarget && (
+        <ApplyPromotionDialog
+          open={!!promoTarget}
+          onOpenChange={(o) => !o && setPromoTarget(null)}
+          productId={promoTarget.product_id}
+          productName={promoTarget.product_name}
+          unitPrice={promoTarget.unit_price}
+          quantity={promoTarget.quantity}
+          hasDiscount={!!promoTarget.promotion_id}
+          onApply={(promo: Promotion, discountAmount: number) => {
+            setCart((prev) =>
+              prev.map((it) =>
+                it.product_id === promoTarget.product_id
+                  ? {
+                      ...it,
+                      discount: discountAmount,
+                      total: it.unit_price * it.quantity - discountAmount,
+                      promotion_id: promo.id,
+                      promotion_name: promo.name,
+                    }
+                  : it,
+              ),
+            );
+            toast.success(`Promoção "${promo.name}" aplicada`);
+          }}
+          onClear={() => {
+            setCart((prev) =>
+              prev.map((it) =>
+                it.product_id === promoTarget.product_id
+                  ? {
+                      ...it,
+                      discount: 0,
+                      total: it.unit_price * it.quantity,
+                      promotion_id: null,
+                      promotion_name: null,
+                    }
+                  : it,
+              ),
+            );
+            toast.success("Desconto removido");
+          }}
+        />
+      )}
     </AppLayout>
   );
 };
