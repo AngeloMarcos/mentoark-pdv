@@ -857,6 +857,71 @@ export type Database = {
           },
         ]
       }
+      promotions: {
+        Row: {
+          active: boolean
+          category: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          discount_type: string
+          discount_value: number
+          ends_at: string | null
+          id: string
+          min_quantity: number | null
+          name: string
+          product_ids: string[] | null
+          scope: string
+          starts_at: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          discount_type: string
+          discount_value: number
+          ends_at?: string | null
+          id?: string
+          min_quantity?: number | null
+          name: string
+          product_ids?: string[] | null
+          scope?: string
+          starts_at?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          ends_at?: string | null
+          id?: string
+          min_quantity?: number | null
+          name?: string
+          product_ids?: string[] | null
+          scope?: string
+          starts_at?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_order_items: {
         Row: {
           id: string
@@ -1688,6 +1753,33 @@ export type Database = {
       generate_internal_barcode: {
         Args: { p_tenant_id: string }
         Returns: string
+      }
+      get_applicable_promotions: {
+        Args: { p_product_id: string; p_tenant_id: string }
+        Returns: {
+          active: boolean
+          category: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          discount_type: string
+          discount_value: number
+          ends_at: string | null
+          id: string
+          min_quantity: number | null
+          name: string
+          product_ids: string[] | null
+          scope: string
+          starts_at: string | null
+          tenant_id: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "promotions"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_available_credit: { Args: { p_customer_id: string }; Returns: number }
       get_customer_points: { Args: { p_customer_id: string }; Returns: number }
