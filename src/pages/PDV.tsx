@@ -24,6 +24,8 @@ import { Promotion } from "@/hooks/usePromotions";
 
 interface CartItem extends SaleItem {
   product_name: string;
+  promotion_id?: string | null;
+  promotion_name?: string | null;
 }
 
 const PDV = () => {
@@ -38,6 +40,7 @@ const PDV = () => {
   const searchRef = useRef<HTMLInputElement>(null);
   const barcodeBufferRef = useRef("");
   const barcodeTimeoutRef = useRef<NodeJS.Timeout>();
+  const [promoTarget, setPromoTarget] = useState<CartItem | null>(null);
 
   const { currentTenant } = useTenant();
   const { hasFeature } = useCompany();
