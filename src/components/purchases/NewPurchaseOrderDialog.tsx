@@ -67,7 +67,7 @@ export function NewPurchaseOrderDialog({ open, onOpenChange }: Props) {
     setItems((prev) => [...prev, {
       product_id: p.id,
       product_name: p.name,
-      unit_cost: Number(p.cost_price ?? p.weighted_avg_cost ?? 0),
+      unit_cost: Number(p.cost_price ?? 0),
       quantity_ordered: 1,
     }]);
     setProductPick("");
