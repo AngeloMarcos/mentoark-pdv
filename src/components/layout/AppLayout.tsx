@@ -90,20 +90,26 @@ export function AppLayout({ children, title }: AppLayoutProps) {
   }
 
   const NavContent = () => (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full relative">
+      {/* Reflexo sutil no topo do sidebar (apenas dark) */}
+      <div className="hidden dark:block pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+
       {/* Branding Header */}
       <div className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary/70 rounded-xl flex items-center justify-center shadow-lg shadow-primary/30">
-            <Zap className="w-5 h-5 text-primary-foreground" />
+          <div className="w-10 h-10 gradient-brand rounded-xl flex items-center justify-center glow-primary shrink-0">
+            <Zap className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="font-bold text-sidebar-foreground text-base">Nexus Retail Cloud</h2>
+            <h2 className="font-bold text-base leading-tight">
+              <span className="gradient-brand-text">Nexus</span>
+              <span className="text-sidebar-foreground"> Retail</span>
+            </h2>
             <p className="text-[11px] text-sidebar-muted leading-tight">Vendas e estoque na nuvem</p>
           </div>
         </div>
         {/* Tenant Name */}
-        <div className="mt-3 px-2 py-1.5 rounded-lg bg-sidebar-accent/50">
+        <div className="mt-3 px-2 py-1.5 rounded-lg gradient-brand-subtle border border-sidebar-border">
           <p className="text-xs text-sidebar-foreground truncate font-medium">{currentTenant.name}</p>
         </div>
       </div>
@@ -117,11 +123,13 @@ export function AppLayout({ children, title }: AppLayoutProps) {
               <Button
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start gap-3 h-11 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all",
-                  isActive && "bg-sidebar-accent text-sidebar-primary font-medium border-l-2 border-sidebar-primary rounded-l-none"
+                  "w-full justify-start gap-3 h-11 transition-all rounded-lg",
+                  isActive
+                    ? "gradient-brand text-white font-medium glow-primary hover:opacity-95 hover:text-white"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 )}
               >
-                <item.icon className={cn("w-5 h-5", isActive && "text-sidebar-primary")} />
+                <item.icon className={cn("w-5 h-5", isActive && "text-white")} />
                 {item.label}
               </Button>
             </Link>
@@ -152,23 +160,33 @@ export function AppLayout({ children, title }: AppLayoutProps) {
   );
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-screen flex bg-background relative overflow-hidden">
+      {/* Orbs de luz ambiente — decorativos */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-32 -left-32 w-[480px] h-[480px] rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute top-1/3 -right-40 w-[520px] h-[520px] rounded-full bg-accent/10 blur-3xl" />
+        <div className="absolute -bottom-40 left-1/3 w-[420px] h-[420px] rounded-full bg-primary/5 blur-3xl" />
+      </div>
+
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 bg-sidebar border-r border-sidebar-border flex-col flex-shrink-0">
+      <aside className="hidden lg:flex w-64 sidebar-gradient border-r border-sidebar-border flex-col flex-shrink-0 relative z-10">
         <NavContent />
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 relative z-10">
         {/* Header */}
-        <header className="h-14 border-b border-border bg-card/50 backdrop-blur-sm flex items-center px-4 gap-4 sticky top-0 z-10">
+        <header className="h-14 border-b border-border/60 bg-card/60 backdrop-blur-md flex items-center px-4 gap-4 sticky top-0 z-20 relative">
+          {/* Linha degradê na base do header */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="lg:hidden h-9 w-9">
                 <Menu className="w-5 h-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-64 bg-sidebar border-sidebar-border">
+            <SheetContent side="left" className="p-0 w-64 sidebar-gradient border-sidebar-border">
               <NavContent />
             </SheetContent>
           </Sheet>
