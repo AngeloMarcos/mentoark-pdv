@@ -21,6 +21,8 @@ import {
   Zap,
   DollarSign,
   RotateCcw,
+  Truck,
+  ClipboardList,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -35,6 +37,8 @@ const ALL_NAV_ITEMS = [
   { path: "/products", label: "Produtos", icon: Package, feature: null },
   { path: "/customers", label: "Clientes", icon: Users, feature: null },
   { path: "/stock", label: "Estoque", icon: Warehouse, feature: null },
+  { path: "/suppliers", label: "Fornecedores", icon: Truck, feature: null },
+  { path: "/purchase-orders", label: "Pedidos de Compra", icon: ClipboardList, feature: null },
   { path: "/reports", label: "Relatórios", icon: BarChart3, feature: null },
   { path: "/financial", label: "Financeiro", icon: Wallet, feature: null },
   { path: "/settings", label: "Configurações", icon: Settings, feature: null },
