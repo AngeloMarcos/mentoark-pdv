@@ -384,10 +384,15 @@ const PDV = () => {
                 <p className="text-center text-muted-foreground py-8">Carrinho vazio</p>
               ) : (
                 cart.map((item) => (
-                  <div key={item.product_id} className="pdv-item">
+                  <div key={item.product_id} className="pdv-item flex-wrap">
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{item.product_name}</div>
                       <div className="text-sm text-muted-foreground">{formatCurrency(item.unit_price)} × {item.quantity}</div>
+                      {item.promotion_name && (
+                        <Badge className="mt-1 gap-1 text-[10px]">
+                          <Tag className="w-3 h-3" /> {item.promotion_name} (-{formatCurrency(item.discount)})
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-1">
                       <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product_id, -1)}><Minus className="w-3 h-3" /></Button>
@@ -395,6 +400,15 @@ const PDV = () => {
                       <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product_id, 1)}><Plus className="w-3 h-3" /></Button>
                     </div>
                     <div className="font-semibold w-20 text-right">{formatCurrency(item.total)}</div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      title="Aplicar promoção"
+                      onClick={() => setPromoTarget(item)}
+                    >
+                      <Tag className={`w-4 h-4 ${item.promotion_id ? "text-primary" : ""}`} />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeFromCart(item.product_id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
                   </div>
                 ))
