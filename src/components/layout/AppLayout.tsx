@@ -20,6 +20,7 @@ import {
   BarChart3,
   Zap,
   DollarSign,
+  RotateCcw,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,7 @@ import { AppLayoutSkeleton } from "@/components/ui/skeletons";
 const ALL_NAV_ITEMS = [
   { path: "/dashboard", label: "Painel", icon: LayoutDashboard, feature: null },
   { path: "/pdv", label: "PDV", icon: ShoppingBag, feature: null },
+  { path: "/returns", label: "Devoluções", icon: RotateCcw, feature: null },
   { path: "/cash-register", label: "Caixa", icon: DollarSign, feature: "cash_register" },
   { path: "/tables", label: "Mesas", icon: UtensilsCrossed, feature: "tables" },
   { path: "/products", label: "Produtos", icon: Package, feature: null },

@@ -953,6 +953,125 @@ export type Database = {
           },
         ]
       }
+      sale_return_items: {
+        Row: {
+          id: string
+          product_id: string
+          quantity: number
+          return_id: string
+          sale_item_id: string
+          total: number
+          unit_price: number
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          quantity: number
+          return_id: string
+          sale_item_id: string
+          total: number
+          unit_price: number
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          quantity?: number
+          return_id?: string
+          sale_item_id?: string
+          total?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_return_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_return_items_return_id_fkey"
+            columns: ["return_id"]
+            isOneToOne: false
+            referencedRelation: "sale_returns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_return_items_sale_item_id_fkey"
+            columns: ["sale_item_id"]
+            isOneToOne: false
+            referencedRelation: "sale_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sale_returns: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          notes: string | null
+          reason: string
+          reason_type: string
+          refund_method: string
+          refund_reference_id: string | null
+          sale_id: string
+          session_id: string | null
+          tenant_id: string
+          total_amount: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          notes?: string | null
+          reason: string
+          reason_type?: string
+          refund_method: string
+          refund_reference_id?: string | null
+          sale_id: string
+          session_id?: string | null
+          tenant_id: string
+          total_amount?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          notes?: string | null
+          reason?: string
+          reason_type?: string
+          refund_method?: string
+          refund_reference_id?: string | null
+          sale_id?: string
+          session_id?: string | null
+          tenant_id?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sale_returns_sale_id_fkey"
+            columns: ["sale_id"]
+            isOneToOne: false
+            referencedRelation: "sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_returns_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "cash_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_returns_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales: {
         Row: {
           created_at: string | null
@@ -1452,6 +1571,17 @@ export type Database = {
           p_new_data?: Json
           p_old_data?: Json
           p_tenant_id: string
+        }
+        Returns: string
+      }
+      process_sale_return: {
+        Args: {
+          p_items: Json
+          p_notes: string
+          p_reason: string
+          p_reason_type: string
+          p_refund_method: string
+          p_sale_id: string
         }
         Returns: string
       }
