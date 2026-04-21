@@ -14,14 +14,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Minus, Trash2, ShoppingCart, Check, Barcode, Printer, AlertCircle, DollarSign, Wallet } from "lucide-react";
+import { Search, Plus, Minus, Trash2, ShoppingCart, Check, Barcode, Printer, AlertCircle, DollarSign, Wallet, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { ReceiptPreview } from "@/components/print/ReceiptPreview";
 import { useTenant } from "@/contexts/TenantContext";
 import { useCompany } from "@/contexts/CompanyContext";
+import { ApplyPromotionDialog } from "@/components/promotions/ApplyPromotionDialog";
+import { Promotion } from "@/hooks/usePromotions";
 
 interface CartItem extends SaleItem {
   product_name: string;
+  promotion_id?: string | null;
+  promotion_name?: string | null;
 }
 
 const PDV = () => {
@@ -36,6 +40,7 @@ const PDV = () => {
   const searchRef = useRef<HTMLInputElement>(null);
   const barcodeBufferRef = useRef("");
   const barcodeTimeoutRef = useRef<NodeJS.Timeout>();
+  const [promoTarget, setPromoTarget] = useState<CartItem | null>(null);
 
   const { currentTenant } = useTenant();
   const { hasFeature } = useCompany();
@@ -379,10 +384,15 @@ const PDV = () => {
                 <p className="text-center text-muted-foreground py-8">Carrinho vazio</p>
               ) : (
                 cart.map((item) => (
-                  <div key={item.product_id} className="pdv-item">
+                  <div key={item.product_id} className="pdv-item flex-wrap">
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{item.product_name}</div>
                       <div className="text-sm text-muted-foreground">{formatCurrency(item.unit_price)} × {item.quantity}</div>
+                      {item.promotion_name && (
+                        <Badge className="mt-1 gap-1 text-[10px]">
+                          <Tag className="w-3 h-3" /> {item.promotion_name} (-{formatCurrency(item.discount)})
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-1">
                       <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product_id, -1)}><Minus className="w-3 h-3" /></Button>
@@ -390,6 +400,15 @@ const PDV = () => {
                       <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product_id, 1)}><Plus className="w-3 h-3" /></Button>
                     </div>
                     <div className="font-semibold w-20 text-right">{formatCurrency(item.total)}</div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      title="Aplicar promoção"
+                      onClick={() => setPromoTarget(item)}
+                    >
+                      <Tag className={`w-4 h-4 ${item.promotion_id ? "text-primary" : ""}`} />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeFromCart(item.product_id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
                   </div>
                 ))
@@ -425,6 +444,51 @@ const PDV = () => {
         onConfirm={handlePaymentConfirm}
         isProcessing={createSale.isPending}
       />
+
+      {/* Apply Promotion Dialog */}
+      {promoTarget && (
+        <ApplyPromotionDialog
+          open={!!promoTarget}
+          onOpenChange={(o) => !o && setPromoTarget(null)}
+          productId={promoTarget.product_id}
+          productName={promoTarget.product_name}
+          unitPrice={promoTarget.unit_price}
+          quantity={promoTarget.quantity}
+          hasDiscount={!!promoTarget.promotion_id}
+          onApply={(promo: Promotion, discountAmount: number) => {
+            setCart((prev) =>
+              prev.map((it) =>
+                it.product_id === promoTarget.product_id
+                  ? {
+                      ...it,
+                      discount: discountAmount,
+                      total: it.unit_price * it.quantity - discountAmount,
+                      promotion_id: promo.id,
+                      promotion_name: promo.name,
+                    }
+                  : it,
+              ),
+            );
+            toast.success(`Promoção "${promo.name}" aplicada`);
+          }}
+          onClear={() => {
+            setCart((prev) =>
+              prev.map((it) =>
+                it.product_id === promoTarget.product_id
+                  ? {
+                      ...it,
+                      discount: 0,
+                      total: it.unit_price * it.quantity,
+                      promotion_id: null,
+                      promotion_name: null,
+                    }
+                  : it,
+              ),
+            );
+            toast.success("Desconto removido");
+          }}
+        />
+      )}
     </AppLayout>
   );
 };
