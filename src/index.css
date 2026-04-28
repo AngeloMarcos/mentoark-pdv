@@ -191,8 +191,8 @@
   /* Texto com degradê (alias antigo p/ compatibilidade) */
   .gradient-text {
     background: linear-gradient(135deg,
-      hsl(226 85% 52%) 0%,
-      hsl(262 83% 58%) 100%);
+      hsl(262 83% 58%) 0%,
+      hsl(280 80% 60%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -217,12 +217,12 @@
     @apply bg-card/80 backdrop-blur-md border border-border/50;
   }
 
-  /* ── Degradê principal: Azul → Roxo ── */
+  /* ── Degradê principal: Roxo → Violeta (light) / Azul → Roxo (dark) ── */
   .gradient-brand {
     background: linear-gradient(135deg,
-      hsl(226 85% 52%) 0%,
-      hsl(248 84% 58%) 50%,
-      hsl(262 83% 58%) 100%);
+      hsl(262 83% 58%) 0%,
+      hsl(272 82% 58%) 50%,
+      hsl(282 80% 60%) 100%);
   }
   .dark .gradient-brand {
     background: linear-gradient(135deg,
@@ -234,8 +234,8 @@
   /* ── Degradê suave (fundos) ── */
   .gradient-brand-subtle {
     background: linear-gradient(135deg,
-      hsl(226 85% 52% / 0.10) 0%,
-      hsl(262 83% 58% / 0.10) 100%);
+      hsl(262 83% 58% / 0.10) 0%,
+      hsl(282 80% 60% / 0.10) 100%);
   }
   .dark .gradient-brand-subtle {
     background: linear-gradient(135deg,
@@ -246,8 +246,8 @@
   /* ── Texto com degradê ── */
   .gradient-brand-text {
     background: linear-gradient(135deg,
-      hsl(226 85% 52%) 0%,
-      hsl(262 83% 58%) 100%);
+      hsl(262 83% 58%) 0%,
+      hsl(282 80% 60%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -273,8 +273,8 @@
     border-radius: inherit;
     padding: 1px;
     background: linear-gradient(135deg,
-      hsl(226 85% 52% / 0.5),
-      hsl(262 83% 58% / 0.5));
+      hsl(262 83% 58% / 0.5),
+      hsl(282 80% 60% / 0.5));
     -webkit-mask:
       linear-gradient(#fff 0 0) content-box,
       linear-gradient(#fff 0 0);
@@ -283,8 +283,14 @@
     pointer-events: none;
   }
 
-  /* ── Sidebar dark gradient ── */
+  /* ── Sidebar gradient ── claro no light, escuro no dark */
   .sidebar-gradient {
+    background: linear-gradient(180deg,
+      hsl(210 16% 97%) 0%,
+      hsl(210 14% 95%) 60%,
+      hsl(210 14% 94%) 100%);
+  }
+  .dark .sidebar-gradient {
     background: linear-gradient(180deg,
       hsl(232 35% 5%)  0%,
       hsl(238 30% 7%) 60%,
@@ -294,9 +300,9 @@
   /* ── Glows ── */
   .glow-primary {
     box-shadow:
-      0 0 0 1px hsl(226 85% 52% / 0.15),
-      0 4px 16px hsl(226 85% 52% / 0.20),
-      0 8px 32px hsl(262 83% 58% / 0.10);
+      0 0 0 1px hsl(262 83% 58% / 0.15),
+      0 4px 16px hsl(262 83% 58% / 0.20),
+      0 8px 32px hsl(282 80% 60% / 0.10);
   }
   .dark .glow-primary {
     box-shadow:
@@ -306,8 +312,8 @@
   }
   .glow-accent {
     box-shadow:
-      0 0 0 1px hsl(262 83% 58% / 0.15),
-      0 4px 16px hsl(262 83% 58% / 0.25);
+      0 0 0 1px hsl(22 92% 53% / 0.15),
+      0 4px 16px hsl(22 92% 53% / 0.25);
   }
 
   /* ── Animações ── */
@@ -329,7 +335,7 @@
     100% { box-shadow: 0 0 0 12px hsl(var(--success) / 0); }
   }
 
-  /* Glow primário (alias antigo, agora azul) */
+  /* Glow primário (alias antigo) */
   .animate-primary-glow { animation: primaryGlow 2s ease-in-out infinite; }
   @keyframes primaryGlow {
     0%, 100% { box-shadow: 0 0 20px hsl(var(--primary) / 0.35); }
@@ -343,22 +349,22 @@
   }
   .shimmer {
     background: linear-gradient(90deg,
-      hsl(226 85% 52% / 0.04) 0%,
-      hsl(262 83% 58% / 0.12) 50%,
-      hsl(226 85% 52% / 0.04) 100%);
+      hsl(var(--primary) / 0.04) 0%,
+      hsl(var(--accent) / 0.12) 50%,
+      hsl(var(--primary) / 0.04) 100%);
     background-size: 200% 100%;
     animation: shimmer 2s infinite linear;
   }
 
   /* ── Scrollbar customizada ── */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: hsl(226 85% 52% / 0.25);
+    background: hsl(262 83% 58% / 0.25);
     border-radius: 99px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(226 85% 52% / 0.45);
+    background: hsl(262 83% 58% / 0.45);
   }
   .dark ::-webkit-scrollbar-thumb {
     background: hsl(226 90% 62% / 0.20);
