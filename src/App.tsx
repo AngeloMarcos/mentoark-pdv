@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TenantProvider } from "@/contexts/TenantContext";
 import { CompanyProvider } from "@/contexts/CompanyContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { OnboardingGuard } from "@/components/onboarding/OnboardingGuard";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -34,6 +35,7 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <ThemeProvider>
     <AuthProvider>
       <TenantProvider>
         <CompanyProvider>
@@ -70,6 +72,7 @@ const App = () => (
         </CompanyProvider>
       </TenantProvider>
     </AuthProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

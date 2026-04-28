@@ -25,6 +25,7 @@ import {
   ClipboardList,
   Tag,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { AppLayoutSkeleton } from "@/components/ui/skeletons";
@@ -163,10 +164,10 @@ export function AppLayout({ children, title }: AppLayoutProps) {
 
   return (
     <div className="min-h-screen flex bg-background relative overflow-hidden">
-      {/* Orbs de luz ambiente — decorativos */}
+      {/* Orbs de luz ambiente — decorativos (mais sutis no light) */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-32 -left-32 w-[480px] h-[480px] rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute top-1/3 -right-40 w-[520px] h-[520px] rounded-full bg-accent/10 blur-3xl" />
+        <div className="absolute -top-32 -left-32 w-[480px] h-[480px] rounded-full bg-primary/5 dark:bg-primary/10 blur-3xl" />
+        <div className="absolute top-1/3 -right-40 w-[520px] h-[520px] rounded-full bg-accent/5 dark:bg-accent/10 blur-3xl" />
         <div className="absolute -bottom-40 left-1/3 w-[420px] h-[420px] rounded-full bg-primary/5 blur-3xl" />
       </div>
 
@@ -194,6 +195,10 @@ export function AppLayout({ children, title }: AppLayoutProps) {
           </Sheet>
 
           {title && <h1 className="text-lg font-semibold text-foreground">{title}</h1>}
+
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
+          </div>
         </header>
 
         {/* Page Content */}

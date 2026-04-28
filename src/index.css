@@ -10,65 +10,65 @@
 
 @layer base {
   :root {
-    /* ── Backgrounds ── */
-    --background:        230 28% 96%;
-    --foreground:        230 25% 10%;
-    --card:              0   0%  100%;
-    --card-foreground:   230 25% 10%;
+    /* ── Backgrounds (light mode limpo) ── */
+    --background:        210 17% 98%;   /* #F8F9FA */
+    --foreground:        240 25% 14%;   /* #1A1A2E */
+    --card:              0   0%  100%;  /* #FFFFFF */
+    --card-foreground:   240 25% 14%;
     --popover:           0   0%  100%;
-    --popover-foreground:230 25% 10%;
+    --popover-foreground:240 25% 14%;
 
-    /* ── Primary: Azul vibrante ── */
-    --primary:           226 85% 52%;
+    /* ── Primary: Roxo/Violeta (#7C3AED) ── */
+    --primary:           262 83% 58%;
     --primary-foreground:0   0%  100%;
 
     /* ── Secondary ── */
-    --secondary:         230 20% 92%;
-    --secondary-foreground:230 25% 20%;
+    --secondary:         210 16% 95%;
+    --secondary-foreground:240 20% 22%;
 
     /* ── Muted ── */
-    --muted:             230 20% 94%;
-    --muted-foreground:  230 12% 48%;
+    --muted:             210 16% 96%;
+    --muted-foreground:  210 10% 38%;   /* #495057 */
 
-    /* ── Accent: Roxo ── */
-    --accent:            262 83% 58%;
+    /* ── Accent: Laranja (#F97316) ── */
+    --accent:            22 92% 53%;
     --accent-foreground: 0   0%  100%;
 
     /* ── Semânticas ── */
-    --destructive:       0   84% 60%;
+    --destructive:       0   84% 56%;
     --destructive-foreground:0 0% 100%;
-    --border:            230 20% 88%;
-    --input:             230 20% 88%;
-    --ring:              226 85% 52%;
+    --border:            210 14% 91%;   /* #E9ECEF */
+    --input:             210 14% 83%;   /* #CED4DA */
+    --ring:              262 83% 58%;
     --radius:            0.75rem;
 
-    /* ── Sidebar claro ── */
-    --sidebar-background:          230 25% 98%;
-    --sidebar-foreground:          230 20% 28%;
-    --sidebar-primary:             226 85% 52%;
+    /* ── Sidebar light ── */
+    --sidebar-background:          210 14% 96%;   /* #F1F3F5 */
+    --sidebar-foreground:          240 20% 22%;
+    --sidebar-primary:             262 83% 58%;
     --sidebar-primary-foreground:  0   0%  100%;
-    --sidebar-accent:              230 22% 93%;
-    --sidebar-accent-foreground:   230 25% 18%;
-    --sidebar-border:              230 18% 90%;
-    --sidebar-ring:                226 85% 52%;
-    --sidebar-muted:               230 12% 50%;
+    --sidebar-accent:              210 16% 92%;
+    --sidebar-accent-foreground:   240 25% 14%;
+    --sidebar-border:              210 14% 88%;
+    --sidebar-ring:                262 83% 58%;
+    --sidebar-muted:               210 10% 42%;
 
     /* ── Status ── */
-    --success:           142 70% 40%;
+    --success:           142 65% 38%;
     --success-foreground:0   0%  100%;
-    --warning:           38  92% 50%;
+    --warning:           38  92% 48%;
     --warning-foreground:0   0%  100%;
     --info:              226 85% 56%;
     --info-foreground:   0   0%  100%;
-    --whatsapp:          142 70% 40%;
+    --whatsapp:          142 65% 38%;
     --whatsapp-foreground:0  0%  100%;
 
-    /* ── Chart ── */
-    --chart-1: 226 85% 52%;
-    --chart-2: 262 83% 58%;
-    --chart-3: 142 70% 45%;
-    --chart-4: 38  92% 55%;
-    --chart-5: 200 85% 55%;
+    /* ── Chart (legível em fundo claro) ── */
+    --chart-1: 226 78% 48%;
+    --chart-2: 262 75% 52%;
+    --chart-3: 142 60% 38%;
+    --chart-4: 22  88% 48%;
+    --chart-5: 200 75% 45%;
   }
 
   .dark {
@@ -191,8 +191,8 @@
   /* Texto com degradê (alias antigo p/ compatibilidade) */
   .gradient-text {
     background: linear-gradient(135deg,
-      hsl(226 85% 52%) 0%,
-      hsl(262 83% 58%) 100%);
+      hsl(262 83% 58%) 0%,
+      hsl(280 80% 60%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -217,12 +217,12 @@
     @apply bg-card/80 backdrop-blur-md border border-border/50;
   }
 
-  /* ── Degradê principal: Azul → Roxo ── */
+  /* ── Degradê principal: Roxo → Violeta (light) / Azul → Roxo (dark) ── */
   .gradient-brand {
     background: linear-gradient(135deg,
-      hsl(226 85% 52%) 0%,
-      hsl(248 84% 58%) 50%,
-      hsl(262 83% 58%) 100%);
+      hsl(262 83% 58%) 0%,
+      hsl(272 82% 58%) 50%,
+      hsl(282 80% 60%) 100%);
   }
   .dark .gradient-brand {
     background: linear-gradient(135deg,
@@ -234,8 +234,8 @@
   /* ── Degradê suave (fundos) ── */
   .gradient-brand-subtle {
     background: linear-gradient(135deg,
-      hsl(226 85% 52% / 0.10) 0%,
-      hsl(262 83% 58% / 0.10) 100%);
+      hsl(262 83% 58% / 0.10) 0%,
+      hsl(282 80% 60% / 0.10) 100%);
   }
   .dark .gradient-brand-subtle {
     background: linear-gradient(135deg,
@@ -246,8 +246,8 @@
   /* ── Texto com degradê ── */
   .gradient-brand-text {
     background: linear-gradient(135deg,
-      hsl(226 85% 52%) 0%,
-      hsl(262 83% 58%) 100%);
+      hsl(262 83% 58%) 0%,
+      hsl(282 80% 60%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -273,8 +273,8 @@
     border-radius: inherit;
     padding: 1px;
     background: linear-gradient(135deg,
-      hsl(226 85% 52% / 0.5),
-      hsl(262 83% 58% / 0.5));
+      hsl(262 83% 58% / 0.5),
+      hsl(282 80% 60% / 0.5));
     -webkit-mask:
       linear-gradient(#fff 0 0) content-box,
       linear-gradient(#fff 0 0);
@@ -283,8 +283,14 @@
     pointer-events: none;
   }
 
-  /* ── Sidebar dark gradient ── */
+  /* ── Sidebar gradient ── claro no light, escuro no dark */
   .sidebar-gradient {
+    background: linear-gradient(180deg,
+      hsl(210 16% 97%) 0%,
+      hsl(210 14% 95%) 60%,
+      hsl(210 14% 94%) 100%);
+  }
+  .dark .sidebar-gradient {
     background: linear-gradient(180deg,
       hsl(232 35% 5%)  0%,
       hsl(238 30% 7%) 60%,
@@ -294,9 +300,9 @@
   /* ── Glows ── */
   .glow-primary {
     box-shadow:
-      0 0 0 1px hsl(226 85% 52% / 0.15),
-      0 4px 16px hsl(226 85% 52% / 0.20),
-      0 8px 32px hsl(262 83% 58% / 0.10);
+      0 0 0 1px hsl(262 83% 58% / 0.15),
+      0 4px 16px hsl(262 83% 58% / 0.20),
+      0 8px 32px hsl(282 80% 60% / 0.10);
   }
   .dark .glow-primary {
     box-shadow:
@@ -306,8 +312,8 @@
   }
   .glow-accent {
     box-shadow:
-      0 0 0 1px hsl(262 83% 58% / 0.15),
-      0 4px 16px hsl(262 83% 58% / 0.25);
+      0 0 0 1px hsl(22 92% 53% / 0.15),
+      0 4px 16px hsl(22 92% 53% / 0.25);
   }
 
   /* ── Animações ── */
@@ -329,7 +335,7 @@
     100% { box-shadow: 0 0 0 12px hsl(var(--success) / 0); }
   }
 
-  /* Glow primário (alias antigo, agora azul) */
+  /* Glow primário (alias antigo) */
   .animate-primary-glow { animation: primaryGlow 2s ease-in-out infinite; }
   @keyframes primaryGlow {
     0%, 100% { box-shadow: 0 0 20px hsl(var(--primary) / 0.35); }
@@ -343,22 +349,22 @@
   }
   .shimmer {
     background: linear-gradient(90deg,
-      hsl(226 85% 52% / 0.04) 0%,
-      hsl(262 83% 58% / 0.12) 50%,
-      hsl(226 85% 52% / 0.04) 100%);
+      hsl(var(--primary) / 0.04) 0%,
+      hsl(var(--accent) / 0.12) 50%,
+      hsl(var(--primary) / 0.04) 100%);
     background-size: 200% 100%;
     animation: shimmer 2s infinite linear;
   }
 
   /* ── Scrollbar customizada ── */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: hsl(226 85% 52% / 0.25);
+    background: hsl(262 83% 58% / 0.25);
     border-radius: 99px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(226 85% 52% / 0.45);
+    background: hsl(262 83% 58% / 0.45);
   }
   .dark ::-webkit-scrollbar-thumb {
     background: hsl(226 90% 62% / 0.20);
