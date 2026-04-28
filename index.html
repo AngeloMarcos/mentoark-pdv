@@ -1,21 +1,21 @@
 <!doctype html>
 <html lang="pt-BR">
-  <script>
-    // Apply theme before React loads to avoid flash
-    (function () {
-      try {
-        var t = localStorage.getItem('nexus-theme');
-        if (t !== 'light' && t !== 'dark') t = 'dark';
-        document.documentElement.classList.add(t);
-        document.documentElement.style.colorScheme = t;
-      } catch (e) {
-        document.documentElement.classList.add('dark');
-      }
-    })();
-  </script>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Apply theme before React loads to avoid flash
+      (function () {
+        try {
+          var t = localStorage.getItem('nexus-theme');
+          if (t !== 'light' && t !== 'dark') t = 'dark';
+          document.documentElement.classList.add(t);
+          document.documentElement.style.colorScheme = t;
+        } catch (e) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
     <title>Nexus Retail Cloud - PDV Universal</title>
     <meta name="description" content="Sistema de gestão de vendas e estoque na nuvem. PDV moderno para farmácias, mercados, bares e restaurantes." />
     <meta name="author" content="Nexus Retail Cloud" />
