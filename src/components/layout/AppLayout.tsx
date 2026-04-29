@@ -23,6 +23,7 @@ import {
   Truck,
   Tag,
   UserCog,
+  FileText,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -45,6 +46,7 @@ const ALL_NAV_ITEMS: { path: string; label: string; icon: typeof LayoutDashboard
   { path: "/reports", label: "Relatórios", icon: BarChart2, feature: null, permission: "reports" },
   { path: "/financial", label: "Financeiro", icon: DollarSign, feature: null, permission: "financial" },
   { path: "/team", label: "Equipe", icon: UserCog, feature: null, permission: "team" },
+  { path: "/fiscal", label: "Fiscal", icon: FileText, feature: null, permission: "fiscal" },
   { path: "/settings", label: "Configurações", icon: Settings, feature: null, permission: "settings" },
 ];
 

@@ -28,6 +28,7 @@ import Returns from "./pages/Returns";
 import Compras from "./pages/Compras";
 import Promotions from "./pages/Promotions";
 import Team from "./pages/Team";
+import Fiscal from "./pages/Fiscal";
 import NotFound from "./pages/NotFound";
 import AcceptInvitation from "./pages/AcceptInvitation";
 
@@ -66,6 +67,7 @@ const App = () => (
                 <Route path="/purchase-orders" element={<OnboardingGuard><Compras /></OnboardingGuard>} />
                 <Route path="/promotions" element={<OnboardingGuard><Promotions /></OnboardingGuard>} />
                 <Route path="/team" element={<OnboardingGuard><Team /></OnboardingGuard>} />
+                <Route path="/fiscal" element={<OnboardingGuard><Fiscal /></OnboardingGuard>} />
                 <Route path="/invite/:token" element={<AcceptInvitation />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

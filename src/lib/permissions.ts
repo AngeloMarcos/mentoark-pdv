@@ -35,6 +35,7 @@ export type Permission =
   | "reports"
   | "financial"
   | "team"
+  | "fiscal"
   | "settings";
 
 // Quais roles têm acesso a cada módulo
@@ -52,6 +53,7 @@ const PERMISSION_MAP: Record<Permission, AppRole[]> = {
   reports:      ["admin", "manager", "financial"],
   financial:    ["admin", "manager", "financial"],
   team:         ["admin", "manager"],
+  fiscal:       ["admin", "manager"],
   settings:     ["admin"],
 };
 
