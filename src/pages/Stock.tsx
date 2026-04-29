@@ -51,6 +51,23 @@ const Stock = () => {
   const { data: expiringProducts = [] } = useExpiringProducts(30);
   const { data: allLots = [] } = useLots();
   const createMovement = useCreateStockMovement();
+  const findByBarcode = useFindByBarcode();
+
+  // Global barcode scanner — opens movement dialog with product pre-selected
+  useBarcodeScanner(async (code) => {
+    try {
+      const product = await findByBarcode.mutateAsync(code);
+      if (product) {
+        setForm({ product_id: product.id, movement_type: "purchase", quantity: 1, description: `Leitura ${code}` });
+        setDialogOpen(true);
+        toast.success(`${product.name} pré-selecionado`);
+      } else {
+        toast.error(`Produto não encontrado: ${code}`);
+      }
+    } catch {
+      toast.error("Erro ao buscar produto");
+    }
+  });
 
   // Filter only active products for the select dropdown
   const activeProducts = products.filter((p) => p.active !== false);
