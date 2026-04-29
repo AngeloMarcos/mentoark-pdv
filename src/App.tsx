@@ -27,6 +27,7 @@ import Inventory from "./pages/Inventory";
 import Returns from "./pages/Returns";
 import Compras from "./pages/Compras";
 import Promotions from "./pages/Promotions";
+import Team from "./pages/Team";
 import NotFound from "./pages/NotFound";
 import AcceptInvitation from "./pages/AcceptInvitation";
 
@@ -64,6 +65,7 @@ const App = () => (
                 <Route path="/suppliers" element={<OnboardingGuard><Compras /></OnboardingGuard>} />
                 <Route path="/purchase-orders" element={<OnboardingGuard><Compras /></OnboardingGuard>} />
                 <Route path="/promotions" element={<OnboardingGuard><Promotions /></OnboardingGuard>} />
+                <Route path="/team" element={<OnboardingGuard><Team /></OnboardingGuard>} />
                 <Route path="/invite/:token" element={<AcceptInvitation />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
