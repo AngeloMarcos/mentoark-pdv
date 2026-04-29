@@ -42,9 +42,10 @@ const PDV = () => {
   const [showReceipt, setShowReceipt] = useState(false);
   const [employee, setEmployee] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-  const barcodeBufferRef = useRef("");
-  const barcodeTimeoutRef = useRef<NodeJS.Timeout>();
   const [promoTarget, setPromoTarget] = useState<CartItem | null>(null);
+  const [emittingNfce, setEmittingNfce] = useState(false);
+  const [nfceDoc, setNfceDoc] = useState<FiscalDocument | null>(null);
+  const [nfceItems, setNfceItems] = useState<Array<{ product_name: string; quantity: number; unit_price: number; total: number }>>([]);
 
   const { currentTenant } = useTenant();
   const { hasFeature } = useCompany();
@@ -52,6 +53,7 @@ const PDV = () => {
   const createSale = useCreateSale();
   const findByBarcode = useFindByBarcode();
   const { data: activeSession, isLoading: sessionLoading } = useActiveSession();
+  const { emitNfce } = useFiscal();
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
