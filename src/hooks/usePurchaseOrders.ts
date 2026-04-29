@@ -83,7 +83,7 @@ export function usePurchaseOrderDetail(orderId: string | null) {
       if (!orderId) return null;
       const { data, error } = await supabase
         .from("purchase_orders")
-        .select("*, suppliers(name, document, phone, email), purchase_order_items(*, products(name, unit))")
+        .select("*, suppliers(name, document, phone, email, due_days), purchase_order_items(*, products(name, unit))")
         .eq("id", orderId)
         .single();
       if (error) throw error;

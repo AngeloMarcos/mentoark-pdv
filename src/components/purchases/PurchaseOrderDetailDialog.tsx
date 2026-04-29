@@ -170,9 +170,24 @@ export function PurchaseOrderDetailDialog({ orderId, onClose }: Props) {
             </div>
 
             {canReceive && totalToReceive > 0 && (
-              <div className="flex justify-between items-center p-3 rounded-lg bg-primary/10 border border-primary/20">
-                <span className="font-medium">Valor desta entrada</span>
-                <span className="text-lg font-bold text-primary">R$ {totalToReceive.toFixed(2)}</span>
+              <div className="space-y-3 p-3 rounded-lg bg-primary/10 border border-primary/20">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Valor desta entrada</span>
+                  <span className="text-lg font-bold text-primary">R$ {totalToReceive.toFixed(2)}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3 items-end">
+                  <div>
+                    <label className="text-xs text-muted-foreground">Vencimento da conta a pagar *</label>
+                    <Input
+                      type="date"
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Será criada automaticamente uma Conta a Pagar no Financeiro.
+                  </p>
+                </div>
               </div>
             )}
           </div>
