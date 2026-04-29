@@ -2028,7 +2028,13 @@ export type Database = {
       validate_ean: { Args: { barcode: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "operator"
+      app_role:
+        | "admin"
+        | "operator"
+        | "manager"
+        | "cashier"
+        | "financial"
+        | "stock"
       system_role: "super_admin" | "user"
     }
     CompositeTypes: {
@@ -2157,7 +2163,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "operator"],
+      app_role: [
+        "admin",
+        "operator",
+        "manager",
+        "cashier",
+        "financial",
+        "stock",
+      ],
       system_role: ["super_admin", "user"],
     },
   },
