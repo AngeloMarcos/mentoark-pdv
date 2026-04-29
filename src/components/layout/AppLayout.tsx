@@ -21,7 +21,6 @@ import {
   DollarSign,
   RotateCcw,
   Truck,
-  ClipboardList,
   Tag,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
@@ -38,8 +37,7 @@ const ALL_NAV_ITEMS = [
   { path: "/products", label: "Produtos", icon: Package, feature: null },
   { path: "/customers", label: "Clientes", icon: Users, feature: null },
   { path: "/stock", label: "Estoque", icon: Warehouse, feature: null },
-  { path: "/suppliers", label: "Fornecedores", icon: Truck, feature: null },
-  { path: "/purchase-orders", label: "Pedidos de Compra", icon: ClipboardList, feature: null },
+  { path: "/compras", label: "Compras", icon: Truck, feature: null },
   { path: "/promotions", label: "Promoções", icon: Tag, feature: null },
   { path: "/reports", label: "Relatórios", icon: BarChart3, feature: null },
   { path: "/financial", label: "Financeiro", icon: DollarSign, feature: null },
