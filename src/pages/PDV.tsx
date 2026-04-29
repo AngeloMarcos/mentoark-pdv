@@ -182,6 +182,31 @@ const PDV = () => {
 
     setLastSale({ id: sale.id, netTotal, payments });
     setShowPaymentDialog(false);
+
+    // Auto NFC-e emission if enabled in tenant settings
+    const settingsObj = (currentTenant?.settings || {}) as Record<string, unknown>;
+    const fiscal = (settingsObj.fiscal || {}) as { emite_nfce?: boolean };
+    if (fiscal.emite_nfce) {
+      setEmittingNfce(true);
+      try {
+        const doc = await emitNfce.mutateAsync(sale.id);
+        setNfceDoc(doc as unknown as FiscalDocument);
+        setNfceItems(
+          cart.map((c) => ({
+            product_name: c.product_name,
+            quantity: c.quantity,
+            unit_price: c.unit_price,
+            total: c.total,
+          }))
+        );
+        toast.success("NFC-e emitida!");
+      } catch {
+        // already toasted
+      } finally {
+        setEmittingNfce(false);
+      }
+    }
+
     setShowSuccess(true);
     setTimeout(() => {
       setShowSuccess(false);
