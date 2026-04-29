@@ -24,7 +24,9 @@ import {
   Tag,
   UserCog,
   FileText,
+  ShieldCheck,
 } from "lucide-react";
+import { useIsSuperAdmin } from "@/hooks/useSuperAdmin";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -63,6 +65,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
   const { hasFeature, isOnboardingCompleted } = useCompany();
 
   const { role } = useCurrentRole();
+  const { data: isSuperAdmin } = useIsSuperAdmin();
 
   const NAV_ITEMS = useMemo(() => {
     const base = !isOnboardingCompleted
@@ -149,6 +152,17 @@ export function AppLayout({ children, title }: AppLayoutProps) {
 
       {/* Footer Actions */}
       <div className="p-3 border-t border-sidebar-border space-y-1">
+        {isSuperAdmin && (
+          <Link to="/super-admin">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 h-10 text-primary hover:bg-primary/10"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span className="text-sm">Super Admin</span>
+            </Button>
+          </Link>
+        )}
         <Button
           variant="ghost"
           className="w-full justify-start gap-3 h-10 text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground"
