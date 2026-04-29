@@ -79,13 +79,17 @@ export function useSalesHistory(start: Date, end: Date) {
       const saleIds = sales.map((s) => s.id);
       const customerIds = Array.from(new Set(sales.map((s) => s.customer_id).filter(Boolean))) as string[];
 
-      const [{ data: items }, { data: customers }, { data: members }] = await Promise.all([
+      const [{ data: items }, { data: customers }, membersRes] = await Promise.all([
         supabase.from("sale_items").select("sale_id, quantity").in("sale_id", saleIds),
         customerIds.length
           ? supabase.from("customers").select("id, name").in("id", customerIds)
           : Promise.resolve({ data: [] as any[] }),
-        supabase.rpc("get_tenant_members", { p_tenant_id: currentTenant.id }).then((r) => r).catch(() => ({ data: [] as any[] })),
+        supabase.rpc("get_tenant_members", { p_tenant_id: currentTenant.id }).then(
+          (r) => r,
+          () => ({ data: [] as any[] })
+        ),
       ]);
+      const members = (membersRes as any)?.data;
 
       const itemCounts = new Map<string, number>();
       (items || []).forEach((it: any) => {
