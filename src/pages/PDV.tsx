@@ -4,6 +4,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useProducts, Product } from "@/hooks/useProducts";
 import { useCreateSale, SaleItem } from "@/hooks/useSales";
 import { useFindByBarcode } from "@/hooks/useBarcodes";
+import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { useActiveSession } from "@/hooks/useCashRegister";
 import { SalePayment } from "@/hooks/usePaymentMethods";
 import { PaymentDialog } from "@/components/pdv/PaymentDialog";
@@ -14,13 +15,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Minus, Trash2, ShoppingCart, Check, Barcode, Printer, AlertCircle, DollarSign, Wallet, Tag } from "lucide-react";
+import { Search, Plus, Minus, Trash2, ShoppingCart, Check, Barcode, Printer, AlertCircle, DollarSign, Wallet, Tag, Loader2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { ReceiptPreview } from "@/components/print/ReceiptPreview";
 import { useTenant } from "@/contexts/TenantContext";
 import { useCompany } from "@/contexts/CompanyContext";
 import { ApplyPromotionDialog } from "@/components/promotions/ApplyPromotionDialog";
 import { Promotion } from "@/hooks/usePromotions";
+import { useFiscal } from "@/hooks/useFiscal";
+import { DanfeViewer } from "@/components/fiscal/DanfeViewer";
+import type { FiscalDocument } from "@/hooks/useFiscalDocuments";
 
 interface CartItem extends SaleItem {
   product_name: string;
