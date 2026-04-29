@@ -35,8 +35,19 @@ export function PurchaseOrderDetailDialog({ orderId, onClose }: Props) {
   const receive = useReceivePurchaseOrder();
   const updateStatus = useUpdatePurchaseOrderStatus();
   const [receiveQty, setReceiveQty] = useState<Record<string, number>>({});
+  const [dueDate, setDueDate] = useState<string>("");
 
   const canReceive = order && (order.status === "sent" || order.status === "partially_received");
+
+  // default due date = today + supplier.due_days (or 30)
+  useMemo(() => {
+    if (canReceive) {
+      const days = order?.suppliers?.due_days ?? 30;
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      setDueDate(d.toISOString().split("T")[0]);
+    }
+  }, [canReceive, order?.suppliers?.due_days]);
 
   const totalToReceive = useMemo(() => {
     if (!order) return 0;
@@ -52,7 +63,8 @@ export function PurchaseOrderDetailDialog({ orderId, onClose }: Props) {
       .filter(([, q]) => q > 0)
       .map(([item_id, quantity_received]) => ({ item_id, quantity_received }));
     if (items.length === 0) { toast.error("Informe quantidades a receber"); return; }
-    await receive.mutateAsync({ orderId: order.id, items });
+    if (!dueDate) { toast.error("Informe o vencimento da conta a pagar"); return; }
+    await receive.mutateAsync({ orderId: order.id, items, dueDate });
     setReceiveQty({});
   };
 
