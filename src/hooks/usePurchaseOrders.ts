@@ -83,7 +83,7 @@ export function usePurchaseOrderDetail(orderId: string | null) {
       if (!orderId) return null;
       const { data, error } = await supabase
         .from("purchase_orders")
-        .select("*, suppliers(name, document, phone, email), purchase_order_items(*, products(name, unit))")
+        .select("*, suppliers(name, document, phone, email, due_days), purchase_order_items(*, products(name, unit))")
         .eq("id", orderId)
         .single();
       if (error) throw error;
@@ -180,13 +180,16 @@ export function useReceivePurchaseOrder() {
     mutationFn: async ({
       orderId,
       items,
+      dueDate,
     }: {
       orderId: string;
       items: Array<{ item_id: string; quantity_received: number }>;
+      dueDate?: string;
     }) => {
       const { data, error } = await supabase.rpc("receive_purchase_order_items", {
         p_order_id: orderId,
         p_items: items as any,
+        p_due_date: dueDate ?? null,
       });
       if (error) throw error;
       return data as string;
@@ -195,7 +198,9 @@ export function useReceivePurchaseOrder() {
       queryClient.invalidateQueries({ queryKey: ["purchase_orders"] });
       queryClient.invalidateQueries({ queryKey: ["purchase_order"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast.success("Recebimento registrado e estoque atualizado!");
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["financial_dashboard"] });
+      toast.success("Recebimento registrado, estoque atualizado e Conta a Pagar gerada!");
     },
     onError: (e) => toast.error(getUserFriendlyError(e)),
   });

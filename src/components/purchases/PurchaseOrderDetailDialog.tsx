@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,8 +35,19 @@ export function PurchaseOrderDetailDialog({ orderId, onClose }: Props) {
   const receive = useReceivePurchaseOrder();
   const updateStatus = useUpdatePurchaseOrderStatus();
   const [receiveQty, setReceiveQty] = useState<Record<string, number>>({});
+  const [dueDate, setDueDate] = useState<string>("");
 
   const canReceive = order && (order.status === "sent" || order.status === "partially_received");
+
+  // default due date = today + supplier.due_days (or 30)
+  useEffect(() => {
+    if (canReceive) {
+      const days = order?.suppliers?.due_days ?? 30;
+      const d = new Date();
+      d.setDate(d.getDate() + days);
+      setDueDate(d.toISOString().split("T")[0]);
+    }
+  }, [canReceive, order?.suppliers?.due_days]);
 
   const totalToReceive = useMemo(() => {
     if (!order) return 0;
@@ -52,7 +63,8 @@ export function PurchaseOrderDetailDialog({ orderId, onClose }: Props) {
       .filter(([, q]) => q > 0)
       .map(([item_id, quantity_received]) => ({ item_id, quantity_received }));
     if (items.length === 0) { toast.error("Informe quantidades a receber"); return; }
-    await receive.mutateAsync({ orderId: order.id, items });
+    if (!dueDate) { toast.error("Informe o vencimento da conta a pagar"); return; }
+    await receive.mutateAsync({ orderId: order.id, items, dueDate });
     setReceiveQty({});
   };
 
@@ -158,9 +170,24 @@ export function PurchaseOrderDetailDialog({ orderId, onClose }: Props) {
             </div>
 
             {canReceive && totalToReceive > 0 && (
-              <div className="flex justify-between items-center p-3 rounded-lg bg-primary/10 border border-primary/20">
-                <span className="font-medium">Valor desta entrada</span>
-                <span className="text-lg font-bold text-primary">R$ {totalToReceive.toFixed(2)}</span>
+              <div className="space-y-3 p-3 rounded-lg bg-primary/10 border border-primary/20">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Valor desta entrada</span>
+                  <span className="text-lg font-bold text-primary">R$ {totalToReceive.toFixed(2)}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3 items-end">
+                  <div>
+                    <label className="text-xs text-muted-foreground">Vencimento da conta a pagar *</label>
+                    <Input
+                      type="date"
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Será criada automaticamente uma Conta a Pagar no Financeiro.
+                  </p>
+                </div>
               </div>
             )}
           </div>

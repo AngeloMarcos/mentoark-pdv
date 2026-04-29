@@ -25,8 +25,7 @@ import Settings from "./pages/Settings";
 import CashRegister from "./pages/CashRegister";
 import Inventory from "./pages/Inventory";
 import Returns from "./pages/Returns";
-import Suppliers from "./pages/Suppliers";
-import PurchaseOrders from "./pages/PurchaseOrders";
+import Compras from "./pages/Compras";
 import Promotions from "./pages/Promotions";
 import NotFound from "./pages/NotFound";
 import AcceptInvitation from "./pages/AcceptInvitation";
@@ -61,8 +60,9 @@ const App = () => (
                 <Route path="/cash-register" element={<OnboardingGuard><CashRegister /></OnboardingGuard>} />
                 <Route path="/inventory" element={<OnboardingGuard><Inventory /></OnboardingGuard>} />
                 <Route path="/returns" element={<OnboardingGuard><Returns /></OnboardingGuard>} />
-                <Route path="/suppliers" element={<OnboardingGuard><Suppliers /></OnboardingGuard>} />
-                <Route path="/purchase-orders" element={<OnboardingGuard><PurchaseOrders /></OnboardingGuard>} />
+                <Route path="/compras" element={<OnboardingGuard><Compras /></OnboardingGuard>} />
+                <Route path="/suppliers" element={<OnboardingGuard><Compras /></OnboardingGuard>} />
+                <Route path="/purchase-orders" element={<OnboardingGuard><Compras /></OnboardingGuard>} />
                 <Route path="/promotions" element={<OnboardingGuard><Promotions /></OnboardingGuard>} />
                 <Route path="/invite/:token" element={<AcceptInvitation />} />
                 <Route path="*" element={<NotFound />} />
