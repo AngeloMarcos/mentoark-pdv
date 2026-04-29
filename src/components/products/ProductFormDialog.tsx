@@ -4,11 +4,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Product, ProductInput } from "@/hooks/useProducts";
+import { FiscalProductTab, FiscalFields } from "@/components/fiscal/FiscalProductTab";
 
-interface ExtendedProductInput extends ProductInput {
+interface ExtendedProductInput extends ProductInput, FiscalFields {
   controls_lot?: boolean;
   wholesale_price?: number | null;
   wholesale_min_qty?: number | null;
@@ -113,7 +115,7 @@ export function ProductFormDialog({ open, onOpenChange, editingProduct, onSubmit
       setForm(INITIAL_FORM);
       setTouched(new Set());
     } else if (isOpen && editingProduct) {
-      const ext = editingProduct as Product & { controls_lot?: boolean; wholesale_price?: number | null; wholesale_min_qty?: number | null };
+      const ext = editingProduct as Product & FiscalFields & { controls_lot?: boolean; wholesale_price?: number | null; wholesale_min_qty?: number | null };
       setForm({
         name: editingProduct.name,
         sale_price: editingProduct.sale_price,
@@ -128,6 +130,17 @@ export function ProductFormDialog({ open, onOpenChange, editingProduct, onSubmit
         controls_lot: ext.controls_lot || false,
         wholesale_price: ext.wholesale_price || null,
         wholesale_min_qty: ext.wholesale_min_qty || null,
+        ncm: ext.ncm || null,
+        cfop: ext.cfop || "5102",
+        csosn: ext.csosn || "400",
+        cst_icms: ext.cst_icms || null,
+        cest: ext.cest || null,
+        origem: ext.origem ?? 0,
+        icms_aliquota: ext.icms_aliquota ?? 0,
+        pis_aliquota: ext.pis_aliquota ?? 0.65,
+        cofins_aliquota: ext.cofins_aliquota ?? 3.0,
+        unidade_medida: ext.unidade_medida || ext.unit || "UN",
+        ean: ext.ean || ext.barcode || null,
       });
       setTouched(new Set());
     }
@@ -196,11 +209,17 @@ export function ProductFormDialog({ open, onOpenChange, editingProduct, onSubmit
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editingProduct ? "Editar Produto" : "Novo Produto"}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 pt-4">
+        <Tabs defaultValue="geral" className="pt-2">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="geral">Geral</TabsTrigger>
+            <TabsTrigger value="fiscal">Fiscal</TabsTrigger>
+          </TabsList>
+          <TabsContent value="geral">
+            <div className="space-y-4 pt-4">
           <div className="grid sm:grid-cols-2 gap-4">
             {/* Nome */}
             <div className="space-y-1 sm:col-span-2">
