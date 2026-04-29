@@ -489,6 +489,26 @@ const PDV = () => {
           }}
         />
       )}
+
+      {/* NFC-e emitting overlay */}
+      {emittingNfce && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3 p-6 rounded-lg border bg-card shadow-lg">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="font-medium">Emitindo NFC-e...</p>
+            <p className="text-xs text-muted-foreground">Não feche a janela</p>
+          </div>
+        </div>
+      )}
+
+      {/* DANFE viewer for emitted NFC-e */}
+      <DanfeViewer
+        document={nfceDoc}
+        open={!!nfceDoc}
+        onOpenChange={(o) => !o && setNfceDoc(null)}
+        items={nfceItems}
+        paymentLabel={lastSale?.payments.map((p) => p.payment_method_code).join(", ")}
+      />
     </AppLayout>
   );
 };
