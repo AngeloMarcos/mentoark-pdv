@@ -22,26 +22,30 @@ import {
   RotateCcw,
   Truck,
   Tag,
+  UserCog,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { AppLayoutSkeleton } from "@/components/ui/skeletons";
+import { useCurrentRole } from "@/hooks/usePermission";
+import { roleHasPermission, Permission } from "@/lib/permissions";
 
-const ALL_NAV_ITEMS = [
-  { path: "/dashboard", label: "Painel", icon: LayoutDashboard, feature: null },
-  { path: "/pdv", label: "PDV", icon: ShoppingBag, feature: null },
-  { path: "/returns", label: "Devoluções", icon: RotateCcw, feature: null },
-  { path: "/cash-register", label: "Caixa", icon: DollarSign, feature: "cash_register" },
-  { path: "/tables", label: "Mesas", icon: UtensilsCrossed, feature: "tables" },
-  { path: "/products", label: "Produtos", icon: Package, feature: null },
-  { path: "/customers", label: "Clientes", icon: Users, feature: null },
-  { path: "/stock", label: "Estoque", icon: Warehouse, feature: null },
-  { path: "/compras", label: "Compras", icon: Truck, feature: null },
-  { path: "/promotions", label: "Promoções", icon: Tag, feature: null },
-  { path: "/reports", label: "Relatórios", icon: BarChart3, feature: null },
-  { path: "/financial", label: "Financeiro", icon: DollarSign, feature: null },
-  { path: "/settings", label: "Configurações", icon: Settings, feature: null },
+const ALL_NAV_ITEMS: { path: string; label: string; icon: typeof LayoutDashboard; feature: string | null; permission: Permission }[] = [
+  { path: "/dashboard", label: "Painel", icon: LayoutDashboard, feature: null, permission: "dashboard" },
+  { path: "/pdv", label: "PDV", icon: ShoppingBag, feature: null, permission: "pdv" },
+  { path: "/returns", label: "Devoluções", icon: RotateCcw, feature: null, permission: "returns" },
+  { path: "/cash-register", label: "Caixa", icon: DollarSign, feature: "cash_register", permission: "cash_register" },
+  { path: "/tables", label: "Mesas", icon: UtensilsCrossed, feature: "tables", permission: "tables" },
+  { path: "/products", label: "Produtos", icon: Package, feature: null, permission: "products" },
+  { path: "/customers", label: "Clientes", icon: Users, feature: null, permission: "customers" },
+  { path: "/stock", label: "Estoque", icon: Warehouse, feature: null, permission: "stock" },
+  { path: "/compras", label: "Compras", icon: Truck, feature: null, permission: "compras" },
+  { path: "/promotions", label: "Promoções", icon: Tag, feature: null, permission: "promotions" },
+  { path: "/reports", label: "Relatórios", icon: BarChart3, feature: null, permission: "reports" },
+  { path: "/financial", label: "Financeiro", icon: DollarSign, feature: null, permission: "financial" },
+  { path: "/team", label: "Equipe", icon: UserCog, feature: null, permission: "team" },
+  { path: "/settings", label: "Configurações", icon: Settings, feature: null, permission: "settings" },
 ];
 
 interface AppLayoutProps {
@@ -56,12 +60,16 @@ export function AppLayout({ children, title }: AppLayoutProps) {
   const { currentTenant, setCurrentTenant } = useTenant();
   const { hasFeature, isOnboardingCompleted } = useCompany();
 
+  const { role } = useCurrentRole();
+
   const NAV_ITEMS = useMemo(() => {
-    if (!isOnboardingCompleted) return ALL_NAV_ITEMS;
-    return ALL_NAV_ITEMS.filter(
-      (item) => item.feature === null || hasFeature(item.feature)
-    );
-  }, [isOnboardingCompleted, hasFeature]);
+    const base = !isOnboardingCompleted
+      ? ALL_NAV_ITEMS
+      : ALL_NAV_ITEMS.filter((item) => item.feature === null || hasFeature(item.feature));
+    // Filter by role permissions (only if role is loaded; otherwise show base to avoid flash)
+    if (!role) return base;
+    return base.filter((item) => roleHasPermission(role, item.permission));
+  }, [isOnboardingCompleted, hasFeature, role]);
 
   useEffect(() => {
     if (!authLoading && !user) {
