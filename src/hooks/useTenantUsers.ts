@@ -1,22 +1,32 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/error-handler";
+import { AppRole } from "@/lib/permissions";
 
 export interface TenantUser {
   id: string;
   user_id: string;
-  role: "admin" | "operator";
+  role: AppRole;
   created_at: string;
   email?: string;
+}
+
+export interface TenantMember {
+  user_id: string;
+  email: string | null;
+  role: AppRole;
+  created_at: string;
+  last_seen: string | null;
 }
 
 export interface TenantInvitation {
   id: string;
   tenant_id: string;
   email: string;
-  role: "admin" | "operator";
+  role: AppRole;
   invited_by: string;
   token: string;
   expires_at: string;
@@ -24,7 +34,24 @@ export interface TenantInvitation {
   created_at: string;
 }
 
-// Hook to list tenant users
+// List members (with email + last_seen) — admins only via RPC
+export function useTenantMembers() {
+  const { currentTenant } = useTenant();
+
+  return useQuery({
+    queryKey: ["tenant-members", currentTenant?.id],
+    queryFn: async () => {
+      if (!currentTenant) return [];
+      const { data, error } = await supabase.rpc("get_tenant_members", {
+        p_tenant_id: currentTenant.id,
+      });
+      if (error) throw error;
+      return (data ?? []) as TenantMember[];
+    },
+    enabled: !!currentTenant,
+  });
+}
+
 export function useTenantUsers() {
   const { currentTenant } = useTenant();
 
@@ -46,13 +73,12 @@ export function useTenantUsers() {
   });
 }
 
-// Hook to update user role
 export function useUpdateUserRole() {
   const queryClient = useQueryClient();
   const { currentTenant } = useTenant();
 
   return useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: "admin" | "operator" }) => {
+    mutationFn: async ({ userId, role }: { userId: string; role: AppRole }) => {
       if (!currentTenant) throw new Error("Nenhum tenant selecionado");
 
       const { error } = await supabase
@@ -65,7 +91,8 @@ export function useUpdateUserRole() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tenant-users", currentTenant?.id] });
-      toast.success("Função atualizada com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["tenant-members", currentTenant?.id] });
+      toast.success("Perfil atualizado!");
     },
     onError: (error) => {
       toast.error(getUserFriendlyError(error));
@@ -73,7 +100,6 @@ export function useUpdateUserRole() {
   });
 }
 
-// Hook to remove user from tenant
 export function useRemoveTenantUser() {
   const queryClient = useQueryClient();
   const { currentTenant } = useTenant();
@@ -92,7 +118,8 @@ export function useRemoveTenantUser() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tenant-users", currentTenant?.id] });
-      toast.success("Usuário removido com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["tenant-members", currentTenant?.id] });
+      toast.success("Acesso revogado!");
     },
     onError: (error) => {
       toast.error(getUserFriendlyError(error));
@@ -100,7 +127,6 @@ export function useRemoveTenantUser() {
   });
 }
 
-// Hook to list pending invitations
 export function useTenantInvitations() {
   const { currentTenant } = useTenant();
 
@@ -123,16 +149,14 @@ export function useTenantInvitations() {
   });
 }
 
-// Hook to create invitation
 export function useCreateInvitation() {
   const queryClient = useQueryClient();
   const { currentTenant } = useTenant();
+  const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ email, role }: { email: string; role: "admin" | "operator" }) => {
+    mutationFn: async ({ email, role }: { email: string; role: AppRole }) => {
       if (!currentTenant) throw new Error("Nenhum tenant selecionado");
-
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
       const { data, error } = await supabase
@@ -151,7 +175,7 @@ export function useCreateInvitation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tenant-invitations", currentTenant?.id] });
-      toast.success("Convite criado com sucesso!");
+      toast.success("Convite criado! Compartilhe o link com o usuário.");
     },
     onError: (error) => {
       toast.error(getUserFriendlyError(error));
@@ -159,7 +183,6 @@ export function useCreateInvitation() {
   });
 }
 
-// Hook to cancel invitation
 export function useCancelInvitation() {
   const queryClient = useQueryClient();
   const { currentTenant } = useTenant();
@@ -183,7 +206,6 @@ export function useCancelInvitation() {
   });
 }
 
-// Hook to accept invitation (used on AcceptInvitation page)
 export function useAcceptInvitation() {
   const queryClient = useQueryClient();
 
@@ -191,7 +213,7 @@ export function useAcceptInvitation() {
     mutationFn: async (token: string) => {
       const { data, error } = await supabase.rpc("accept_invitation", { p_token: token });
       if (error) throw error;
-      return data as string; // Returns tenant_id
+      return data as string;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tenants"] });
@@ -203,13 +225,11 @@ export function useAcceptInvitation() {
   });
 }
 
-// Hook to get invitation info by token
 export function useInvitationInfo(token: string | undefined) {
   return useQuery({
     queryKey: ["invitation-info", token],
     queryFn: async () => {
       if (!token) return null;
-
       const { data, error } = await supabase.rpc("get_invitation_info", { p_token: token });
       if (error) throw error;
       return data?.[0] || null;
