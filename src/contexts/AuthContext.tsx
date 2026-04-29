@@ -26,6 +26,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
+        // Track last_seen on sign in (deferred to avoid blocking auth callback)
+        if (event === "SIGNED_IN" && session?.user) {
+          setTimeout(() => {
+            supabase.from("user_activity").upsert({
+              user_id: session.user.id,
+              last_seen: new Date().toISOString(),
+            }).then(() => {});
+          }, 0);
+        }
       }
     );
 
@@ -34,6 +43,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
+      if (session?.user) {
+        supabase.from("user_activity").upsert({
+          user_id: session.user.id,
+          last_seen: new Date().toISOString(),
+        }).then(() => {});
+      }
     });
 
     return () => subscription.unsubscribe();
