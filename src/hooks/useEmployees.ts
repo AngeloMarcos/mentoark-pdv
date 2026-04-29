@@ -11,7 +11,21 @@ export interface Employee {
   phone: string | null;
   active: boolean;
   created_at: string;
+  user_id?: string | null;
+  email?: string | null;
+  cpf?: string | null;
+  rg?: string | null;
+  birth_date?: string | null;
+  department?: string | null;
+  salary?: number | null;
+  hire_date?: string | null;
+  termination_date?: string | null;
+  contract_type?: string | null;
+  notes?: string | null;
+  photo_url?: string | null;
 }
+
+export type EmployeeInput = Partial<Omit<Employee, "id" | "tenant_id" | "created_at">> & { name: string };
 
 export function useEmployees(activeOnly = true) {
   const { currentTenant } = useTenant();
@@ -43,15 +57,14 @@ export function useCreateEmployee() {
   const { currentTenant } = useTenant();
 
   return useMutation({
-    mutationFn: async (input: { name: string; role?: string; phone?: string }) => {
+    mutationFn: async (input: EmployeeInput) => {
       if (!currentTenant) throw new Error("Sem empresa selecionada");
       const { data, error } = await supabase
         .from("employees")
         .insert({
           tenant_id: currentTenant.id,
-          name: input.name,
+          ...input,
           role: input.role || "atendente",
-          phone: input.phone || null,
         })
         .select()
         .single();
@@ -72,7 +85,7 @@ export function useUpdateEmployee() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<{ name: string; role: string; phone: string; active: boolean }> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Employee> }) => {
       const { error } = await supabase
         .from("employees")
         .update(data)
