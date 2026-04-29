@@ -10,7 +10,6 @@ import {
   Package,
   FileBarChart,
   Warehouse,
-  Wallet,
   Building2,
   LogOut,
   Menu,
@@ -43,7 +42,7 @@ const ALL_NAV_ITEMS = [
   { path: "/purchase-orders", label: "Pedidos de Compra", icon: ClipboardList, feature: null },
   { path: "/promotions", label: "Promoções", icon: Tag, feature: null },
   { path: "/reports", label: "Relatórios", icon: BarChart3, feature: null },
-  { path: "/financial", label: "Financeiro", icon: Wallet, feature: null },
+  { path: "/financial", label: "Financeiro", icon: DollarSign, feature: null },
   { path: "/settings", label: "Configurações", icon: Settings, feature: null },
 ];
 
