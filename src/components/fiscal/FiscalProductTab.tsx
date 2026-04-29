@@ -236,11 +236,17 @@ export function FiscalProductTab({ values, onChange, regime = "simples" }: Props
           <Label className="flex items-center gap-1">
             EAN / GTIN <FieldTip text="Código de barras de 8, 12, 13 ou 14 dígitos. Use 'SEM GTIN' se não houver." />
           </Label>
-          <Input
-            value={values.ean || ""}
-            onChange={(e) => onChange({ ean: e.target.value.slice(0, 14) })}
-            placeholder="7891234567890"
-          />
+          <div className="flex gap-2">
+            <Input
+              value={values.ean || ""}
+              onChange={(e) => onChange({ ean: e.target.value.slice(0, 14) })}
+              placeholder="7891234567890"
+              className="flex-1"
+            />
+            <Button type="button" variant="outline" onClick={startScan} disabled={scanActive} title="Ler com leitor de código de barras">
+              {scanActive ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanLine className="w-4 h-4" />}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
