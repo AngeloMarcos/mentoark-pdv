@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      accounts: {
+        Row: {
+          amount: number
+          category_id: string | null
+          created_at: string
+          created_by: string
+          customer_id: string | null
+          description: string
+          due_date: string
+          id: string
+          notes: string | null
+          paid_amount: number | null
+          paid_at: string | null
+          party_name: string | null
+          payment_method: string | null
+          status: string
+          tenant_id: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category_id?: string | null
+          created_at?: string
+          created_by: string
+          customer_id?: string | null
+          description: string
+          due_date: string
+          id?: string
+          notes?: string | null
+          paid_amount?: number | null
+          paid_at?: string | null
+          party_name?: string | null
+          payment_method?: string | null
+          status?: string
+          tenant_id: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string | null
+          created_at?: string
+          created_by?: string
+          customer_id?: string | null
+          description?: string
+          due_date?: string
+          id?: string
+          notes?: string | null
+          paid_amount?: number | null
+          paid_at?: string | null
+          party_name?: string | null
+          payment_method?: string | null
+          status?: string
+          tenant_id?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "financial_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -416,6 +484,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      financial_categories: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          tenant_id: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          tenant_id: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          tenant_id?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       financial_entries: {
         Row: {
@@ -1796,6 +1894,10 @@ export type Database = {
           status: string
         }[]
       }
+      get_financial_dashboard: {
+        Args: { p_end: string; p_start: string; p_tenant_id: string }
+        Returns: Json
+      }
       get_invitation_info: {
         Args: { p_token: string }
         Returns: {
@@ -1829,6 +1931,15 @@ export type Database = {
           p_tenant_id: string
         }
         Returns: string
+      }
+      pay_account: {
+        Args: {
+          p_account_id: string
+          p_paid_amount: number
+          p_paid_at: string
+          p_payment_method: string
+        }
+        Returns: undefined
       }
       process_sale_return: {
         Args: {
