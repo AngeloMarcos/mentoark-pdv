@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_deletion_requests: {
+        Row: {
+          id: string
+          processed_at: string | null
+          reason: string | null
+          requested_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          processed_at?: string | null
+          reason?: string | null
+          requested_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          processed_at?: string | null
+          reason?: string | null
+          requested_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       accounts: {
         Row: {
           amount: number
@@ -1995,6 +2022,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_consents: {
+        Row: {
+          accepted: boolean
+          consent_type: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string
+          version: string
+        }
+        Insert: {
+          accepted?: boolean
+          consent_type: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id: string
+          version: string
+        }
+        Update: {
+          accepted?: boolean
+          consent_type?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string
+          version?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -2068,10 +2128,20 @@ export type Database = {
         }
         Returns: number
       }
-      decrement_stock: {
-        Args: { p_product_id: string; p_quantity: number }
-        Returns: undefined
-      }
+      decrement_stock:
+        | {
+            Args: { p_product_id: string; p_quantity: number }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_product_id: string
+              p_quantity: number
+              p_tenant_id?: string
+            }
+            Returns: undefined
+          }
+      export_my_data: { Args: never; Returns: Json }
       generate_fiscal_document: {
         Args: { p_document_type?: string; p_sale_id: string }
         Returns: {
@@ -2133,6 +2203,7 @@ export type Database = {
         }
       }
       get_available_credit: { Args: { p_customer_id: string }; Returns: number }
+      get_current_tenant_id: { Args: never; Returns: string }
       get_customer_points: { Args: { p_customer_id: string }; Returns: number }
       get_expiring_products: {
         Args: { p_days_ahead?: number; p_tenant_id: string }
@@ -2179,10 +2250,19 @@ export type Database = {
         }
         Returns: boolean
       }
-      increment_stock: {
-        Args: { p_product_id: string; p_quantity: number }
-        Returns: undefined
-      }
+      increment_stock:
+        | {
+            Args: { p_product_id: string; p_quantity: number }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_product_id: string
+              p_quantity: number
+              p_tenant_id?: string
+            }
+            Returns: undefined
+          }
       is_super_admin: { Args: { _user_id?: string }; Returns: boolean }
       log_audit_event: {
         Args: {
@@ -2233,6 +2313,31 @@ export type Database = {
       seed_default_payment_methods: {
         Args: { p_tenant_id: string }
         Returns: undefined
+      }
+      super_create_tenant_with_admin: {
+        Args: {
+          p_admin_email: string
+          p_document: string
+          p_name: string
+          p_phone: string
+          p_segment: string
+        }
+        Returns: Json
+      }
+      super_get_metrics: { Args: never; Returns: Json }
+      super_list_tenants: {
+        Args: never
+        Returns: {
+          created_at: string
+          document: string
+          id: string
+          name: string
+          phone: string
+          revenue_30d: number
+          sales_count: number
+          segment: string
+          user_count: number
+        }[]
       }
       update_weighted_avg_cost: {
         Args: {
