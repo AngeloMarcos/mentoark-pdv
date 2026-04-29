@@ -450,30 +450,69 @@ export type Database = {
       employees: {
         Row: {
           active: boolean
+          birth_date: string | null
+          contract_type: string | null
+          cpf: string | null
           created_at: string | null
+          department: string | null
+          email: string | null
+          hire_date: string | null
           id: string
           name: string
+          notes: string | null
           phone: string | null
+          photo_url: string | null
+          rg: string | null
           role: string | null
+          salary: number | null
           tenant_id: string
+          termination_date: string | null
+          updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           active?: boolean
+          birth_date?: string | null
+          contract_type?: string | null
+          cpf?: string | null
           created_at?: string | null
+          department?: string | null
+          email?: string | null
+          hire_date?: string | null
           id?: string
           name: string
+          notes?: string | null
           phone?: string | null
+          photo_url?: string | null
+          rg?: string | null
           role?: string | null
+          salary?: number | null
           tenant_id: string
+          termination_date?: string | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           active?: boolean
+          birth_date?: string | null
+          contract_type?: string | null
+          cpf?: string | null
           created_at?: string | null
+          department?: string | null
+          email?: string | null
+          hire_date?: string | null
           id?: string
           name?: string
+          notes?: string | null
           phone?: string | null
+          photo_url?: string | null
+          rg?: string | null
           role?: string | null
+          salary?: number | null
           tenant_id?: string
+          termination_date?: string | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1845,6 +1884,21 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity: {
+        Row: {
+          last_seen: string
+          user_id: string
+        }
+        Insert: {
+          last_seen?: string
+          user_id: string
+        }
+        Update: {
+          last_seen?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1951,6 +2005,16 @@ export type Database = {
           is_valid: boolean
           role: Database["public"]["Enums"]["app_role"]
           tenant_name: string
+        }[]
+      }
+      get_tenant_members: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          created_at: string
+          email: string
+          last_seen: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
         }[]
       }
       get_user_tenants: { Args: never; Returns: string[] }
