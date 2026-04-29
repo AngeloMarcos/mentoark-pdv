@@ -30,12 +30,12 @@ export function useMyDeletionRequest() {
     queryKey: ["deletion-request", user?.id],
     queryFn: async () => {
       if (!user) return null;
-      const { data } = await supabase
-        .from("account_deletion_requests" as any)
+      const { data } = await (supabase as any)
+        .from("account_deletion_requests")
         .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
-      return data;
+      return data as { status: string; requested_at: string; reason: string | null } | null;
     },
     enabled: !!user,
   });
