@@ -100,47 +100,9 @@ const PDV = () => {
     }
   }, [findByBarcode, addToCart]);
 
-  // Detecta leitura de código de barras (input rápido)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignora se não está focado no input de busca ou teclas especiais
-      if (e.ctrlKey || e.altKey || e.metaKey) return;
-
-      // Enter submete o código
-      if (e.key === "Enter" && barcodeBufferRef.current.length >= 8) {
-        e.preventDefault();
-        handleBarcodeSearch(barcodeBufferRef.current);
-        barcodeBufferRef.current = "";
-        return;
-      }
-
-      // Apenas dígitos para código de barras
-      if (e.key.length === 1 && /^\d$/.test(e.key)) {
-        barcodeBufferRef.current += e.key;
-
-        // Reset do timeout
-        if (barcodeTimeoutRef.current) {
-          clearTimeout(barcodeTimeoutRef.current);
-        }
-
-        // Se parou de digitar por 50ms, pode ser fim da leitura
-        barcodeTimeoutRef.current = setTimeout(() => {
-          if (barcodeBufferRef.current.length >= 8) {
-            handleBarcodeSearch(barcodeBufferRef.current);
-          }
-          barcodeBufferRef.current = "";
-        }, 100);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      if (barcodeTimeoutRef.current) {
-        clearTimeout(barcodeTimeoutRef.current);
-      }
-    };
-  }, [handleBarcodeSearch]);
+  // Global barcode scanner — detecta leitura rápida (<50ms entre teclas)
+  // ignoreInputs=false porque o foco fica no input de busca
+  useBarcodeScanner((code) => handleBarcodeSearch(code), { minLength: 4, ignoreInputs: false });
 
   // Atalhos de teclado
   useEffect(() => {
