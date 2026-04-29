@@ -161,7 +161,7 @@ export function useStockSummary() {
 
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, stock_current, min_stock, sale_price, cost_price, unit, active")
+        .select("id, name, category, stock_current, min_stock, sale_price, cost_price, unit, active")
         .eq("tenant_id", currentTenant.id)
         .eq("active", true)
         .order("name");
