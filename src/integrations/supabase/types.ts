@@ -1472,44 +1472,89 @@ export type Database = {
         Row: {
           active: boolean
           address: string | null
+          bank_account: string | null
+          bank_agency: string | null
+          bank_name: string | null
+          category: string | null
+          city: string | null
+          complement: string | null
           created_at: string
           document: string | null
+          due_days: number
           email: string | null
+          fantasy_name: string | null
           id: string
           name: string
+          neighborhood: string | null
           notes: string | null
+          number: string | null
           payment_terms: string | null
           phone: string | null
+          pix_key: string | null
+          state: string | null
+          state_registration: string | null
+          street: string | null
           tenant_id: string
           updated_at: string
+          zip_code: string | null
         }
         Insert: {
           active?: boolean
           address?: string | null
+          bank_account?: string | null
+          bank_agency?: string | null
+          bank_name?: string | null
+          category?: string | null
+          city?: string | null
+          complement?: string | null
           created_at?: string
           document?: string | null
+          due_days?: number
           email?: string | null
+          fantasy_name?: string | null
           id?: string
           name: string
+          neighborhood?: string | null
           notes?: string | null
+          number?: string | null
           payment_terms?: string | null
           phone?: string | null
+          pix_key?: string | null
+          state?: string | null
+          state_registration?: string | null
+          street?: string | null
           tenant_id: string
           updated_at?: string
+          zip_code?: string | null
         }
         Update: {
           active?: boolean
           address?: string | null
+          bank_account?: string | null
+          bank_agency?: string | null
+          bank_name?: string | null
+          category?: string | null
+          city?: string | null
+          complement?: string | null
           created_at?: string
           document?: string | null
+          due_days?: number
           email?: string | null
+          fantasy_name?: string | null
           id?: string
           name?: string
+          neighborhood?: string | null
           notes?: string | null
+          number?: string | null
           payment_terms?: string | null
           phone?: string | null
+          pix_key?: string | null
+          state?: string | null
+          state_registration?: string | null
+          street?: string | null
           tenant_id?: string
           updated_at?: string
+          zip_code?: string | null
         }
         Relationships: [
           {
@@ -1952,10 +1997,12 @@ export type Database = {
         }
         Returns: string
       }
-      receive_purchase_order_items: {
-        Args: { p_items: Json; p_order_id: string }
-        Returns: string
-      }
+      receive_purchase_order_items:
+        | { Args: { p_items: Json; p_order_id: string }; Returns: string }
+        | {
+            Args: { p_due_date?: string; p_items: Json; p_order_id: string }
+            Returns: string
+          }
       redeem_loyalty_points: {
         Args: {
           p_customer_id: string
