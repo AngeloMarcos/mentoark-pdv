@@ -184,27 +184,34 @@ const PDV = () => {
     setShowPaymentDialog(false);
 
     // Auto NFC-e emission if enabled in tenant settings
-    const settingsObj = (currentTenant?.settings || {}) as Record<string, unknown>;
-    const fiscal = (settingsObj.fiscal || {}) as { emite_nfce?: boolean };
-    if (fiscal.emite_nfce) {
-      setEmittingNfce(true);
-      try {
-        const doc = await emitNfce.mutateAsync(sale.id);
-        setNfceDoc(doc as unknown as FiscalDocument);
-        setNfceItems(
-          cart.map((c) => ({
-            product_name: c.product_name,
-            quantity: c.quantity,
-            unit_price: c.unit_price,
-            total: c.total,
-          }))
-        );
-        toast.success("NFC-e emitida!");
-      } catch {
-        // already toasted
-      } finally {
-        setEmittingNfce(false);
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: t } = await supabase
+        .from("tenants")
+        .select("settings")
+        .eq("id", currentTenant?.id || "")
+        .maybeSingle();
+      const fiscal = ((t?.settings as Record<string, unknown>)?.fiscal || {}) as { emite_nfce?: boolean };
+      if (fiscal.emite_nfce) {
+        setEmittingNfce(true);
+        try {
+          const doc = await emitNfce.mutateAsync(sale.id);
+          setNfceDoc(doc as unknown as FiscalDocument);
+          setNfceItems(
+            cart.map((c) => ({
+              product_name: c.product_name,
+              quantity: c.quantity,
+              unit_price: c.unit_price,
+              total: c.total,
+            }))
+          );
+          toast.success("NFC-e emitida!");
+        } finally {
+          setEmittingNfce(false);
+        }
       }
+    } catch {
+      // already toasted by useFiscal
     }
 
     setShowSuccess(true);
