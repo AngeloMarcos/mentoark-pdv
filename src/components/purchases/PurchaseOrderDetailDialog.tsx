@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,7 +40,7 @@ export function PurchaseOrderDetailDialog({ orderId, onClose }: Props) {
   const canReceive = order && (order.status === "sent" || order.status === "partially_received");
 
   // default due date = today + supplier.due_days (or 30)
-  useMemo(() => {
+  useEffect(() => {
     if (canReceive) {
       const days = order?.suppliers?.due_days ?? 30;
       const d = new Date();
