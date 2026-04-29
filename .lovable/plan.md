@@ -1,69 +1,129 @@
 
+# Catálogo & Estoque robustos + Exportação Excel
 
-## Aplicação do tema azul-roxo degradê — em sprints
-
-Vou aplicar o novo tema visual (azul vibrante → roxo, com degradês, glows e suporte a dark/light) no sistema. O conteúdo que você colou tem alguns problemas que preciso ajustar antes de aplicar:
-
-### Problemas detectados no material enviado
-
-1. **Arquivos 3, 4, 7, 8 vieram com JSX corrompido** (tags vazias, sem conteúdo). Não posso colar como está — o build quebraria. Vou **preservar a estrutura JSX original** desses componentes e aplicar apenas as classes de estilo do novo tema.
-2. **Arquivos 6, 7, 8 (`AppSidebar`, `AppHeader`, `CRMLayout`) não existem neste projeto.** Este projeto usa `src/components/layout/AppLayout.tsx` (sidebar + header em um único componente, sem `ThemeProvider`, sem `useAuth` hook próprio — usa `AuthContext`). Os itens de menu também são totalmente diferentes (PDV, Estoque, Caixa, etc., não Leads/WhatsApp/Disparos).
-3. **O sistema atualmente é dark-only** (`color-scheme: dark` forçado). O novo CSS introduz light + dark; vou manter ambos funcionais e deixar o default em **dark** para não quebrar a percepção atual.
-
-### Plano em 3 sprints
+## Objetivo
+Tornar as telas **Produtos** e **Estoque** mais robustas, fáceis de usar e adicionar **exportação em Excel (.xlsx)** real (hoje só existe CSV) — em ambas as telas, com filtros aplicados e múltiplas abas.
 
 ---
 
-**Sprint 1 — Fundação do tema (tokens + primitives)**
-- Substituir `src/index.css` integralmente pelo novo design system (azul/roxo, degradês, glows, shimmer, scrollbar, light + dark).
-- Substituir `src/components/ui/button.tsx` pelo novo (variant `default` com `gradient-brand`).
-- Substituir `src/components/ui/tabs.tsx` pelo novo (trigger ativo com degradê + glow).
-- Reescrever `src/components/ui/badge.tsx` preservando o JSX original e aplicando apenas as novas classes (`gradient-brand` no default).
-- Reescrever `src/components/ui/card.tsx` preservando o JSX original (o conteúdo enviado está vazio) e adicionando sutilezas do tema (`glass`, borda suave) sem quebrar API.
-- Remover do `index.css` antigo as classes específicas laranja/verde que não fazem mais sentido (`gradient-text`, `gradient-text-success`, `hero-card`, `sale-button`, `animate-primary-glow` em laranja). Substituir por equivalentes do novo tema (`gradient-brand-text`, etc.) e manter aliases para não quebrar telas que usam os nomes antigos.
+## 1. Exportação em Excel (.xlsx) — núcleo
 
-**Sprint 2 — Layout principal (adaptado ao projeto real)**
-- Adaptar `src/components/layout/AppLayout.tsx` (equivalente local de AppSidebar + AppHeader + CRMLayout) ao novo tema:
-  - Sidebar com `sidebar-gradient` no dark, fundo claro no light.
-  - Logo/título com `gradient-brand-text`.
-  - Item ativo do menu com `gradient-brand` + `glow-primary`.
-  - Header com linha degradê na base, blur/glass.
-  - Adicionar orbs de luz ambiente (decorativos, `pointer-events-none`) no background da área de conteúdo.
-  - **Manter** todos os itens de menu reais do PDV (Dashboard, PDV, Produtos, Estoque, Caixa, Devoluções, Fornecedores, Pedidos, etc.) — não substituir pelos itens de CRM do material enviado.
-- **Não criar** `AppSidebar.tsx`, `AppHeader.tsx` nem `CRMLayout.tsx` separados — manteria o padrão atual do projeto (um único `AppLayout`) para evitar duplicação e refactor cascata em `App.tsx`.
+### Biblioteca
+- Adicionar `xlsx` (SheetJS) — leve, sem dependências, funciona no browser.
+- Criar utilitário `src/lib/xlsx-utils.ts` com:
+  - `exportToXLSX(filename, sheets)` — aceita múltiplas abas
+  - Cada aba: `{ name, columns: ExportColumn[], data }`
+  - Formatação automática: moeda BRL, datas pt-BR, números com 2 casas
+  - Largura de coluna automática (auto-fit)
+  - Cabeçalho em negrito + cor de fundo laranja (cor primária da marca)
 
-**Sprint 3 — Varredura de cores hard-coded**
-- Buscar nas páginas/componentes usos diretos de classes laranja/verde do tema antigo (`text-orange-*`, `bg-green-*`, `from-primary to-warning`, `sale-button`, `hero-card`, `animate-primary-glow`) e atualizar para os novos tokens (`gradient-brand`, `gradient-brand-text`, `glow-primary`, `accent`).
-- Validar que badges "PROMO", botões de ação principal do PDV (Finalizar Venda), e cards de KPI no Dashboard ficam visualmente consistentes com o novo tema.
+### Onde aparece
+- **Produtos** (`/products`): botão "Exportar" passa a abrir um menu com 3 opções:
+  - Exportar CSV (mantido)
+  - **Exportar Excel (.xlsx)** (novo) — abas: `Produtos`, `Códigos de Barras`, `Resumo`
+  - Imprimir / PDF
+- **Estoque** (`/stock`): novo botão **"Exportar Excel"** no header, com abas:
+  - `Posição de Estoque` (todos os produtos: nome, código, categoria, estoque atual, mín, unidade, custo, preço, valor em estoque)
+  - `Estoque Baixo`
+  - `Sem Estoque`
+  - `Movimentações` (filtra pela aba "movimentações" — últimos 90 dias)
+  - `Lotes & Validade` (lote, produto, qtd, validade, dias para vencer)
+  - `Resumo` (KPIs: total produtos, valor em estoque, baixo/sem estoque, vencendo)
 
-### Detalhes técnicos
+---
 
-- **Compatibilidade**: o token `--accent` muda de verde para roxo. Componentes que usavam `bg-accent` para indicar "venda/sucesso" passam a usar `bg-success` (verde mantido como token semântico). Vou fazer essa troca onde semanticamente fizer sentido (ex: botões de finalizar venda, indicadores positivos).
-- **Dark default**: vou aplicar `class="dark"` no `<html>` (em `index.html` ou no root) para manter a experiência atual em dark, deixando o light disponível para futuro toggle.
-- **Sem novas dependências**, sem mudança de rotas, sem mudança de banco.
-- **Theme toggle**: não vou criar `ThemeProvider` nesta passada (não estava no escopo original e o sistema é dark-only hoje). Posso adicionar numa sprint extra se quiser.
+## 2. Catálogo (Produtos) — UX mais robusta
 
-### Arquivos por sprint
+### Filtros e visualização
+- Adicionar barra de filtros acima da lista:
+  - Categoria (select com categorias existentes)
+  - Status (Ativos / Inativos / Todos)
+  - Estoque (Todos / Baixo / Sem estoque / Com estoque)
+  - Faixa de preço (min/max opcional)
+- Toggle de visualização **Lista ↔ Tabela compacta** (tabela densa para gerenciar muitos itens rapidamente)
+- Indicador de quantos produtos estão sendo exibidos / total
+- Botão "Limpar filtros"
 
-```text
-Sprint 1:
-  src/index.css                       (substituir)
-  src/components/ui/button.tsx        (substituir)
-  src/components/ui/tabs.tsx          (substituir)
-  src/components/ui/badge.tsx         (reescrever preservando JSX)
-  src/components/ui/card.tsx          (reescrever preservando JSX)
-  index.html                          (adicionar class="dark" no <html>)
+### Seleção em massa
+- Checkbox "Selecionar todos visíveis" no topo
+- Ações em lote: **Ativar/Desativar**, **Imprimir etiquetas**, **Exportar selecionados**
 
-Sprint 2:
-  src/components/layout/AppLayout.tsx (aplicar novo tema, manter menu real)
+### Pequenos ganhos
+- Mostrar badge "Estoque baixo" / "Sem estoque" no card do produto
+- Ordenação: nome, preço, estoque, criação (dropdown)
 
-Sprint 3:
-  Varredura e ajuste em páginas/components que usam tokens antigos
-  (lista exata definida após Sprint 1+2 estarem aplicadas)
-```
+---
 
-### O que NÃO vou fazer
-- Não vou criar `AppSidebar.tsx`/`AppHeader.tsx`/`CRMLayout.tsx` (quebraria o `App.tsx` atual e duplicaria o `AppLayout`).
-- Não vou trocar os itens de menu do PDV pelos itens de CRM do material colado.
-- Não vou colar JSX vazio dos arquivos 3/4/7/8 — vou regenerar o JSX correto aplicando apenas o estilo novo.
+## 3. Estoque — UX mais robusta
 
+### Filtros na aba Movimentações
+- Período (presets: Hoje, 7 dias, 30 dias, customizado) usando `getPeriodPresets`
+- Tipo de movimento (Compra / Venda / Ajuste +/- / Todos)
+- Busca por produto
+
+### Filtros na aba Estoque Baixo
+- Toggle: Mostrar também "Sem estoque"
+- Ordenar por: maior déficit, nome, categoria
+
+### Aba "Posição de Estoque" (NOVA)
+- Tabela com TODOS os produtos ativos: nome, categoria, estoque atual, mínimo, unidade, custo médio, valor em estoque, status (OK/Baixo/Zerado)
+- Busca + filtro por categoria
+- Esta aba é a base do export "Posição de Estoque"
+
+### Lotes
+- Filtros adicionais: "Apenas vencendo em 30 dias", "Apenas vencidos"
+- Mostrar dias para vencer com cor (vermelho/amarelo/verde)
+
+### Quick actions
+- No card de produto com estoque baixo: botão "Repor" abre dialog de movimentação já pré-preenchido com sugestão de quantidade (`min_stock - stock_current`)
+
+---
+
+## 4. Componente reutilizável
+
+Criar `src/components/export/ExcelExportButton.tsx`:
+- Dropdown com ícone Excel
+- Recebe função `getSheets()` para gerar abas dinamicamente (lazy — só roda no clique)
+- Toast de sucesso com nome do arquivo gerado
+- Loading state durante geração
+
+---
+
+## Arquivos afetados
+
+**Novos:**
+- `src/lib/xlsx-utils.ts` — engine de export Excel
+- `src/components/export/ExcelExportButton.tsx` — botão reutilizável
+- `src/components/products/ProductFilters.tsx` — filtros do catálogo
+- `src/components/stock/StockPositionTab.tsx` — nova aba de posição
+
+**Editados:**
+- `src/pages/Products.tsx` — filtros, toggle vista, ações em lote, botão Excel
+- `src/pages/Stock.tsx` — filtros nas abas, nova aba Posição, botão Excel, quick "Repor"
+- `src/components/import/ProductExporter.tsx` — adicionar opção Excel além de CSV
+- `package.json` — adicionar `xlsx`
+
+**Não tocados:**
+- Esquema do banco (sem migrations)
+- Hooks de dados (`useProducts`, `useStock`, `useLots`) — só consumimos o que já existe
+- Lógica fiscal e do PDV
+
+---
+
+## Detalhes técnicos
+
+- `xlsx` (SheetJS Community) gera arquivos .xlsx 100% no browser, sem servidor
+- Formato numérico via `cell.z = 'R$ #,##0.00'` para moeda, `'dd/mm/yyyy'` para datas
+- Auto-fit de coluna calculado a partir do maior conteúdo (limitado a 50 chars)
+- Cabeçalho estilizado: `s: { font: { bold: true }, fill: { fgColor: { rgb: "EA580C" } } }` (laranja da marca)
+- Nome do arquivo: `produtos_2026-04-29.xlsx`, `estoque_completo_2026-04-29.xlsx`
+- Tudo client-side, respeita RLS atual (só exporta o que o usuário já enxerga)
+
+---
+
+## Fora de escopo (deixar para depois se quiser)
+- Importação de Excel (hoje só CSV) — pode virar Sprint separado
+- Histórico de exports / agendamento
+- Templates de Excel personalizáveis pelo cliente
+
+Confirma que posso seguir com este plano?
