@@ -64,6 +64,30 @@ function maskNcm(v: string): string {
 }
 
 export function FiscalProductTab({ values, onChange, regime = "simples" }: Props) {
+  const [scanActive, setScanActive] = useState(false);
+  const { pause, resume } = useBarcodeScanner(
+    (code) => {
+      onChange({ ean: code.slice(0, 14) });
+      toast.success(`EAN capturado: ${code}`);
+      setScanActive(false);
+      pause();
+    },
+    { ignoreInputs: false, minLength: 6 }
+  );
+  // Start paused — only activates when user clicks scan
+  if (typeof window !== "undefined" && !scanActive) {
+    // idempotent
+    pause();
+  }
+  const startScan = () => {
+    setScanActive(true);
+    resume();
+    toast.info("Aguardando leitura... (5s)");
+    setTimeout(() => {
+      pause();
+      setScanActive(false);
+    }, 5000);
+  };
   return (
     <div className="space-y-4 pt-2">
       <div className="grid sm:grid-cols-2 gap-4">
