@@ -605,6 +605,69 @@ export type Database = {
           },
         ]
       }
+      fiscal_documents: {
+        Row: {
+          ambiente: string
+          chave_acesso: string | null
+          created_at: string
+          created_by: string | null
+          danfe_url: string | null
+          document_type: string
+          id: string
+          numero_nota: number | null
+          obs: string | null
+          protocolo: string | null
+          sale_id: string | null
+          serie: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          valor_impostos: number
+          valor_total: number
+          xml_content: string | null
+        }
+        Insert: {
+          ambiente?: string
+          chave_acesso?: string | null
+          created_at?: string
+          created_by?: string | null
+          danfe_url?: string | null
+          document_type?: string
+          id?: string
+          numero_nota?: number | null
+          obs?: string | null
+          protocolo?: string | null
+          sale_id?: string | null
+          serie?: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          valor_impostos?: number
+          valor_total?: number
+          xml_content?: string | null
+        }
+        Update: {
+          ambiente?: string
+          chave_acesso?: string | null
+          created_at?: string
+          created_by?: string | null
+          danfe_url?: string | null
+          document_type?: string
+          id?: string
+          numero_nota?: number | null
+          obs?: string | null
+          protocolo?: string | null
+          sale_id?: string | null
+          serie?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          valor_impostos?: number
+          valor_total?: number
+          xml_content?: string | null
+        }
+        Relationships: []
+      }
       inventory_count_items: {
         Row: {
           adjustment_reason: string | null
@@ -925,17 +988,28 @@ export type Database = {
           active: boolean | null
           barcode: string | null
           category: string | null
+          cest: string | null
+          cfop: string | null
+          cofins_aliquota: number | null
           controls_lot: boolean | null
           cost_price: number | null
           created_at: string | null
+          csosn: string | null
+          cst_icms: string | null
+          ean: string | null
           extra_attributes: Json | null
+          icms_aliquota: number | null
           id: string
           internal_code: string | null
           min_stock: number | null
           name: string
+          ncm: string | null
+          origem: number | null
+          pis_aliquota: number | null
           sale_price: number
           stock_current: number | null
           tenant_id: string
+          unidade_medida: string | null
           unit: string | null
           updated_at: string | null
           weighted_avg_cost: number | null
@@ -946,17 +1020,28 @@ export type Database = {
           active?: boolean | null
           barcode?: string | null
           category?: string | null
+          cest?: string | null
+          cfop?: string | null
+          cofins_aliquota?: number | null
           controls_lot?: boolean | null
           cost_price?: number | null
           created_at?: string | null
+          csosn?: string | null
+          cst_icms?: string | null
+          ean?: string | null
           extra_attributes?: Json | null
+          icms_aliquota?: number | null
           id?: string
           internal_code?: string | null
           min_stock?: number | null
           name: string
+          ncm?: string | null
+          origem?: number | null
+          pis_aliquota?: number | null
           sale_price: number
           stock_current?: number | null
           tenant_id: string
+          unidade_medida?: string | null
           unit?: string | null
           updated_at?: string | null
           weighted_avg_cost?: number | null
@@ -967,17 +1052,28 @@ export type Database = {
           active?: boolean | null
           barcode?: string | null
           category?: string | null
+          cest?: string | null
+          cfop?: string | null
+          cofins_aliquota?: number | null
           controls_lot?: boolean | null
           cost_price?: number | null
           created_at?: string | null
+          csosn?: string | null
+          cst_icms?: string | null
+          ean?: string | null
           extra_attributes?: Json | null
+          icms_aliquota?: number | null
           id?: string
           internal_code?: string | null
           min_stock?: number | null
           name?: string
+          ncm?: string | null
+          origem?: number | null
+          pis_aliquota?: number | null
           sale_price?: number
           stock_current?: number | null
           tenant_id?: string
+          unidade_medida?: string | null
           unit?: string | null
           updated_at?: string | null
           weighted_avg_cost?: number | null
@@ -1909,6 +2005,35 @@ export type Database = {
         Args: { p_session_id: string }
         Returns: number
       }
+      cancel_fiscal_document: {
+        Args: { p_id: string; p_reason?: string }
+        Returns: {
+          ambiente: string
+          chave_acesso: string | null
+          created_at: string
+          created_by: string | null
+          danfe_url: string | null
+          document_type: string
+          id: string
+          numero_nota: number | null
+          obs: string | null
+          protocolo: string | null
+          sale_id: string | null
+          serie: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          valor_impostos: number
+          valor_total: number
+          xml_content: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "fiscal_documents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_tenant_for_user: {
         Args: {
           p_document?: string
@@ -1946,6 +2071,35 @@ export type Database = {
       decrement_stock: {
         Args: { p_product_id: string; p_quantity: number }
         Returns: undefined
+      }
+      generate_fiscal_document: {
+        Args: { p_document_type?: string; p_sale_id: string }
+        Returns: {
+          ambiente: string
+          chave_acesso: string | null
+          created_at: string
+          created_by: string | null
+          danfe_url: string | null
+          document_type: string
+          id: string
+          numero_nota: number | null
+          obs: string | null
+          protocolo: string | null
+          sale_id: string | null
+          serie: string
+          status: string
+          tenant_id: string
+          updated_at: string
+          valor_impostos: number
+          valor_total: number
+          xml_content: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "fiscal_documents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       generate_internal_barcode: {
         Args: { p_tenant_id: string }
