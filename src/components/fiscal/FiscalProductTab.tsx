@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ExternalLink, HelpCircle } from "lucide-react";
+import { ExternalLink, HelpCircle, ScanLine, Loader2 } from "lucide-react";
+import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
+import { toast } from "sonner";
 
 export interface FiscalFields {
   ncm?: string | null;
@@ -60,6 +64,30 @@ function maskNcm(v: string): string {
 }
 
 export function FiscalProductTab({ values, onChange, regime = "simples" }: Props) {
+  const [scanActive, setScanActive] = useState(false);
+  const { pause, resume } = useBarcodeScanner(
+    (code) => {
+      onChange({ ean: code.slice(0, 14) });
+      toast.success(`EAN capturado: ${code}`);
+      setScanActive(false);
+      pause();
+    },
+    { ignoreInputs: false, minLength: 6 }
+  );
+  // Start paused — only activates when user clicks scan
+  if (typeof window !== "undefined" && !scanActive) {
+    // idempotent
+    pause();
+  }
+  const startScan = () => {
+    setScanActive(true);
+    resume();
+    toast.info("Aguardando leitura... (5s)");
+    setTimeout(() => {
+      pause();
+      setScanActive(false);
+    }, 5000);
+  };
   return (
     <div className="space-y-4 pt-2">
       <div className="grid sm:grid-cols-2 gap-4">
@@ -208,11 +236,17 @@ export function FiscalProductTab({ values, onChange, regime = "simples" }: Props
           <Label className="flex items-center gap-1">
             EAN / GTIN <FieldTip text="Código de barras de 8, 12, 13 ou 14 dígitos. Use 'SEM GTIN' se não houver." />
           </Label>
-          <Input
-            value={values.ean || ""}
-            onChange={(e) => onChange({ ean: e.target.value.slice(0, 14) })}
-            placeholder="7891234567890"
-          />
+          <div className="flex gap-2">
+            <Input
+              value={values.ean || ""}
+              onChange={(e) => onChange({ ean: e.target.value.slice(0, 14) })}
+              placeholder="7891234567890"
+              className="flex-1"
+            />
+            <Button type="button" variant="outline" onClick={startScan} disabled={scanActive} title="Ler com leitor de código de barras">
+              {scanActive ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanLine className="w-4 h-4" />}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

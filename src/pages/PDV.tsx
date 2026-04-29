@@ -4,6 +4,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useProducts, Product } from "@/hooks/useProducts";
 import { useCreateSale, SaleItem } from "@/hooks/useSales";
 import { useFindByBarcode } from "@/hooks/useBarcodes";
+import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { useActiveSession } from "@/hooks/useCashRegister";
 import { SalePayment } from "@/hooks/usePaymentMethods";
 import { PaymentDialog } from "@/components/pdv/PaymentDialog";
@@ -14,13 +15,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Minus, Trash2, ShoppingCart, Check, Barcode, Printer, AlertCircle, DollarSign, Wallet, Tag } from "lucide-react";
+import { Search, Plus, Minus, Trash2, ShoppingCart, Check, Barcode, Printer, AlertCircle, DollarSign, Wallet, Tag, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ReceiptPreview } from "@/components/print/ReceiptPreview";
 import { useTenant } from "@/contexts/TenantContext";
 import { useCompany } from "@/contexts/CompanyContext";
 import { ApplyPromotionDialog } from "@/components/promotions/ApplyPromotionDialog";
 import { Promotion } from "@/hooks/usePromotions";
+import { useFiscal } from "@/hooks/useFiscal";
+import { DanfeViewer } from "@/components/fiscal/DanfeViewer";
+import type { FiscalDocument } from "@/hooks/useFiscalDocuments";
 
 interface CartItem extends SaleItem {
   product_name: string;
@@ -38,9 +42,10 @@ const PDV = () => {
   const [showReceipt, setShowReceipt] = useState(false);
   const [employee, setEmployee] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-  const barcodeBufferRef = useRef("");
-  const barcodeTimeoutRef = useRef<NodeJS.Timeout>();
   const [promoTarget, setPromoTarget] = useState<CartItem | null>(null);
+  const [emittingNfce, setEmittingNfce] = useState(false);
+  const [nfceDoc, setNfceDoc] = useState<FiscalDocument | null>(null);
+  const [nfceItems, setNfceItems] = useState<Array<{ product_name: string; quantity: number; unit_price: number; total: number }>>([]);
 
   const { currentTenant } = useTenant();
   const { hasFeature } = useCompany();
@@ -48,6 +53,7 @@ const PDV = () => {
   const createSale = useCreateSale();
   const findByBarcode = useFindByBarcode();
   const { data: activeSession, isLoading: sessionLoading } = useActiveSession();
+  const { emitNfce } = useFiscal();
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -94,47 +100,9 @@ const PDV = () => {
     }
   }, [findByBarcode, addToCart]);
 
-  // Detecta leitura de código de barras (input rápido)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignora se não está focado no input de busca ou teclas especiais
-      if (e.ctrlKey || e.altKey || e.metaKey) return;
-
-      // Enter submete o código
-      if (e.key === "Enter" && barcodeBufferRef.current.length >= 8) {
-        e.preventDefault();
-        handleBarcodeSearch(barcodeBufferRef.current);
-        barcodeBufferRef.current = "";
-        return;
-      }
-
-      // Apenas dígitos para código de barras
-      if (e.key.length === 1 && /^\d$/.test(e.key)) {
-        barcodeBufferRef.current += e.key;
-
-        // Reset do timeout
-        if (barcodeTimeoutRef.current) {
-          clearTimeout(barcodeTimeoutRef.current);
-        }
-
-        // Se parou de digitar por 50ms, pode ser fim da leitura
-        barcodeTimeoutRef.current = setTimeout(() => {
-          if (barcodeBufferRef.current.length >= 8) {
-            handleBarcodeSearch(barcodeBufferRef.current);
-          }
-          barcodeBufferRef.current = "";
-        }, 100);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      if (barcodeTimeoutRef.current) {
-        clearTimeout(barcodeTimeoutRef.current);
-      }
-    };
-  }, [handleBarcodeSearch]);
+  // Global barcode scanner — detecta leitura rápida (<50ms entre teclas)
+  // ignoreInputs=false porque o foco fica no input de busca
+  useBarcodeScanner((code) => handleBarcodeSearch(code), { minLength: 4, ignoreInputs: false });
 
   // Atalhos de teclado
   useEffect(() => {
@@ -214,6 +182,38 @@ const PDV = () => {
 
     setLastSale({ id: sale.id, netTotal, payments });
     setShowPaymentDialog(false);
+
+    // Auto NFC-e emission if enabled in tenant settings
+    try {
+      const { supabase } = await import("@/integrations/supabase/client");
+      const { data: t } = await supabase
+        .from("tenants")
+        .select("settings")
+        .eq("id", currentTenant?.id || "")
+        .maybeSingle();
+      const fiscal = ((t?.settings as Record<string, unknown>)?.fiscal || {}) as { emite_nfce?: boolean };
+      if (fiscal.emite_nfce) {
+        setEmittingNfce(true);
+        try {
+          const doc = await emitNfce.mutateAsync(sale.id);
+          setNfceDoc(doc as unknown as FiscalDocument);
+          setNfceItems(
+            cart.map((c) => ({
+              product_name: c.product_name,
+              quantity: c.quantity,
+              unit_price: c.unit_price,
+              total: c.total,
+            }))
+          );
+          toast.success("NFC-e emitida!");
+        } finally {
+          setEmittingNfce(false);
+        }
+      }
+    } catch {
+      // already toasted by useFiscal
+    }
+
     setShowSuccess(true);
     setTimeout(() => {
       setShowSuccess(false);
@@ -489,6 +489,26 @@ const PDV = () => {
           }}
         />
       )}
+
+      {/* NFC-e emitting overlay */}
+      {emittingNfce && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3 p-6 rounded-lg border bg-card shadow-lg">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="font-medium">Emitindo NFC-e...</p>
+            <p className="text-xs text-muted-foreground">Não feche a janela</p>
+          </div>
+        </div>
+      )}
+
+      {/* DANFE viewer for emitted NFC-e */}
+      <DanfeViewer
+        document={nfceDoc}
+        open={!!nfceDoc}
+        onOpenChange={(o) => !o && setNfceDoc(null)}
+        items={nfceItems}
+        paymentLabel={lastSale?.payments.map((p) => p.payment_method_code).join(", ")}
+      />
     </AppLayout>
   );
 };

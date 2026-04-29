@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useStockSummary, useStockMovements, useCreateStockMovement, CreateStockMovementInput } from "@/hooks/useStock";
 import { useProducts } from "@/hooks/useProducts";
+import { useFindByBarcode } from "@/hooks/useBarcodes";
+import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { useExpiringProducts } from "@/hooks/useLots";
 import { useLots } from "@/hooks/useLots";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +19,7 @@ import { Package, AlertTriangle, Plus, ArrowUpCircle, ArrowDownCircle, TrendingU
 import { SummaryCardSkeleton, EntryItemSkeleton } from "@/components/ui/skeletons";
 import { ExpiryAlerts } from "@/components/stock/ExpiryAlerts";
 import { LotManager } from "@/components/stock/LotManager";
+import { toast } from "sonner";
 
 const MOVEMENT_TYPES = [
   { value: "purchase", label: "Entrada (Compra)", icon: ArrowUpCircle },
@@ -48,6 +51,23 @@ const Stock = () => {
   const { data: expiringProducts = [] } = useExpiringProducts(30);
   const { data: allLots = [] } = useLots();
   const createMovement = useCreateStockMovement();
+  const findByBarcode = useFindByBarcode();
+
+  // Global barcode scanner — opens movement dialog with product pre-selected
+  useBarcodeScanner(async (code) => {
+    try {
+      const product = await findByBarcode.mutateAsync(code);
+      if (product) {
+        setForm({ product_id: product.id, movement_type: "purchase", quantity: 1, description: `Leitura ${code}` });
+        setDialogOpen(true);
+        toast.success(`${product.name} pré-selecionado`);
+      } else {
+        toast.error(`Produto não encontrado: ${code}`);
+      }
+    } catch {
+      toast.error("Erro ao buscar produto");
+    }
+  });
 
   // Filter only active products for the select dropdown
   const activeProducts = products.filter((p) => p.active !== false);
