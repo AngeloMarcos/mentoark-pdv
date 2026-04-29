@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Download, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { useCashFlow } from "@/hooks/useCashFlow";
 import { format } from "date-fns";
-import { exportCSV } from "@/lib/csv-utils";
+import { generateCSV, downloadCSV } from "@/lib/csv-utils";
 
 export function CashFlowView() {
   const today = new Date();
@@ -25,17 +25,16 @@ export function CashFlowView() {
   }, [rows]);
 
   const handleExport = () => {
-    exportCSV(
-      rows.map((r) => ({
-        Data: format(new Date(r.date + "T00:00:00"), "dd/MM/yyyy"),
-        Descrição: r.description,
-        Tipo: r.type === "income" ? "Entrada" : "Saída",
-        Forma: r.payment_method ?? "",
-        Valor: r.amount.toFixed(2).replace(".", ","),
-        Saldo: r.balance.toFixed(2).replace(".", ","),
-      })),
-      `fluxo-de-caixa-${start}-a-${end}`,
-    );
+    const data = rows.map((r) => ({
+      Data: format(new Date(r.date + "T00:00:00"), "dd/MM/yyyy"),
+      Descricao: r.description,
+      Tipo: r.type === "income" ? "Entrada" : "Saida",
+      Forma: r.payment_method ?? "",
+      Valor: r.amount.toFixed(2).replace(".", ","),
+      Saldo: r.balance.toFixed(2).replace(".", ","),
+    }));
+    const csv = generateCSV(data, ["Data", "Descricao", "Tipo", "Forma", "Valor", "Saldo"]);
+    downloadCSV(csv, `fluxo-de-caixa-${start}-a-${end}.csv`);
   };
 
   return (
