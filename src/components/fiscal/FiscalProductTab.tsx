@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ExternalLink, HelpCircle } from "lucide-react";
+import { ExternalLink, HelpCircle, ScanLine, Loader2 } from "lucide-react";
+import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
+import { toast } from "sonner";
 
 export interface FiscalFields {
   ncm?: string | null;
