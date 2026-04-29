@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { FileText, Save, Loader2, AlertTriangle } from "lucide-react";
 import { useCompanySettings, useUpdateCompanySettings } from "@/hooks/useCompanySettings";
-import { maskCNPJCPF } from "@/lib/br-masks";
+import { maskCpfCnpj } from "@/lib/br-masks";
 import { toast } from "sonner";
 
 interface FiscalSettings {
@@ -65,7 +65,7 @@ export function FiscalSettingsTab() {
               <Label>CNPJ Emissor</Label>
               <Input
                 value={fiscal.emitter_cnpj || ""}
-                onChange={(e) => update({ emitter_cnpj: maskCNPJCPF(e.target.value) })}
+                onChange={(e) => update({ emitter_cnpj: maskCpfCnpj(e.target.value) })}
                 placeholder="00.000.000/0001-00"
               />
             </div>

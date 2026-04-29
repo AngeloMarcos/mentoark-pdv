@@ -9,7 +9,7 @@ import { useTenant } from "@/contexts/TenantContext";
 import { useUpdateTenant } from "@/hooks/useTenants";
 import { useCompanySettings, useUpdateCompanySettings } from "@/hooks/useCompanySettings";
 import { SEGMENT_OPTIONS } from "@/components/onboarding/SegmentFeatures";
-import { maskCNPJCPF, maskPhone, maskCEP } from "@/lib/br-masks";
+import { maskCpfCnpj, maskPhone, maskCEP } from "@/lib/br-masks";
 import { toast } from "sonner";
 
 interface AddressData {
@@ -88,7 +88,7 @@ export function CompanyDataTab() {
               <Label>CNPJ / CPF</Label>
               <Input
                 value={form.document}
-                onChange={(e) => setForm({ ...form, document: maskCNPJCPF(e.target.value) })}
+                onChange={(e) => setForm({ ...form, document: maskCpfCnpj(e.target.value) })}
                 placeholder="00.000.000/0001-00"
               />
             </div>
