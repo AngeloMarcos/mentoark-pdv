@@ -401,7 +401,17 @@ export function ProductFormDialog({ open, onOpenChange, editingProduct, onSubmit
           >
             {isPending ? "Salvando..." : editingProduct ? "Salvar" : "Criar Produto"}
           </Button>
-        </div>
+            </div>
+          </TabsContent>
+          <TabsContent value="fiscal">
+            <div className="pt-4">
+              <FiscalProductTab
+                values={form as FiscalFields}
+                onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
