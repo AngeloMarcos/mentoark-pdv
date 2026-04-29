@@ -373,3 +373,75 @@
     background: hsl(226 90% 62% / 0.40);
   }
 }
+
+/* ──────────────────────────────────────────────
+   PRINT STYLES — Relatórios em PDF (window.print)
+   ────────────────────────────────────────────── */
+@media print {
+  /* Reset cores para preto/branco e força fundo branco */
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Esconde elementos que não devem ser impressos */
+  aside,
+  header,
+  nav,
+  .no-print,
+  [data-sidebar],
+  [role="dialog"] button[aria-label="Close"],
+  button {
+    display: none !important;
+  }
+
+  /* Mostra explicitamente botões marcados como imprimíveis (caso futuro) */
+  .print-show {
+    display: revert !important;
+  }
+
+  /* Layout: ocupa página inteira, remove paddings de scroll */
+  main, .print-area {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Cards perdem sombras/bordas pesadas para tinta */
+  .card, [class*="rounded"] {
+    box-shadow: none !important;
+    border-color: #ddd !important;
+  }
+
+  /* Tabelas: bordas finas, evita quebra dentro de linhas */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }
+  tr, td, th { page-break-inside: avoid; }
+  th, td {
+    border: 1px solid #ccc !important;
+    padding: 4px 8px !important;
+    color: #000 !important;
+  }
+
+  /* Quebra de página utilitária */
+  .page-break { page-break-before: always; }
+  .avoid-break { page-break-inside: avoid; }
+
+  /* Tipografia limpa */
+  h1, h2, h3, h4 { color: #000 !important; }
+  a { color: #000 !important; text-decoration: none !important; }
+
+  /* Margens de página */
+  @page {
+    margin: 1.5cm 1cm;
+    size: A4;
+  }
+}
