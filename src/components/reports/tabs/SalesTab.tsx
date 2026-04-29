@@ -5,8 +5,8 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, BarChart, 
 import { ShoppingCart, DollarSign, Receipt, Trophy } from "lucide-react";
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { KpiCard } from "./KpiCard";
-import { TableExportActions } from "./TableExportActions";
+import { KpiCard } from "../KpiCard";
+import { TableExportActions } from "../TableExportActions";
 import { useDailyReport, useProductRevenueReport, usePaymentMethodReport } from "@/hooks/useReports";
 import { useHourlyReport, useSalesHistory } from "@/hooks/useBIReports";
 import { formatCurrency } from "@/lib/export-utils";
