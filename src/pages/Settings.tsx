@@ -2,11 +2,12 @@ import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PermissionGuard } from "@/components/auth/PermissionGuard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, ShoppingBag, FileText, Plug } from "lucide-react";
+import { Building2, ShoppingBag, FileText, Plug, ShieldCheck } from "lucide-react";
 import { CompanyDataTab } from "@/components/settings/CompanyDataTab";
 import { PdvSettingsTab } from "@/components/settings/PdvSettingsTab";
 import { FiscalSettingsTab } from "@/components/settings/FiscalSettingsTab";
 import { IntegrationsTab } from "@/components/settings/IntegrationsTab";
+import { PrivacyTab } from "@/components/settings/PrivacyTab";
 
 const Settings = () => {
   const [params, setParams] = useSearchParams();
@@ -23,7 +24,7 @@ const Settings = () => {
       <AppLayout title="Configurações">
         <div className="max-w-5xl mx-auto animate-fade-in">
           <Tabs value={tab} onValueChange={setTab} className="w-full">
-            <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full">
+            <TabsList className="grid grid-cols-3 md:grid-cols-5 w-full">
               <TabsTrigger value="company" className="gap-2">
                 <Building2 className="w-4 h-4" />
                 <span className="hidden sm:inline">Empresa</span>
@@ -40,6 +41,10 @@ const Settings = () => {
                 <Plug className="w-4 h-4" />
                 <span className="hidden sm:inline">Integrações</span>
               </TabsTrigger>
+              <TabsTrigger value="privacy" className="gap-2">
+                <ShieldCheck className="w-4 h-4" />
+                <span className="hidden sm:inline">Privacidade</span>
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="company" className="mt-6">
@@ -53,6 +58,9 @@ const Settings = () => {
             </TabsContent>
             <TabsContent value="integrations" className="mt-6">
               <IntegrationsTab />
+            </TabsContent>
+            <TabsContent value="privacy" className="mt-6">
+              <PrivacyTab />
             </TabsContent>
           </Tabs>
         </div>
