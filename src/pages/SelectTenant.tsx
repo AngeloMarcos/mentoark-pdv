@@ -24,7 +24,7 @@ const SEGMENTS = [
 const SelectTenant = () => {
   const navigate = useNavigate();
   const { user, isLoading: authLoading, signOut } = useAuth();
-  const { tenants, setCurrentTenant, isLoading: tenantsLoading, refetchTenants } = useTenant();
+  const { currentTenant, tenants, setCurrentTenant, isLoading: tenantsLoading, refetchTenants } = useTenant();
   const createTenant = useCreateTenant();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -35,6 +35,12 @@ const SelectTenant = () => {
       navigate("/auth");
     }
   }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    if (!authLoading && !tenantsLoading && user && currentTenant) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [user, currentTenant, authLoading, tenantsLoading, navigate]);
 
   const handleSelectTenant = (tenant: typeof tenants[0]) => {
     setCurrentTenant(tenant);

@@ -25,10 +25,11 @@ const TenantContext = createContext<TenantContextType | undefined>(undefined);
 const TENANT_STORAGE_KEY = "pdv_current_tenant_id";
 
 export function TenantProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const [currentTenant, setCurrentTenantState] = useState<Tenant | null>(null);
+  const [hasResolvedTenant, setHasResolvedTenant] = useState(false);
 
-  const { data: tenants = [], isLoading, refetch: refetchTenants } = useQuery({
+  const { data: tenants = [], isLoading: tenantsQueryLoading, refetch: refetchTenants } = useQuery({
     queryKey: ["tenants", user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -61,16 +62,46 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     enabled: !!user,
   });
 
-  // Load saved tenant on mount
   useEffect(() => {
-    if (tenants.length > 0 && !currentTenant) {
-      const savedTenantId = localStorage.getItem(TENANT_STORAGE_KEY);
-      const savedTenant = tenants.find((t) => t.id === savedTenantId);
-      if (savedTenant) {
-        setCurrentTenantState(savedTenant);
-      }
+    setCurrentTenantState(null);
+    setHasResolvedTenant(false);
+  }, [user?.id]);
+
+  // Resolve selected tenant after auth + tenant list are available
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!user) {
+      setHasResolvedTenant(true);
+      return;
     }
-  }, [tenants, currentTenant]);
+
+    if (tenantsQueryLoading) return;
+
+    const savedTenantId = localStorage.getItem(TENANT_STORAGE_KEY);
+    const savedTenant = savedTenantId ? tenants.find((tenant) => tenant.id === savedTenantId) ?? null : null;
+
+    setCurrentTenantState((previousTenant) => {
+      if (previousTenant) {
+        const refreshedTenant = tenants.find((tenant) => tenant.id === previousTenant.id);
+        if (refreshedTenant) return refreshedTenant;
+      }
+
+      if (savedTenant) return savedTenant;
+      if (tenants.length === 1) return tenants[0];
+      return null;
+    });
+
+    if (savedTenant) {
+      localStorage.setItem(TENANT_STORAGE_KEY, savedTenant.id);
+    } else if (tenants.length === 1) {
+      localStorage.setItem(TENANT_STORAGE_KEY, tenants[0].id);
+    } else if (savedTenantId && !tenants.some((tenant) => tenant.id === savedTenantId)) {
+      localStorage.removeItem(TENANT_STORAGE_KEY);
+    }
+
+    setHasResolvedTenant(true);
+  }, [authLoading, user, tenants, tenantsQueryLoading]);
 
   const setCurrentTenant = (tenant: Tenant | null) => {
     setCurrentTenantState(tenant);
@@ -87,7 +118,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         currentTenant,
         setCurrentTenant,
         tenants,
-        isLoading,
+        isLoading: authLoading || (!!user && (!hasResolvedTenant || tenantsQueryLoading)),
         refetchTenants,
       }}
     >

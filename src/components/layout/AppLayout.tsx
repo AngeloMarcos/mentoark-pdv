@@ -61,7 +61,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isLoading: authLoading, signOut } = useAuth();
-  const { currentTenant, setCurrentTenant } = useTenant();
+  const { currentTenant, setCurrentTenant, isLoading: tenantLoading } = useTenant();
   const { hasFeature, isOnboardingCompleted } = useCompany();
 
   const { role } = useCurrentRole();
@@ -83,10 +83,10 @@ export function AppLayout({ children, title }: AppLayoutProps) {
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
-    if (!authLoading && user && !currentTenant) {
+    if (!authLoading && !tenantLoading && user && !currentTenant) {
       navigate("/select-tenant");
     }
-  }, [user, currentTenant, authLoading, navigate]);
+  }, [user, currentTenant, authLoading, tenantLoading, navigate]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -98,7 +98,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
     navigate("/select-tenant");
   };
 
-  if (authLoading || !user || !currentTenant) {
+  if (authLoading || tenantLoading || !user || !currentTenant) {
     return <AppLayoutSkeleton />;
   }
 
