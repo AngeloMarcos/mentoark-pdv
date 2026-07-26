@@ -56,6 +56,7 @@ export interface CloseCashInput {
   closing_balance: number;
   difference_reason?: string;
   notes?: string;
+  discrepancy_by_method?: Record<string, { expected: number; counted: number; difference: number }>;
 }
 
 export interface CashMovementInput {
