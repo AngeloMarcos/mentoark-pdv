@@ -370,6 +370,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "customer_credits_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers_active"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "customer_credits_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
@@ -421,6 +428,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "customer_points_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers_active"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "customer_points_sale_id_fkey"
             columns: ["sale_id"]
             isOneToOne: false
@@ -439,6 +453,7 @@ export type Database = {
       customers: {
         Row: {
           created_at: string | null
+          deleted_at: string | null
           document: string | null
           email: string | null
           id: string
@@ -449,6 +464,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          deleted_at?: string | null
           document?: string | null
           email?: string | null
           id?: string
@@ -459,6 +475,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          deleted_at?: string | null
           document?: string | null
           email?: string | null
           id?: string
@@ -484,6 +501,7 @@ export type Database = {
           contract_type: string | null
           cpf: string | null
           created_at: string | null
+          deleted_at: string | null
           department: string | null
           email: string | null
           hire_date: string | null
@@ -506,6 +524,7 @@ export type Database = {
           contract_type?: string | null
           cpf?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           department?: string | null
           email?: string | null
           hire_date?: string | null
@@ -528,6 +547,7 @@ export type Database = {
           contract_type?: string | null
           cpf?: string | null
           created_at?: string | null
+          deleted_at?: string | null
           department?: string | null
           email?: string | null
           hire_date?: string | null
@@ -750,6 +770,13 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "inventory_count_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_active"
+            referencedColumns: ["id"]
+          },
         ]
       }
       inventory_counts: {
@@ -945,10 +972,121 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "product_barcodes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_active"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "product_barcodes_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_images: {
+        Row: {
+          created_at: string
+          id: string
+          is_primary: boolean
+          position: number
+          product_id: string
+          public_url: string | null
+          storage_path: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          position?: number
+          product_id: string
+          public_url?: string | null
+          storage_path: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          position?: number
+          product_id?: string
+          public_url?: string | null
+          storage_path?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_images_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_images_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_active"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_kits: {
+        Row: {
+          child_product_id: string
+          created_at: string
+          id: string
+          parent_product_id: string
+          quantity: number
+          tenant_id: string
+        }
+        Insert: {
+          child_product_id: string
+          created_at?: string
+          id?: string
+          parent_product_id: string
+          quantity?: number
+          tenant_id: string
+        }
+        Update: {
+          child_product_id?: string
+          created_at?: string
+          id?: string
+          parent_product_id?: string
+          quantity?: number
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_kits_child_product_id_fkey"
+            columns: ["child_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_kits_child_product_id_fkey"
+            columns: ["child_product_id"]
+            isOneToOne: false
+            referencedRelation: "products_active"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_kits_parent_product_id_fkey"
+            columns: ["parent_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_kits_parent_product_id_fkey"
+            columns: ["parent_product_id"]
+            isOneToOne: false
+            referencedRelation: "products_active"
             referencedColumns: ["id"]
           },
         ]
@@ -1005,10 +1143,77 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "product_lots_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_active"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "product_lots_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_variants: {
+        Row: {
+          active: boolean
+          attributes: Json
+          barcode: string | null
+          cost_price: number | null
+          created_at: string
+          id: string
+          product_id: string
+          sale_price: number | null
+          sku: string
+          stock_current: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          attributes?: Json
+          barcode?: string | null
+          cost_price?: number | null
+          created_at?: string
+          id?: string
+          product_id: string
+          sale_price?: number | null
+          sku: string
+          stock_current?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          attributes?: Json
+          barcode?: string | null
+          cost_price?: number | null
+          created_at?: string
+          id?: string
+          product_id?: string
+          sale_price?: number | null
+          sku?: string
+          stock_current?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_active"
             referencedColumns: ["id"]
           },
         ]
@@ -1026,6 +1231,7 @@ export type Database = {
           created_at: string | null
           csosn: string | null
           cst_icms: string | null
+          deleted_at: string | null
           ean: string | null
           extra_attributes: Json | null
           icms_aliquota: number | null
@@ -1058,6 +1264,7 @@ export type Database = {
           created_at?: string | null
           csosn?: string | null
           cst_icms?: string | null
+          deleted_at?: string | null
           ean?: string | null
           extra_attributes?: Json | null
           icms_aliquota?: number | null
@@ -1090,6 +1297,7 @@ export type Database = {
           created_at?: string | null
           csosn?: string | null
           cst_icms?: string | null
+          deleted_at?: string | null
           ean?: string | null
           extra_attributes?: Json | null
           icms_aliquota?: number | null
@@ -1228,6 +1436,13 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "purchase_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_active"
+            referencedColumns: ["id"]
+          },
         ]
       }
       purchase_orders: {
@@ -1333,6 +1548,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sale_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_active"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "sale_items_sale_id_fkey"
             columns: ["sale_id"]
             isOneToOne: false
@@ -1426,6 +1648,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_return_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_active"
             referencedColumns: ["id"]
           },
           {
@@ -1563,6 +1792,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sales_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers_active"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "sales_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
@@ -1574,6 +1810,58 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_by_warehouse: {
+        Row: {
+          id: string
+          product_id: string
+          quantity: number
+          reserved: number
+          tenant_id: string
+          updated_at: string
+          warehouse_id: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          quantity?: number
+          reserved?: number
+          tenant_id: string
+          updated_at?: string
+          warehouse_id: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          quantity?: number
+          reserved?: number
+          tenant_id?: string
+          updated_at?: string
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_by_warehouse_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_by_warehouse_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_active"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_by_warehouse_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
             referencedColumns: ["id"]
           },
         ]
@@ -1618,6 +1906,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_active"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "stock_movements_sale_id_fkey"
             columns: ["sale_id"]
             isOneToOne: false
@@ -1633,6 +1928,138 @@ export type Database = {
           },
         ]
       }
+      stock_reservations: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          product_id: string
+          quantity: number
+          reference_id: string | null
+          reference_type: string | null
+          status: string
+          tenant_id: string
+          warehouse_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          product_id: string
+          quantity: number
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string
+          tenant_id: string
+          warehouse_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          product_id?: string
+          quantity?: number
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string
+          tenant_id?: string
+          warehouse_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_reservations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_reservations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_active"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_reservations_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_transfers: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          from_warehouse_id: string
+          id: string
+          notes: string | null
+          product_id: string
+          quantity: number
+          status: string
+          tenant_id: string
+          to_warehouse_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          from_warehouse_id: string
+          id?: string
+          notes?: string | null
+          product_id: string
+          quantity: number
+          status?: string
+          tenant_id: string
+          to_warehouse_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          from_warehouse_id?: string
+          id?: string
+          notes?: string | null
+          product_id?: string
+          quantity?: number
+          status?: string
+          tenant_id?: string
+          to_warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_transfers_from_warehouse_id_fkey"
+            columns: ["from_warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_transfers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_transfers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_active"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_transfers_to_warehouse_id_fkey"
+            columns: ["to_warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           active: boolean
@@ -1644,6 +2071,7 @@ export type Database = {
           city: string | null
           complement: string | null
           created_at: string
+          deleted_at: string | null
           document: string | null
           due_days: number
           email: string | null
@@ -1673,6 +2101,7 @@ export type Database = {
           city?: string | null
           complement?: string | null
           created_at?: string
+          deleted_at?: string | null
           document?: string | null
           due_days?: number
           email?: string | null
@@ -1702,6 +2131,7 @@ export type Database = {
           city?: string | null
           complement?: string | null
           created_at?: string
+          deleted_at?: string | null
           document?: string | null
           due_days?: number
           email?: string | null
@@ -1795,6 +2225,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tab_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_active"
             referencedColumns: ["id"]
           },
           {
@@ -2058,9 +2495,198 @@ export type Database = {
         }
         Relationships: []
       }
+      warehouses: {
+        Row: {
+          active: boolean
+          address: string | null
+          code: string
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          code: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          code?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      customers_active: {
+        Row: {
+          created_at: string | null
+          deleted_at: string | null
+          document: string | null
+          email: string | null
+          id: string | null
+          name: string | null
+          notes: string | null
+          phone: string | null
+          tenant_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          deleted_at?: string | null
+          document?: string | null
+          email?: string | null
+          id?: string | null
+          name?: string | null
+          notes?: string | null
+          phone?: string | null
+          tenant_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          deleted_at?: string | null
+          document?: string | null
+          email?: string | null
+          id?: string | null
+          name?: string | null
+          notes?: string | null
+          phone?: string | null
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products_active: {
+        Row: {
+          active: boolean | null
+          barcode: string | null
+          category: string | null
+          cest: string | null
+          cfop: string | null
+          cofins_aliquota: number | null
+          controls_lot: boolean | null
+          cost_price: number | null
+          created_at: string | null
+          csosn: string | null
+          cst_icms: string | null
+          deleted_at: string | null
+          ean: string | null
+          extra_attributes: Json | null
+          icms_aliquota: number | null
+          id: string | null
+          internal_code: string | null
+          min_stock: number | null
+          name: string | null
+          ncm: string | null
+          origem: number | null
+          pis_aliquota: number | null
+          sale_price: number | null
+          stock_current: number | null
+          tenant_id: string | null
+          unidade_medida: string | null
+          unit: string | null
+          updated_at: string | null
+          weighted_avg_cost: number | null
+          wholesale_min_qty: number | null
+          wholesale_price: number | null
+        }
+        Insert: {
+          active?: boolean | null
+          barcode?: string | null
+          category?: string | null
+          cest?: string | null
+          cfop?: string | null
+          cofins_aliquota?: number | null
+          controls_lot?: boolean | null
+          cost_price?: number | null
+          created_at?: string | null
+          csosn?: string | null
+          cst_icms?: string | null
+          deleted_at?: string | null
+          ean?: string | null
+          extra_attributes?: Json | null
+          icms_aliquota?: number | null
+          id?: string | null
+          internal_code?: string | null
+          min_stock?: number | null
+          name?: string | null
+          ncm?: string | null
+          origem?: number | null
+          pis_aliquota?: number | null
+          sale_price?: number | null
+          stock_current?: number | null
+          tenant_id?: string | null
+          unidade_medida?: string | null
+          unit?: string | null
+          updated_at?: string | null
+          weighted_avg_cost?: number | null
+          wholesale_min_qty?: number | null
+          wholesale_price?: number | null
+        }
+        Update: {
+          active?: boolean | null
+          barcode?: string | null
+          category?: string | null
+          cest?: string | null
+          cfop?: string | null
+          cofins_aliquota?: number | null
+          controls_lot?: boolean | null
+          cost_price?: number | null
+          created_at?: string | null
+          csosn?: string | null
+          cst_icms?: string | null
+          deleted_at?: string | null
+          ean?: string | null
+          extra_attributes?: Json | null
+          icms_aliquota?: number | null
+          id?: string | null
+          internal_code?: string | null
+          min_stock?: number | null
+          name?: string | null
+          ncm?: string | null
+          origem?: number | null
+          pis_aliquota?: number | null
+          sale_price?: number | null
+          stock_current?: number | null
+          tenant_id?: string | null
+          unidade_medida?: string | null
+          unit?: string | null
+          updated_at?: string | null
+          weighted_avg_cost?: number | null
+          wholesale_min_qty?: number | null
+          wholesale_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       accept_invitation: { Args: { p_token: string }; Returns: string }
@@ -2100,6 +2726,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      consume_lots_fefo: {
+        Args: { _product_id: string; _quantity: number; _tenant_id: string }
+        Returns: Json
       }
       create_tenant_for_user: {
         Args: {
@@ -2290,6 +2920,18 @@ export type Database = {
           tenant_id: string
         }[]
       }
+      list_expiring_lots: {
+        Args: { _days?: number }
+        Returns: {
+          days_left: number
+          expiry_date: string
+          lot_id: string
+          lot_number: string
+          product_id: string
+          product_name: string
+          quantity: number
+        }[]
+      }
       list_suppliers_basic: {
         Args: { p_tenant_id: string }
         Returns: {
@@ -2358,6 +3000,7 @@ export type Database = {
         Args: { p_tenant_id: string }
         Returns: undefined
       }
+      soft_delete_product: { Args: { _product_id: string }; Returns: undefined }
       super_create_tenant_with_admin: {
         Args: {
           p_admin_email: string
@@ -2383,6 +3026,16 @@ export type Database = {
           user_count: number
         }[]
       }
+      transfer_stock: {
+        Args: {
+          _from_warehouse: string
+          _notes?: string
+          _product_id: string
+          _quantity: number
+          _to_warehouse: string
+        }
+        Returns: string
+      }
       update_weighted_avg_cost: {
         Args: {
           p_incoming_cost: number
@@ -2393,6 +3046,10 @@ export type Database = {
       }
       user_belongs_to_tenant: { Args: { _tenant_id: string }; Returns: boolean }
       validate_ean: { Args: { barcode: string }; Returns: boolean }
+      write_off_expired_lot: {
+        Args: { _lot_id: string; _reason?: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
