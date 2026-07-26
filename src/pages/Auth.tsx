@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Loader2, Check, X } from "lucide-react";
-import brandIcon from "@/assets/brand-icon.png";
+import brandLogo from "@/assets/mentoark-logo.png.asset.json";
 import { AuthSkeleton } from "@/components/ui/skeletons";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import { PasswordStrength } from "@/components/auth/PasswordStrength";
