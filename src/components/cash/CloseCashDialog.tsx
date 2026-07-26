@@ -114,11 +114,22 @@ export function CloseCashDialog({ session, onSuccess }: CloseCashDialogProps) {
       return sum + m.expected;
     }, 0);
 
+    const discrepancy_by_method: Record<string, { expected: number; counted: number; difference: number }> = {};
+    for (const m of paymentMethods) {
+      const counted = m.requiresCount ? parseFloat(m.counted) || 0 : m.expected;
+      discrepancy_by_method[m.code] = {
+        expected: Number(m.expected.toFixed(2)),
+        counted: Number(counted.toFixed(2)),
+        difference: Number((counted - m.expected).toFixed(2)),
+      };
+    }
+
     await closeCash.mutateAsync({
       session_id: session.id,
       closing_balance: closingBalance,
       difference_reason: hasCashDifference ? differenceReason : undefined,
       notes: notes || undefined,
+      discrepancy_by_method,
     });
 
     onSuccess?.();
