@@ -44,6 +44,8 @@ const ALL_NAV_ITEMS: { path: string; label: string; icon: typeof LayoutDashboard
   { path: "/products", label: "Produtos", icon: Package, feature: null, permission: "products" },
   { path: "/customers", label: "Clientes", icon: Users, feature: null, permission: "customers" },
   { path: "/stock", label: "Estoque", icon: Warehouse, feature: null, permission: "stock" },
+  { path: "/warehouses", label: "Depósitos", icon: Warehouse, feature: null, permission: "stock" },
+  { path: "/validades", label: "Validades", icon: Warehouse, feature: null, permission: "stock" },
   { path: "/compras", label: "Compras", icon: Truck, feature: null, permission: "compras" },
   { path: "/promotions", label: "Promoções", icon: Tag, feature: null, permission: "promotions" },
   { path: "/reports", label: "Relatórios", icon: BarChart2, feature: null, permission: "reports" },
