@@ -285,6 +285,17 @@ export function useCreateSale() {
           description: `Venda #${sale.id.slice(0, 8)}`,
           sale_id: sale.id,
         });
+
+        // FEFO: baixa automática de lotes (se produto controla lote)
+        try {
+          await supabase.rpc("consume_lots_fefo", {
+            _tenant_id: currentTenant.id,
+            _product_id: item.product_id,
+            _quantity: item.quantity,
+          });
+        } catch (e) {
+          console.warn("[FEFO] falhou (produto pode não controlar lote):", e);
+        }
       }
 
       // Create financial entry
