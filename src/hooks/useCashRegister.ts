@@ -334,6 +334,7 @@ export function useCloseCash() {
           difference_reason: input.difference_reason,
           notes: input.notes,
           status: "closed",
+          discrepancy_by_method: input.discrepancy_by_method ?? null,
         })
         .eq("id", input.session_id)
         .select()
