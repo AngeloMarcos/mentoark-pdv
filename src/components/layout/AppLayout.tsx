@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { AppLayoutSkeleton } from "@/components/ui/skeletons";
 import { useCurrentRole } from "@/hooks/usePermission";
 import { roleHasPermission, Permission } from "@/lib/permissions";
+import brandLogo from "@/assets/mentoark-logo.png.asset.json";
 
 const ALL_NAV_ITEMS: { path: string; label: string; icon: typeof LayoutDashboard; feature: string | null; permission: Permission }[] = [
   { path: "/dashboard", label: "Painel", icon: LayoutDashboard, feature: null, permission: "dashboard" },
