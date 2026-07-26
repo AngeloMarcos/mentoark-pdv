@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { z } from "zod";
-import { ShoppingCart, Loader2, Check, X } from "lucide-react";
+import { Loader2, Check, X } from "lucide-react";
+import brandIcon from "@/assets/brand-icon.png";
 import { AuthSkeleton } from "@/components/ui/skeletons";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import { PasswordStrength } from "@/components/auth/PasswordStrength";
@@ -130,11 +131,11 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-secondary/30 p-4">
       <Card className="w-full max-w-md animate-fade-in">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-16 h-16 bg-primary rounded-2xl flex items-center justify-center">
-            <ShoppingCart className="w-8 h-8 text-primary-foreground" />
+          <div className="mx-auto w-20 h-20 rounded-2xl overflow-hidden flex items-center justify-center bg-primary/10 p-2">
+            <img src={brandIcon} alt="Nexus Retail Cloud" className="w-full h-full object-contain" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">PDV Universal</CardTitle>
+            <CardTitle className="text-2xl font-bold">Nexus Retail Cloud</CardTitle>
             <CardDescription>Sistema de Ponto de Venda</CardDescription>
           </div>
         </CardHeader>
