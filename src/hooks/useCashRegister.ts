@@ -387,6 +387,9 @@ export function useCreateCashMovement() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["cash_movements"] });
+      queryClient.invalidateQueries({ queryKey: ["financial_entries"] });
+      queryClient.invalidateQueries({ queryKey: ["financial_dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["cash_flow"] });
       const typeLabel = variables.movement_type === "supply" ? "Suprimento" : "Sangria";
       toast.success(`${typeLabel} registrado com sucesso!`);
     },
