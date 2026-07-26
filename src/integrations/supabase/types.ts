@@ -2232,6 +2232,13 @@ export type Database = {
           tenant_name: string
         }[]
       }
+      get_session_payment_breakdown: {
+        Args: { p_session_id: string }
+        Returns: {
+          expected: number
+          payment_method: string
+        }[]
+      }
       get_tenant_members: {
         Args: { p_tenant_id: string }
         Returns: {
