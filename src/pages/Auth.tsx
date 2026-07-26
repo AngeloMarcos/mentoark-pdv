@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { z } from "zod";
-import { ShoppingCart, Loader2, Check, X } from "lucide-react";
+import { Loader2, Check, X } from "lucide-react";
+import brandIcon from "@/assets/brand-icon.png";
 import { AuthSkeleton } from "@/components/ui/skeletons";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import { PasswordStrength } from "@/components/auth/PasswordStrength";
