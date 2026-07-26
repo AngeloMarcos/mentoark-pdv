@@ -56,6 +56,7 @@ export interface CloseCashInput {
   closing_balance: number;
   difference_reason?: string;
   notes?: string;
+  discrepancy_by_method?: Record<string, { expected: number; counted: number; difference: number }>;
 }
 
 export interface CashMovementInput {
@@ -212,17 +213,21 @@ export function useOpenCash() {
       if (!currentTenant) throw new Error("Nenhuma empresa selecionada");
       if (!user) throw new Error("Usuário não autenticado");
 
-      // Verifica se já tem sessão aberta
+      // Verifica se já tem sessão aberta (por usuário OU por caixa)
       const { data: existing } = await supabase
         .from("cash_sessions")
-        .select("id")
+        .select("id, user_id, register_id")
         .eq("tenant_id", currentTenant.id)
-        .eq("user_id", user.id)
         .eq("status", "open")
+        .or(`user_id.eq.${user.id},register_id.eq.${input.register_id}`)
         .maybeSingle();
 
       if (existing) {
-        throw new Error("Você já possui um caixa aberto");
+        throw new Error(
+          existing.register_id === input.register_id
+            ? "Este caixa já está aberto por outro operador"
+            : "Você já possui um caixa aberto"
+        );
       }
 
       // Cria a sessão
@@ -329,6 +334,7 @@ export function useCloseCash() {
           difference_reason: input.difference_reason,
           notes: input.notes,
           status: "closed",
+          discrepancy_by_method: input.discrepancy_by_method ?? null,
         })
         .eq("id", input.session_id)
         .select()
@@ -381,6 +387,9 @@ export function useCreateCashMovement() {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["cash_movements"] });
+      queryClient.invalidateQueries({ queryKey: ["financial_entries"] });
+      queryClient.invalidateQueries({ queryKey: ["financial_dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["cash_flow"] });
       const typeLabel = variables.movement_type === "supply" ? "Suprimento" : "Sangria";
       toast.success(`${typeLabel} registrado com sucesso!`);
     },

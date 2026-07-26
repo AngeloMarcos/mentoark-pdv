@@ -262,6 +262,7 @@ export type Database = {
           created_at: string | null
           difference: number | null
           difference_reason: string | null
+          discrepancy_by_method: Json | null
           expected_balance: number | null
           id: string
           notes: string | null
@@ -278,6 +279,7 @@ export type Database = {
           created_at?: string | null
           difference?: number | null
           difference_reason?: string | null
+          discrepancy_by_method?: Json | null
           expected_balance?: number | null
           id?: string
           notes?: string | null
@@ -294,6 +296,7 @@ export type Database = {
           created_at?: string | null
           difference?: number | null
           difference_reason?: string | null
+          discrepancy_by_method?: Json | null
           expected_balance?: number | null
           id?: string
           notes?: string | null
@@ -2061,6 +2064,10 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { p_token: string }; Returns: string }
+      adjust_stock: {
+        Args: { p_delta: number; p_product_id: string; p_reason?: string }
+        Returns: number
+      }
       calculate_expected_balance: {
         Args: { p_session_id: string }
         Returns: number
@@ -2230,6 +2237,13 @@ export type Database = {
           is_valid: boolean
           role: Database["public"]["Enums"]["app_role"]
           tenant_name: string
+        }[]
+      }
+      get_session_payment_breakdown: {
+        Args: { p_session_id: string }
+        Returns: {
+          expected: number
+          payment_method: string
         }[]
       }
       get_tenant_members: {
