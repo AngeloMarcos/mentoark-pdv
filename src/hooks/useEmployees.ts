@@ -27,11 +27,37 @@ export interface Employee {
 
 export type EmployeeInput = Partial<Omit<Employee, "id" | "tenant_id" | "created_at">> & { name: string };
 
+/**
+ * Basic employee list (no PII: no CPF/RG/salary/birth_date). Accessible to any
+ * tenant member via SECURITY DEFINER RPC. Use in PDV and dropdowns.
+ */
 export function useEmployees(activeOnly = true) {
   const { currentTenant } = useTenant();
 
   return useQuery({
-    queryKey: ["employees", currentTenant?.id, activeOnly],
+    queryKey: ["employees-basic", currentTenant?.id, activeOnly],
+    queryFn: async () => {
+      if (!currentTenant) return [];
+      const { data, error } = await supabase.rpc("list_employees_basic" as any, {
+        p_tenant_id: currentTenant.id,
+        p_active_only: activeOnly,
+      });
+      if (error) throw error;
+      return (data ?? []) as Employee[];
+    },
+    enabled: !!currentTenant,
+  });
+}
+
+/**
+ * Full employee rows including PII. Restricted to admins by RLS.
+ * Use in employee management screens only.
+ */
+export function useEmployeesFull(activeOnly = true) {
+  const { currentTenant } = useTenant();
+
+  return useQuery({
+    queryKey: ["employees-full", currentTenant?.id, activeOnly],
     queryFn: async () => {
       if (!currentTenant) return [];
       let query = supabase
@@ -72,7 +98,8 @@ export function useCreateEmployee() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      queryClient.invalidateQueries({ queryKey: ["employees-basic"] });
+      queryClient.invalidateQueries({ queryKey: ["employees-full"] });
       toast.success("Funcionário cadastrado!");
     },
     onError: (error) => {
@@ -93,7 +120,8 @@ export function useUpdateEmployee() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      queryClient.invalidateQueries({ queryKey: ["employees-basic"] });
+      queryClient.invalidateQueries({ queryKey: ["employees-full"] });
     },
     onError: (error) => {
       toast.error("Erro ao atualizar: " + error.message);
@@ -110,7 +138,8 @@ export function useDeleteEmployee() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["employees"] });
+      queryClient.invalidateQueries({ queryKey: ["employees-basic"] });
+      queryClient.invalidateQueries({ queryKey: ["employees-full"] });
       toast.success("Funcionário removido!");
     },
     onError: (error) => {
