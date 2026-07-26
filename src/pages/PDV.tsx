@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useProducts, Product } from "@/hooks/useProducts";
 import { useCreateSale, SaleItem } from "@/hooks/useSales";
@@ -34,6 +35,7 @@ interface CartItem extends SaleItem {
 
 const PDV = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -85,8 +87,21 @@ const PDV = () => {
     searchRef.current?.focus();
   }, []);
 
-  // Handler para busca por código de barras
+  // Handler para busca por código de barras (Alta Performance)
   const handleBarcodeSearch = useCallback(async (barcode: string) => {
+    // 1. Busca Local Instantânea no Cache
+    const cachedProducts = queryClient.getQueryData<Product[]>(["products", "list", currentTenant?.id]) || [];
+    const localProduct = cachedProducts.find(
+      (p) => p.barcode === barcode || p.internal_code === barcode
+    );
+
+    if (localProduct) {
+      addToCart(localProduct);
+      toast.success(`${localProduct.name} adicionado`);
+      return;
+    }
+
+    // 2. Busca de Contingência no Banco (Produto recém-criado ou não carregado)
     try {
       const product = await findByBarcode.mutateAsync(barcode);
       if (product) {
@@ -98,7 +113,7 @@ const PDV = () => {
     } catch {
       toast.error("Erro ao buscar produto");
     }
-  }, [findByBarcode, addToCart]);
+  }, [findByBarcode, addToCart, queryClient, currentTenant?.id]);
 
   // Global barcode scanner — detecta leitura rápida (<50ms entre teclas)
   // ignoreInputs=false porque o foco fica no input de busca

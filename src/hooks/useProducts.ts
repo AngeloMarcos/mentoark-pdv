@@ -1,71 +1,51 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
 import { toast } from "sonner";
 import { ProductInputSchema, validateInput } from "@/lib/validations";
-import { getUserFriendlyError, sanitizeSearchTerm } from "@/lib/error-handler";
+import { getUserFriendlyError } from "@/lib/error-handler";
+import { productsService, Product, ProductInput } from "@/services/db/products.service";
 
-export interface Product {
-  id: string;
-  tenant_id: string;
-  name: string;
-  internal_code: string | null;
-  barcode: string | null;
-  category: string | null;
-  sale_price: number;
-  cost_price: number | null;
-  stock_current: number;
-  unit: string;
-  min_stock: number | null;
-  active: boolean;
-  extra_attributes: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-}
+import { useMemo } from "react";
 
-export interface ProductInput {
-  name: string;
-  internal_code?: string | null;
-  barcode?: string | null;
-  category?: string | null;
-  sale_price: number;
-  cost_price?: number | null;
-  stock_current?: number;
-  unit?: string;
-  min_stock?: number | null;
-  active?: boolean;
-  extra_attributes?: Record<string, unknown>;
-}
+export type { Product, ProductInput };
 
 export function useProducts(searchTerm?: string) {
   const { currentTenant } = useTenant();
 
-  return useQuery({
-    queryKey: ["products", currentTenant?.id, searchTerm],
+  const queryInfo = useQuery({
+    // Removido searchTerm do queryKey para manter um único cache global da lista inteira
+    queryKey: ["products", "list", currentTenant?.id],
     queryFn: async () => {
       if (!currentTenant) return [];
-
-      let query = supabase
-        .from("products")
-        .select("*")
-        .eq("tenant_id", currentTenant.id)
-        .order("name");
-
-      if (searchTerm) {
-        // Sanitize search input to prevent SQL wildcard manipulation
-        const sanitized = sanitizeSearchTerm(searchTerm);
-        query = query.or(
-          `name.ilike.%${sanitized}%,internal_code.ilike.%${sanitized}%,barcode.ilike.%${sanitized}%`
-        );
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as Product[];
+      // Busca todos os produtos do tenant, ignorando a busca por rede
+      return await productsService.getProducts(currentTenant.id);
     },
     enabled: !!currentTenant,
+    staleTime: 5 * 60 * 1000, // 5 minutos de cache (evita chamadas repetitivas no PDV)
   });
+
+  // Função para realizar a filtragem em memória (sem rede)
+  const searchProductsLocally = (term: string, list: Product[]): Product[] => {
+    if (!term) return list;
+    const lower = term.toLowerCase();
+    return list.filter(
+      (p) =>
+        p.name.toLowerCase().includes(lower) ||
+        (p.internal_code && p.internal_code.toLowerCase().includes(lower)) ||
+        (p.barcode && p.barcode.toLowerCase().includes(lower))
+    );
+  };
+
+  // Memorizamos o resultado para evitar re-renderizações desnecessárias
+  const filteredData = useMemo(() => {
+    return searchProductsLocally(searchTerm || "", queryInfo.data || []);
+  }, [searchTerm, queryInfo.data]);
+
+  return {
+    ...queryInfo,
+    data: filteredData,
+    searchProductsLocally,
+  };
 }
 
 export function useProduct(id: string | undefined) {
@@ -75,16 +55,7 @@ export function useProduct(id: string | undefined) {
     queryKey: ["product", id],
     queryFn: async () => {
       if (!id || !currentTenant) return null;
-
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("id", id)
-        .eq("tenant_id", currentTenant.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data as Product | null;
+      return await productsService.getProductById(id, currentTenant.id);
     },
     enabled: !!id && !!currentTenant,
   });
@@ -97,30 +68,8 @@ export function useCreateProduct() {
   return useMutation({
     mutationFn: async (input: ProductInput) => {
       if (!currentTenant) throw new Error("Nenhuma empresa selecionada");
-
-      // Validate input
       validateInput(ProductInputSchema, input);
-
-      const { data, error } = await supabase
-        .from("products")
-        .insert({
-          name: input.name,
-          sale_price: input.sale_price,
-          tenant_id: currentTenant.id,
-          internal_code: input.internal_code,
-          barcode: input.barcode,
-          category: input.category,
-          cost_price: input.cost_price,
-          stock_current: input.stock_current,
-          unit: input.unit,
-          min_stock: input.min_stock,
-          active: input.active,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      return await productsService.createProduct(currentTenant.id, input);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -137,29 +86,8 @@ export function useUpdateProduct() {
 
   return useMutation({
     mutationFn: async ({ id, ...input }: ProductInput & { id: string }) => {
-      // Validate input
       validateInput(ProductInputSchema, input);
-
-      const { data, error } = await supabase
-        .from("products")
-        .update({
-          name: input.name,
-          sale_price: input.sale_price,
-          internal_code: input.internal_code,
-          barcode: input.barcode,
-          category: input.category,
-          cost_price: input.cost_price,
-          stock_current: input.stock_current,
-          unit: input.unit,
-          min_stock: input.min_stock,
-          active: input.active,
-        })
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      return await productsService.updateProduct(id, input);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -176,8 +104,7 @@ export function useDeleteProduct() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("products").delete().eq("id", id);
-      if (error) throw error;
+      await productsService.deleteProduct(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -196,22 +123,26 @@ export function useLowStockProducts() {
     queryKey: ["products", "low-stock", currentTenant?.id],
     queryFn: async () => {
       if (!currentTenant) return [];
-
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("tenant_id", currentTenant.id)
-        .eq("active", true)
-        .not("min_stock", "is", null)
-        .order("name");
-
-      if (error) throw error;
-      
-      // Filter products where stock_current < min_stock
-      return (data as Product[]).filter(
-        (p) => p.min_stock !== null && p.stock_current < p.min_stock
-      );
+      const data = await productsService.getLowStockProducts(currentTenant.id);
+      return data.filter((p) => p.min_stock !== null && p.stock_current < p.min_stock);
     },
     enabled: !!currentTenant,
+  });
+}
+
+export function useBulkUpdateProductActive() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ ids, active }: { ids: string[]; active: boolean }) => {
+      return await productsService.bulkUpdateProductActive(ids, active);
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success(`${variables.ids.length} produto(s) ${variables.active ? "ativado(s)" : "desativado(s)"}`);
+    },
+    onError: (error) => {
+      toast.error(getUserFriendlyError(error));
+    },
   });
 }

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { CreateSaleInputSchema, validateInput } from "@/lib/validations";
 import { getUserFriendlyError } from "@/lib/error-handler";
 import { SalePayment } from "@/hooks/usePaymentMethods";
+import { salesService } from "@/services/db/sales.service";
 
 export interface SaleItem {
   product_id: string;
@@ -211,142 +212,35 @@ export function useCreateSale() {
       const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
       if (totalPayments < netTotal) throw new Error("Valor dos pagamentos insuficiente");
 
-      // Primary payment method for legacy field
-      const primaryPaymentMethod = payments[0].payment_method_code;
-
-      // Create sale
-      const { data: sale, error: saleError } = await supabase
-        .from("sales")
-        .insert({
-          tenant_id: currentTenant.id,
-          user_id: user.id,
-          customer_id: input.customer_id || null,
-          session_id: input.session_id || null,
-          gross_total: grossTotal,
-          discount_total: discountTotal,
-          net_total: netTotal,
-          payment_method: primaryPaymentMethod,
-          notes: input.notes || null,
-        })
-        .select()
-        .single();
-
-      if (saleError) throw saleError;
-
-      // Create sale items
-      const saleItems = input.items.map((item) => ({
-        sale_id: sale.id,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        discount: item.discount,
-        total: item.total,
-      }));
-
-      const { error: itemsError } = await supabase.from("sale_items").insert(saleItems);
-      if (itemsError) throw itemsError;
-
-      // Create sale payments
-      const salePaymentsData = payments.map((p) => ({
-        sale_id: sale.id,
-        payment_method_id: p.payment_method_id || null,
-        payment_method_code: p.payment_method_code,
-        amount: p.amount,
-        change_amount: p.change_amount || 0,
-        installments: p.installments || 1,
-        authorization_code: p.authorization_code || null,
-      }));
-
-      const { error: paymentsError } = await supabase.from("sale_payments").insert(salePaymentsData);
-      if (paymentsError) {
-        console.error("[Sale Payments Error]", paymentsError);
-        // Continue - não crítico
-      }
-
-      // Update stock atomically using RPC and create movements
-      for (const item of input.items) {
-        // Use atomic decrement_stock function to prevent race conditions
-        const { error: stockError } = await supabase.rpc("decrement_stock", {
-          p_product_id: item.product_id,
-          p_quantity: item.quantity,
-        });
-
-        if (stockError) {
-          console.error("[Stock Update Error]", stockError);
-          // Continue with sale even if stock update fails
-        }
-
-        // Create stock movement
-        await supabase.from("stock_movements").insert({
-          tenant_id: currentTenant.id,
-          product_id: item.product_id,
-          movement_type: "sale",
-          quantity: -item.quantity,
-          description: `Venda #${sale.id.slice(0, 8)}`,
-          sale_id: sale.id,
-        });
-
-        // FEFO: baixa automática de lotes (se produto controla lote)
-        try {
-          await supabase.rpc("consume_lots_fefo", {
-            _tenant_id: currentTenant.id,
-            _product_id: item.product_id,
-            _quantity: item.quantity,
-          });
-        } catch (e) {
-          console.warn("[FEFO] falhou (produto pode não controlar lote):", e);
-        }
-      }
-
-      // Create financial entry
-      await supabase.from("financial_entries").insert({
+      // Despacha toda a carga para o serviço especializado
+      const response = await salesService.checkoutSale({
         tenant_id: currentTenant.id,
-        type: "income",
-        description: `Venda #${sale.id.slice(0, 8)}`,
-        amount: netTotal,
+        user_id: user.id,
+        customer_id: input.customer_id || null,
+        session_id: input.session_id || null,
+        gross_total: grossTotal,
+        discount_total: discountTotal,
+        net_total: netTotal,
         payment_method: primaryPaymentMethod,
-        sale_id: sale.id,
+        notes: input.notes || null,
+        items: input.items.map((item) => ({
+          product_id: item.product_id,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          discount: item.discount,
+          total: item.total,
+        })),
+        payments: payments.map((p) => ({
+          payment_method_id: p.payment_method_id || null,
+          payment_method_code: p.payment_method_code,
+          amount: p.amount,
+          change_amount: p.change_amount || 0,
+          installments: p.installments || 1,
+          authorization_code: p.authorization_code || null,
+        })),
       });
 
-      // Register cash movements for each payment method
-      if (input.session_id) {
-        const cashMovements = payments.map((p) => ({
-          tenant_id: currentTenant.id,
-          session_id: input.session_id!,
-          movement_type: "sale",
-          payment_method: p.payment_method_code,
-          amount: p.amount,
-          description: `Venda #${sale.id.slice(0, 8)}`,
-          sale_id: sale.id,
-          user_id: user.id,
-        }));
-
-        const { error: movError } = await supabase.from("cash_movements").insert(cashMovements);
-        if (movError) {
-          console.error("[Cash Movement Error]", movError);
-        }
-      }
-
-      // Credit loyalty points if customer is identified
-      if (input.customer_id) {
-        try {
-          const { data: pointsCredited } = await supabase.rpc("credit_loyalty_points", {
-            p_tenant_id: currentTenant.id,
-            p_customer_id: input.customer_id,
-            p_sale_id: sale.id,
-            p_sale_amount: netTotal,
-          });
-          
-          if (pointsCredited && pointsCredited > 0) {
-            // Toast will be shown on success
-          }
-        } catch (error) {
-          console.error("[Loyalty Points Error]", error);
-          // Continue - não crítico
-        }
-      }
-
-      return sale;
+      return { id: response.sale_id };
     },
     onSuccess: (sale, variables) => {
       queryClient.invalidateQueries({ queryKey: ["sales"] });

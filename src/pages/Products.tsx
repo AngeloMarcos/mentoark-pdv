@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, Product, ProductInput } from "@/hooks/useProducts";
+import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useBulkUpdateProductActive, Product, ProductInput } from "@/hooks/useProducts";
 import { useProductBarcodes, useCreateBarcode, useDeleteBarcode, useGenerateInternalBarcode } from "@/hooks/useBarcodes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +25,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ExcelExportButton } from "@/components/export/ExcelExportButton";
 import { XlsxSheet } from "@/lib/xlsx-utils";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 
 const Products = () => {
@@ -51,6 +50,7 @@ const Products = () => {
   const createBarcode = useCreateBarcode();
   const deleteBarcode = useDeleteBarcode();
   const generateBarcode = useGenerateInternalBarcode();
+  const bulkUpdateProductActive = useBulkUpdateProductActive();
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -148,14 +148,9 @@ const Products = () => {
   const handleBulkToggleActive = async (active: boolean) => {
     const ids = Array.from(selectedProducts);
     if (ids.length === 0) return;
-    const { error } = await supabase.from("products").update({ active }).in("id", ids);
-    if (error) {
-      toast.error("Erro ao atualizar produtos");
-      return;
-    }
-    toast.success(`${ids.length} produto(s) ${active ? "ativado(s)" : "desativado(s)"}`);
+    
+    await bulkUpdateProductActive.mutateAsync({ ids, active });
     setSelectedProducts(new Set());
-    queryClient.invalidateQueries({ queryKey: ["products"] });
   };
 
   const selectedProductsForLabels = filteredProducts.filter((p) => selectedProducts.has(p.id));
