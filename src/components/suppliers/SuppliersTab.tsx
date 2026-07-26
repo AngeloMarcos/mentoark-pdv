@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { useSuppliers, useDeleteSupplier, type Supplier } from "@/hooks/useSuppliers";
+import { useSuppliersFull, useDeleteSupplier, type Supplier } from "@/hooks/useSuppliers";
 import { SupplierFormDialog } from "@/components/suppliers/SupplierFormDialog";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -21,7 +21,7 @@ export function SuppliersTab() {
   const [editing, setEditing] = useState<Supplier | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const { data: suppliers = [], isLoading } = useSuppliers(includeInactive);
+  const { data: suppliers = [], isLoading } = useSuppliersFull(includeInactive);
   const del = useDeleteSupplier();
 
   const filtered = useMemo(() => {
