@@ -2264,6 +2264,36 @@ export type Database = {
             Returns: undefined
           }
       is_super_admin: { Args: { _user_id?: string }; Returns: boolean }
+      list_employees_basic: {
+        Args: { p_active_only?: boolean; p_tenant_id: string }
+        Returns: {
+          active: boolean
+          department: string
+          id: string
+          name: string
+          phone: string
+          role: string
+          tenant_id: string
+        }[]
+      }
+      list_suppliers_basic: {
+        Args: { p_tenant_id: string }
+        Returns: {
+          active: boolean
+          category: string
+          city: string
+          document: string
+          due_days: number
+          email: string
+          fantasy_name: string
+          id: string
+          name: string
+          payment_terms: string
+          phone: string
+          state: string
+          tenant_id: string
+        }[]
+      }
       log_audit_event: {
         Args: {
           p_action: string

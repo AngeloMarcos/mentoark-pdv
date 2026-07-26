@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Pencil, Trash2 } from "lucide-react";
-import { useEmployees, useDeleteEmployee, Employee } from "@/hooks/useEmployees";
+import { useEmployeesFull, useDeleteEmployee, Employee } from "@/hooks/useEmployees";
 import { EmployeeDialog } from "./EmployeeDialog";
 import { getInitials, getAvatarColor } from "@/lib/avatar-utils";
 import { DEPARTMENTS } from "@/lib/permissions";
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export function EmployeesList() {
-  const { data: employees = [], isLoading } = useEmployees(false);
+  const { data: employees = [], isLoading } = useEmployeesFull(false);
   const del = useDeleteEmployee();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");

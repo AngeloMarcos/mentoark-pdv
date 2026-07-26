@@ -60,11 +60,38 @@ export interface SupplierInput {
   active?: boolean;
 }
 
+/**
+ * Basic supplier list (no bank / PIX fields). Accessible to any tenant member
+ * via a SECURITY DEFINER RPC. Use this for dropdowns and non-admin views.
+ */
 export function useSuppliers(includeInactive = false) {
   const { currentTenant } = useTenant();
 
   return useQuery({
-    queryKey: ["suppliers", currentTenant?.id, includeInactive],
+    queryKey: ["suppliers-basic", currentTenant?.id, includeInactive],
+    queryFn: async () => {
+      if (!currentTenant) return [];
+      const { data, error } = await supabase.rpc("list_suppliers_basic" as any, {
+        p_tenant_id: currentTenant.id,
+      });
+      if (error) throw error;
+      const rows = (data ?? []) as Array<Partial<Supplier>>;
+      const filtered = includeInactive ? rows : rows.filter((r) => r.active);
+      return filtered.sort((a, b) => (a.name || "").localeCompare(b.name || "")) as Supplier[];
+    },
+    enabled: !!currentTenant,
+  });
+}
+
+/**
+ * Full supplier rows (including bank details). Restricted to admins by RLS.
+ * Use this in supplier management screens.
+ */
+export function useSuppliersFull(includeInactive = false) {
+  const { currentTenant } = useTenant();
+
+  return useQuery({
+    queryKey: ["suppliers-full", currentTenant?.id, includeInactive],
     queryFn: async () => {
       if (!currentTenant) return [];
       let query = supabase
@@ -97,7 +124,8 @@ export function useCreateSupplier() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      queryClient.invalidateQueries({ queryKey: ["suppliers-basic"] });
+      queryClient.invalidateQueries({ queryKey: ["suppliers-full"] });
       toast.success("Fornecedor criado com sucesso!");
     },
     onError: (e) => toast.error(getUserFriendlyError(e)),
@@ -119,7 +147,8 @@ export function useUpdateSupplier() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      queryClient.invalidateQueries({ queryKey: ["suppliers-basic"] });
+      queryClient.invalidateQueries({ queryKey: ["suppliers-full"] });
       toast.success("Fornecedor atualizado!");
     },
     onError: (e) => toast.error(getUserFriendlyError(e)),
@@ -135,7 +164,8 @@ export function useDeleteSupplier() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["suppliers"] });
+      queryClient.invalidateQueries({ queryKey: ["suppliers-basic"] });
+      queryClient.invalidateQueries({ queryKey: ["suppliers-full"] });
       toast.success("Fornecedor excluído");
     },
     onError: (e) => toast.error(getUserFriendlyError(e)),
