@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { AppLayoutSkeleton } from "@/components/ui/skeletons";
 import { useCurrentRole } from "@/hooks/usePermission";
 import { roleHasPermission, Permission } from "@/lib/permissions";
+import brandLogo from "@/assets/mentoark-logo.png.asset.json";
 
 const ALL_NAV_ITEMS: { path: string; label: string; icon: typeof LayoutDashboard; feature: string | null; permission: Permission }[] = [
   { path: "/dashboard", label: "Painel", icon: LayoutDashboard, feature: null, permission: "dashboard" },
@@ -110,13 +111,13 @@ export function AppLayout({ children, title }: AppLayoutProps) {
       {/* Branding Header */}
       <div className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-primary/10 p-1 shrink-0">
-            <img src="/favicon.png" alt="Nexus Retail" className="w-full h-full object-contain" />
+          <div className="w-11 h-11 flex items-center justify-center shrink-0">
+            <img src={brandLogo.url} alt="MentoArk" className="w-full h-full object-contain" />
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="font-bold text-base leading-tight">
-              <span className="gradient-brand-text">Nexus</span>
-              <span className="text-sidebar-foreground"> Retail</span>
+              <span className="gradient-brand-text">Mento</span>
+              <span className="text-sidebar-foreground">Ark</span>
             </h2>
             <p className="text-[11px] text-sidebar-muted leading-tight">Vendas e estoque na nuvem</p>
           </div>

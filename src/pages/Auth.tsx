@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Loader2, Check, X } from "lucide-react";
-import brandIcon from "@/assets/brand-icon.png";
+import brandLogo from "@/assets/mentoark-logo.png.asset.json";
 import { AuthSkeleton } from "@/components/ui/skeletons";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import { PasswordStrength } from "@/components/auth/PasswordStrength";
@@ -131,11 +131,11 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-secondary/30 p-4">
       <Card className="w-full max-w-md animate-fade-in">
         <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-20 h-20 rounded-2xl overflow-hidden flex items-center justify-center bg-primary/10 p-2">
-            <img src={brandIcon} alt="Nexus Retail Cloud" className="w-full h-full object-contain" />
+          <div className="mx-auto w-24 h-24 flex items-center justify-center">
+            <img src={brandLogo.url} alt="MentoArk" className="w-full h-full object-contain" />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold">Nexus Retail Cloud</CardTitle>
+            <CardTitle className="text-2xl font-bold">MentoArk</CardTitle>
             <CardDescription>Sistema de Ponto de Venda</CardDescription>
           </div>
         </CardHeader>
