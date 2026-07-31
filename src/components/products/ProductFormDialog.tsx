@@ -5,10 +5,27 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CurrencyInput, QuantityInput } from "@/components/ui/currency-input";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Product, ProductInput } from "@/hooks/useProducts";
 import { FiscalProductTab, FiscalFields } from "@/components/fiscal/FiscalProductTab";
+
+const UNITS = [
+  { value: "UN", label: "UN — Unidade" },
+  { value: "CX", label: "CX — Caixa" },
+  { value: "PC", label: "PC — Pacote" },
+  { value: "KG", label: "KG — Quilograma" },
+  { value: "G", label: "G — Grama" },
+  { value: "L", label: "L — Litro" },
+  { value: "ML", label: "ML — Mililitro" },
+  { value: "M", label: "M — Metro" },
+  { value: "DZ", label: "DZ — Dúzia" },
+];
+
+const formatCurrency = (v: number) =>
+  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 interface ExtendedProductInput extends ProductInput, FiscalFields {
   controls_lot?: boolean;
@@ -22,11 +39,13 @@ interface ProductFormDialogProps {
   editingProduct: Product | null;
   onSubmit: (form: ExtendedProductInput) => Promise<void>;
   isPending: boolean;
+  categories?: string[];
 }
 
 interface FieldError {
   message: string;
 }
+
 
 const INITIAL_FORM: ExtendedProductInput = {
   name: "",
