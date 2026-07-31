@@ -136,27 +136,39 @@ export function AppLayout({ children, title }: AppLayoutProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1 overflow-auto">
-        {NAV_ITEMS.map((item) => {
-          const isActive = location.pathname === item.path;
+      <nav className="flex-1 p-3 space-y-4 overflow-auto">
+        {NAV_GROUPS.map((group) => {
+          const items = NAV_ITEMS.filter((i) => i.group === group);
+          if (items.length === 0) return null;
           return (
-            <Link key={item.path} to={item.path}>
-              <Button
-                variant="ghost"
-                className={cn(
-                  "w-full justify-start gap-3 h-11 transition-all rounded-lg",
-                  isActive
-                    ? "gradient-brand text-white font-medium glow-primary hover:opacity-95 hover:text-white"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                )}
-              >
-                <item.icon className={cn("w-5 h-5", isActive && "text-white")} />
-                {item.label}
-              </Button>
-            </Link>
+            <div key={group} className="space-y-1">
+              <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-muted">
+                {group}
+              </p>
+              {items.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <Link key={item.path} to={item.path} className="block">
+                    <Button
+                      variant="ghost"
+                      className={cn(
+                        "w-full justify-start gap-3 h-10 rounded-lg transition-all duration-200 relative",
+                        isActive
+                          ? "gradient-brand text-white font-medium glow-primary hover:opacity-95 hover:text-white"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-0.5",
+                      )}
+                    >
+                      <item.icon className={cn("w-[18px] h-[18px] shrink-0", isActive ? "text-white" : "text-sidebar-muted")} />
+                      <span className="text-sm truncate">{item.label}</span>
+                    </Button>
+                  </Link>
+                );
+              })}
+            </div>
           );
         })}
       </nav>
+
 
       {/* Footer Actions */}
       <div className="p-3 border-t border-sidebar-border space-y-1">
