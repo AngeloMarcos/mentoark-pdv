@@ -36,24 +36,28 @@ import { useCurrentRole } from "@/hooks/usePermission";
 import { roleHasPermission, Permission } from "@/lib/permissions";
 import brandLogo from "@/assets/mentoark-logo.png.asset.json";
 
-const ALL_NAV_ITEMS: { path: string; label: string; icon: typeof LayoutDashboard; feature: string | null; permission: Permission }[] = [
-  { path: "/dashboard", label: "Painel", icon: LayoutDashboard, feature: null, permission: "dashboard" },
-  { path: "/pdv", label: "PDV", icon: ShoppingBag, feature: null, permission: "pdv" },
-  { path: "/returns", label: "Devoluções", icon: RotateCcw, feature: null, permission: "returns" },
-  { path: "/cash-register", label: "Caixa", icon: Wallet, feature: "cash_register", permission: "cash_register" },
-  { path: "/tables", label: "Mesas", icon: UtensilsCrossed, feature: "tables", permission: "tables" },
-  { path: "/products", label: "Produtos", icon: Package, feature: null, permission: "products" },
-  { path: "/customers", label: "Clientes", icon: Users, feature: null, permission: "customers" },
-  { path: "/stock", label: "Estoque", icon: Boxes, feature: null, permission: "stock" },
-  { path: "/warehouses", label: "Depósitos", icon: Warehouse, feature: null, permission: "stock" },
-  { path: "/validades", label: "Validades", icon: CalendarClock, feature: null, permission: "stock" },
-  { path: "/compras", label: "Compras", icon: Truck, feature: null, permission: "compras" },
-  { path: "/promotions", label: "Promoções", icon: Tag, feature: null, permission: "promotions" },
-  { path: "/reports", label: "Relatórios", icon: BarChart2, feature: null, permission: "reports" },
-  { path: "/financial", label: "Financeiro", icon: DollarSign, feature: null, permission: "financial" },
-  { path: "/team", label: "Equipe", icon: UserCog, feature: null, permission: "team" },
-  { path: "/fiscal", label: "Fiscal", icon: FileText, feature: null, permission: "fiscal" },
-  { path: "/settings", label: "Configurações", icon: Settings, feature: null, permission: "settings" },
+type NavItem = { path: string; label: string; icon: typeof LayoutDashboard; feature: string | null; permission: Permission; group: string };
+
+const NAV_GROUPS = ["Geral", "Operação", "Catálogo & Estoque", "Gestão"] as const;
+
+const ALL_NAV_ITEMS: NavItem[] = [
+  { path: "/dashboard", label: "Painel", icon: LayoutDashboard, feature: null, permission: "dashboard", group: "Geral" },
+  { path: "/pdv", label: "PDV", icon: ShoppingBag, feature: null, permission: "pdv", group: "Operação" },
+  { path: "/returns", label: "Devoluções", icon: RotateCcw, feature: null, permission: "returns", group: "Operação" },
+  { path: "/cash-register", label: "Caixa", icon: Wallet, feature: "cash_register", permission: "cash_register", group: "Operação" },
+  { path: "/tables", label: "Mesas", icon: UtensilsCrossed, feature: "tables", permission: "tables", group: "Operação" },
+  { path: "/products", label: "Produtos", icon: Package, feature: null, permission: "products", group: "Catálogo & Estoque" },
+  { path: "/stock", label: "Estoque", icon: Boxes, feature: null, permission: "stock", group: "Catálogo & Estoque" },
+  { path: "/warehouses", label: "Depósitos", icon: Warehouse, feature: null, permission: "stock", group: "Catálogo & Estoque" },
+  { path: "/validades", label: "Validades", icon: CalendarClock, feature: null, permission: "stock", group: "Catálogo & Estoque" },
+  { path: "/compras", label: "Compras", icon: Truck, feature: null, permission: "compras", group: "Catálogo & Estoque" },
+  { path: "/promotions", label: "Promoções", icon: Tag, feature: null, permission: "promotions", group: "Catálogo & Estoque" },
+  { path: "/customers", label: "Clientes", icon: Users, feature: null, permission: "customers", group: "Gestão" },
+  { path: "/reports", label: "Relatórios", icon: BarChart2, feature: null, permission: "reports", group: "Gestão" },
+  { path: "/financial", label: "Financeiro", icon: DollarSign, feature: null, permission: "financial", group: "Gestão" },
+  { path: "/team", label: "Equipe", icon: UserCog, feature: null, permission: "team", group: "Gestão" },
+  { path: "/fiscal", label: "Fiscal", icon: FileText, feature: null, permission: "fiscal", group: "Gestão" },
+  { path: "/settings", label: "Configurações", icon: Settings, feature: null, permission: "settings", group: "Gestão" },
 ];
 
 interface AppLayoutProps {
