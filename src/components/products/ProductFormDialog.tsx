@@ -124,7 +124,7 @@ function FieldMessage({ error, success }: { error?: string | null; success?: str
   return null;
 }
 
-export function ProductFormDialog({ open, onOpenChange, editingProduct, onSubmit, isPending }: ProductFormDialogProps) {
+export function ProductFormDialog({ open, onOpenChange, editingProduct, onSubmit, isPending, categories = [] }: ProductFormDialogProps) {
   const [form, setForm] = useState<ExtendedProductInput>(INITIAL_FORM);
   const [touched, setTouched] = useState<Set<string>>(new Set());
 
