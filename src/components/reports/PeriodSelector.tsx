@@ -3,7 +3,7 @@ import { format, startOfWeek, startOfMonth, startOfQuarter, startOfYear } from "
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type PeriodPreset = "today" | "week" | "month" | "quarter" | "year" | "custom";
@@ -71,12 +71,12 @@ export function PeriodSelector({ preset, start, end, onPresetChange, onCustomCha
           <Popover open={openStart} onOpenChange={setOpenStart}>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
-                <Calendar className="w-4 h-4" />
+                <CalendarIcon className="w-4 h-4" />
                 {format(start, "dd/MM/yyyy")}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
+              <CalendarIcon
                 mode="single"
                 selected={start}
                 onSelect={(d) => { if (d) { onCustomChange(d, end); setOpenStart(false); } }}
@@ -88,12 +88,12 @@ export function PeriodSelector({ preset, start, end, onPresetChange, onCustomCha
           <Popover open={openEnd} onOpenChange={setOpenEnd}>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
-                <Calendar className="w-4 h-4" />
+                <CalendarIcon className="w-4 h-4" />
                 {format(end, "dd/MM/yyyy")}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
+              <CalendarIcon
                 mode="single"
                 selected={end}
                 onSelect={(d) => { if (d) { onCustomChange(start, d); setOpenEnd(false); } }}

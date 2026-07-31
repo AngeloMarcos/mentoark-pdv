@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Filter, X } from "lucide-react";
+import { Calendar as CalendarIcon, Filter, X } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -93,12 +93,12 @@ export function ReportFilters({
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="h-9 w-36 justify-start">
-                <Calendar className="w-4 h-4 mr-2" />
+                <CalendarIcon className="w-4 h-4 mr-2" />
                 {format(startDate, "dd/MM/yyyy")}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
+              <CalendarIcon
                 mode="single"
                 selected={startDate}
                 onSelect={(date) => date && onStartDateChange(date)}
@@ -115,12 +115,12 @@ export function ReportFilters({
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="h-9 w-36 justify-start">
-                <Calendar className="w-4 h-4 mr-2" />
+                <CalendarIcon className="w-4 h-4 mr-2" />
                 {format(endDate, "dd/MM/yyyy")}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
+              <CalendarIcon
                 mode="single"
                 selected={endDate}
                 onSelect={(date) => date && onEndDateChange(date)}

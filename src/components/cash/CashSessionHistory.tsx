@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { ExportButtons } from "@/components/reports/ExportButtons";
 import { CashSession, CashRegister } from "@/hooks/useCashRegister";
-import { Search, Calendar, Filter, DollarSign, CheckCircle2, X, User } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Filter, DollarSign, CheckCircle2, X, User } from "lucide-react";
 
 interface CashSessionHistoryProps {
   sessions: (CashSession & { register: CashRegister })[];
@@ -274,12 +274,12 @@ export function CashSessionHistory({
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="h-9 w-36 justify-start">
-                    <Calendar className="w-4 h-4 mr-2" />
+                    <CalendarIcon className="w-4 h-4 mr-2" />
                     {startDate ? format(startDate, "dd/MM/yyyy") : "Início"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
+                  <CalendarIcon
                     mode="single"
                     selected={startDate}
                     onSelect={setStartDate}
@@ -296,12 +296,12 @@ export function CashSessionHistory({
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="h-9 w-36 justify-start">
-                    <Calendar className="w-4 h-4 mr-2" />
+                    <CalendarIcon className="w-4 h-4 mr-2" />
                     {endDate ? format(endDate, "dd/MM/yyyy") : "Fim"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
+                  <CalendarIcon
                     mode="single"
                     selected={endDate}
                     onSelect={setEndDate}
