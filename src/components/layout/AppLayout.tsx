@@ -8,8 +8,9 @@ import {
   LayoutDashboard,
   ShoppingBag,
   Package,
-  FileBarChart,
+  Boxes,
   Warehouse,
+  CalendarClock,
   Building2,
   LogOut,
   Menu,
@@ -17,7 +18,7 @@ import {
   Users,
   Settings,
   BarChart2,
-  Zap,
+  Wallet,
   DollarSign,
   RotateCcw,
   Truck,
@@ -35,24 +36,28 @@ import { useCurrentRole } from "@/hooks/usePermission";
 import { roleHasPermission, Permission } from "@/lib/permissions";
 import brandLogo from "@/assets/mentoark-logo.png.asset.json";
 
-const ALL_NAV_ITEMS: { path: string; label: string; icon: typeof LayoutDashboard; feature: string | null; permission: Permission }[] = [
-  { path: "/dashboard", label: "Painel", icon: LayoutDashboard, feature: null, permission: "dashboard" },
-  { path: "/pdv", label: "PDV", icon: ShoppingBag, feature: null, permission: "pdv" },
-  { path: "/returns", label: "Devoluções", icon: RotateCcw, feature: null, permission: "returns" },
-  { path: "/cash-register", label: "Caixa", icon: DollarSign, feature: "cash_register", permission: "cash_register" },
-  { path: "/tables", label: "Mesas", icon: UtensilsCrossed, feature: "tables", permission: "tables" },
-  { path: "/products", label: "Produtos", icon: Package, feature: null, permission: "products" },
-  { path: "/customers", label: "Clientes", icon: Users, feature: null, permission: "customers" },
-  { path: "/stock", label: "Estoque", icon: Warehouse, feature: null, permission: "stock" },
-  { path: "/warehouses", label: "Depósitos", icon: Warehouse, feature: null, permission: "stock" },
-  { path: "/validades", label: "Validades", icon: Warehouse, feature: null, permission: "stock" },
-  { path: "/compras", label: "Compras", icon: Truck, feature: null, permission: "compras" },
-  { path: "/promotions", label: "Promoções", icon: Tag, feature: null, permission: "promotions" },
-  { path: "/reports", label: "Relatórios", icon: BarChart2, feature: null, permission: "reports" },
-  { path: "/financial", label: "Financeiro", icon: DollarSign, feature: null, permission: "financial" },
-  { path: "/team", label: "Equipe", icon: UserCog, feature: null, permission: "team" },
-  { path: "/fiscal", label: "Fiscal", icon: FileText, feature: null, permission: "fiscal" },
-  { path: "/settings", label: "Configurações", icon: Settings, feature: null, permission: "settings" },
+type NavItem = { path: string; label: string; icon: typeof LayoutDashboard; feature: string | null; permission: Permission; group: string };
+
+const NAV_GROUPS = ["Geral", "Operação", "Catálogo & Estoque", "Gestão"] as const;
+
+const ALL_NAV_ITEMS: NavItem[] = [
+  { path: "/dashboard", label: "Painel", icon: LayoutDashboard, feature: null, permission: "dashboard", group: "Geral" },
+  { path: "/pdv", label: "PDV", icon: ShoppingBag, feature: null, permission: "pdv", group: "Operação" },
+  { path: "/returns", label: "Devoluções", icon: RotateCcw, feature: null, permission: "returns", group: "Operação" },
+  { path: "/cash-register", label: "Caixa", icon: Wallet, feature: "cash_register", permission: "cash_register", group: "Operação" },
+  { path: "/tables", label: "Mesas", icon: UtensilsCrossed, feature: "tables", permission: "tables", group: "Operação" },
+  { path: "/products", label: "Produtos", icon: Package, feature: null, permission: "products", group: "Catálogo & Estoque" },
+  { path: "/stock", label: "Estoque", icon: Boxes, feature: null, permission: "stock", group: "Catálogo & Estoque" },
+  { path: "/warehouses", label: "Depósitos", icon: Warehouse, feature: null, permission: "stock", group: "Catálogo & Estoque" },
+  { path: "/validades", label: "Validades", icon: CalendarClock, feature: null, permission: "stock", group: "Catálogo & Estoque" },
+  { path: "/compras", label: "Compras", icon: Truck, feature: null, permission: "compras", group: "Catálogo & Estoque" },
+  { path: "/promotions", label: "Promoções", icon: Tag, feature: null, permission: "promotions", group: "Catálogo & Estoque" },
+  { path: "/customers", label: "Clientes", icon: Users, feature: null, permission: "customers", group: "Gestão" },
+  { path: "/reports", label: "Relatórios", icon: BarChart2, feature: null, permission: "reports", group: "Gestão" },
+  { path: "/financial", label: "Financeiro", icon: DollarSign, feature: null, permission: "financial", group: "Gestão" },
+  { path: "/team", label: "Equipe", icon: UserCog, feature: null, permission: "team", group: "Gestão" },
+  { path: "/fiscal", label: "Fiscal", icon: FileText, feature: null, permission: "fiscal", group: "Gestão" },
+  { path: "/settings", label: "Configurações", icon: Settings, feature: null, permission: "settings", group: "Gestão" },
 ];
 
 interface AppLayoutProps {
@@ -131,27 +136,39 @@ export function AppLayout({ children, title }: AppLayoutProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-1 overflow-auto">
-        {NAV_ITEMS.map((item) => {
-          const isActive = location.pathname === item.path;
+      <nav className="flex-1 p-3 space-y-4 overflow-auto">
+        {NAV_GROUPS.map((group) => {
+          const items = NAV_ITEMS.filter((i) => i.group === group);
+          if (items.length === 0) return null;
           return (
-            <Link key={item.path} to={item.path}>
-              <Button
-                variant="ghost"
-                className={cn(
-                  "w-full justify-start gap-3 h-11 transition-all rounded-lg",
-                  isActive
-                    ? "gradient-brand text-white font-medium glow-primary hover:opacity-95 hover:text-white"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                )}
-              >
-                <item.icon className={cn("w-5 h-5", isActive && "text-white")} />
-                {item.label}
-              </Button>
-            </Link>
+            <div key={group} className="space-y-1">
+              <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-muted">
+                {group}
+              </p>
+              {items.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <Link key={item.path} to={item.path} className="block">
+                    <Button
+                      variant="ghost"
+                      className={cn(
+                        "w-full justify-start gap-3 h-10 rounded-lg transition-all duration-200 relative",
+                        isActive
+                          ? "gradient-brand text-white font-medium glow-primary hover:opacity-95 hover:text-white"
+                          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-0.5",
+                      )}
+                    >
+                      <item.icon className={cn("w-[18px] h-[18px] shrink-0", isActive ? "text-white" : "text-sidebar-muted")} />
+                      <span className="text-sm truncate">{item.label}</span>
+                    </Button>
+                  </Link>
+                );
+              })}
+            </div>
           );
         })}
       </nav>
+
 
       {/* Footer Actions */}
       <div className="p-3 border-t border-sidebar-border space-y-1">
