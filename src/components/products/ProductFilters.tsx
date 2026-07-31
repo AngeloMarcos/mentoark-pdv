@@ -52,7 +52,7 @@ export function ProductFilters({ filters, onChange, categories, showing, total }
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Buscar por nome, código ou código de barras..."
-            className="pl-10"
+            className="pl-9 h-9"
             value={filters.search}
             onChange={(e) => set("search", e.target.value)}
           />
@@ -60,7 +60,7 @@ export function ProductFilters({ filters, onChange, categories, showing, total }
 
         <div className="flex gap-2 flex-wrap">
           <Select value={filters.category || "__all__"} onValueChange={(v) => set("category", v === "__all__" ? "" : v)}>
-            <SelectTrigger className="w-[160px]"><SelectValue placeholder="Categoria" /></SelectTrigger>
+            <SelectTrigger className="h-9 w-[150px] text-xs"><SelectValue placeholder="Categoria" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="__all__">Todas categorias</SelectItem>
               {categories.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
@@ -68,7 +68,7 @@ export function ProductFilters({ filters, onChange, categories, showing, total }
           </Select>
 
           <Select value={filters.status} onValueChange={(v: ProductStatusFilter) => set("status", v)}>
-            <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-[120px] text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="active">Ativos</SelectItem>
               <SelectItem value="inactive">Inativos</SelectItem>
@@ -77,7 +77,7 @@ export function ProductFilters({ filters, onChange, categories, showing, total }
           </Select>
 
           <Select value={filters.stock} onValueChange={(v: ProductStockFilter) => set("stock", v)}>
-            <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-[140px] text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Estoque: todos</SelectItem>
               <SelectItem value="in_stock">Com estoque</SelectItem>
@@ -87,7 +87,7 @@ export function ProductFilters({ filters, onChange, categories, showing, total }
           </Select>
 
           <Select value={filters.sortBy} onValueChange={(v: ProductSortBy) => set("sortBy", v)}>
-            <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-[150px] text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="name">Nome (A-Z)</SelectItem>
               <SelectItem value="price_asc">Preço ↑</SelectItem>
@@ -103,7 +103,7 @@ export function ProductFilters({ filters, onChange, categories, showing, total }
               type="button"
               variant={filters.view === "list" ? "secondary" : "ghost"}
               size="icon"
-              className="rounded-none h-10"
+              className="rounded-none h-9 w-9"
               onClick={() => set("view", "list")}
               title="Visualização em lista"
             >
@@ -113,7 +113,7 @@ export function ProductFilters({ filters, onChange, categories, showing, total }
               type="button"
               variant={filters.view === "table" ? "secondary" : "ghost"}
               size="icon"
-              className="rounded-none h-10"
+              className="rounded-none h-9 w-9"
               onClick={() => set("view", "table")}
               title="Tabela compacta"
             >

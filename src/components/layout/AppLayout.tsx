@@ -118,7 +118,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
       {/* Branding Header */}
       <div className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 flex items-center justify-center shrink-0">
             <img src={brandLogo.url} alt="MentoArk" className="w-full h-full object-contain" />
           </div>
           <div className="flex-1 min-w-0">
@@ -136,7 +136,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 space-y-4 overflow-auto">
+      <nav className="flex-1 px-2.5 py-3 space-y-3 overflow-auto">
         {NAV_GROUPS.map((group) => {
           const items = NAV_ITEMS.filter((i) => i.group === group);
           if (items.length === 0) return null;
@@ -152,7 +152,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
                     <Button
                       variant="ghost"
                       className={cn(
-                        "w-full justify-start gap-3 h-10 rounded-lg transition-all duration-200 relative",
+                        "w-full justify-start gap-2.5 h-9 rounded-lg transition-all duration-200 relative",
                         isActive
                           ? "gradient-brand text-white font-medium glow-primary hover:opacity-95 hover:text-white"
                           : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:translate-x-0.5",
@@ -176,7 +176,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
           <Link to="/super-admin">
             <Button
               variant="ghost"
-              className="w-full justify-start gap-3 h-10 text-primary hover:bg-primary/10"
+              className="w-full justify-start gap-2.5 h-9 text-primary hover:bg-primary/10"
             >
               <ShieldCheck className="w-4 h-4" />
               <span className="text-sm">Super Admin</span>
@@ -185,7 +185,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
         )}
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 h-10 text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          className="w-full justify-start gap-2.5 h-9 text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground"
           onClick={handleChangeTenant}
         >
           <Building2 className="w-4 h-4" />
@@ -193,7 +193,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
         </Button>
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 h-10 text-sidebar-muted hover:bg-destructive/20 hover:text-destructive"
+          className="w-full justify-start gap-2.5 h-9 text-sidebar-muted hover:bg-destructive/20 hover:text-destructive"
           onClick={handleSignOut}
         >
           <LogOut className="w-4 h-4" />
@@ -213,14 +213,14 @@ export function AppLayout({ children, title }: AppLayoutProps) {
       </div>
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 sidebar-gradient border-r border-sidebar-border flex-col flex-shrink-0 relative z-10">
+      <aside className="hidden lg:flex w-56 xl:w-60 sidebar-gradient border-r border-sidebar-border flex-col flex-shrink-0 relative z-10">
         <NavContent />
       </aside>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
         {/* Header */}
-        <header className="h-14 border-b border-border/60 bg-card/60 backdrop-blur-md flex items-center px-4 gap-4 sticky top-0 z-20 relative">
+        <header className="h-12 border-b border-border/60 bg-card/60 backdrop-blur-md flex items-center px-4 gap-4 sticky top-0 z-20 relative">
           {/* Linha degradê na base do header */}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
 
@@ -230,7 +230,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
                 <Menu className="w-5 h-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-64 sidebar-gradient border-sidebar-border">
+            <SheetContent side="left" className="p-0 w-60 sidebar-gradient border-sidebar-border">
               <NavContent />
             </SheetContent>
           </Sheet>
@@ -243,7 +243,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto p-4 lg:p-6">{children}</main>
+        <main className="flex-1 overflow-auto p-3 lg:p-5">{children}</main>
       </div>
     </div>
   );
