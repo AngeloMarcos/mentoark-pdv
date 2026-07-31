@@ -269,6 +269,26 @@ export function PaymentDialog({
           </Alert>
         )}
 
+        {/* Fiado exige cliente */}
+        {missingCustomerForCredit && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Venda no fiado exige um cliente. Selecione o cliente no PDV antes de confirmar — será gerada uma Conta a Receber.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {hasCreditPayment && hasCustomer && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              O valor no fiado não entra no caixa: será gerada uma Conta a Receber para o cliente.
+            </AlertDescription>
+          </Alert>
+        )}
+
+
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing}>
             Cancelar
