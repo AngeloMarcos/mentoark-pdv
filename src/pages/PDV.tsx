@@ -236,7 +236,7 @@ const PDV = () => {
     setShowSuccess(true);
     setTimeout(() => {
       setShowSuccess(false);
-      setCart([]);
+      setCart([]); setCustomer(null);
       searchRef.current?.focus();
     }, 1500);
   };
