@@ -71,7 +71,12 @@ export function PaymentDialog({
     return sum;
   }, 0);
 
-  const canFinish = totalPaid >= total && payments.every(p => p.amount > 0);
+  const hasCreditPayment = payments.some(p => p.method.type === "credit" || p.method.code === "fiado");
+  const missingCustomerForCredit = hasCreditPayment && !hasCustomer;
+
+  const canFinish =
+    totalPaid >= total && payments.every(p => p.amount > 0) && !missingCustomerForCredit;
+
 
   const addPayment = (method: PaymentMethod) => {
     // Em modo simples, substitui
