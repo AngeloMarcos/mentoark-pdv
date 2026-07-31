@@ -207,212 +207,250 @@ export function ProductFormDialog({ open, onOpenChange, editingProduct, onSubmit
     };
   };
 
+  const applyMarkup = (pct: number) => {
+    if (!form.cost_price || form.cost_price <= 0) return;
+    const price = Math.round(form.cost_price * (1 + pct / 100) * 100) / 100;
+    updateField("sale_price", price);
+  };
+
+  const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+    <section className="rounded-lg border border-border/60 bg-card/40 p-3 space-y-3">
+      <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</h4>
+      {children}
+    </section>
+  );
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{editingProduct ? "Editar Produto" : "Novo Produto"}</DialogTitle>
+      <DialogContent className="max-w-2xl max-h-[92vh] overflow-y-auto p-4 sm:p-5">
+        <DialogHeader className="space-y-0.5">
+          <DialogTitle className="text-base">{editingProduct ? "Editar Produto" : "Novo Produto"}</DialogTitle>
+          <p className="text-xs text-muted-foreground">
+            Preencha nome e preço de venda. Os demais campos são opcionais.
+          </p>
         </DialogHeader>
-        <Tabs defaultValue="geral" className="pt-2">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="geral">Geral</TabsTrigger>
-            <TabsTrigger value="fiscal">Fiscal</TabsTrigger>
+
+        <Tabs defaultValue="geral" className="pt-1">
+          <TabsList className="grid w-full grid-cols-2 h-9">
+            <TabsTrigger value="geral" className="text-xs h-7">Geral</TabsTrigger>
+            <TabsTrigger value="fiscal" className="text-xs h-7">Fiscal</TabsTrigger>
           </TabsList>
-          <TabsContent value="geral">
-            <div className="space-y-4 pt-4">
-          <div className="grid sm:grid-cols-2 gap-4">
-            {/* Nome */}
-            <div className="space-y-1 sm:col-span-2">
-              <Label>Nome *</Label>
-              <Input
-                value={form.name}
-                onChange={(e) => updateField("name", e.target.value)}
-                onBlur={() => handleBlur("name")}
-                placeholder="Ex: Coca-Cola 350ml"
-                className={cn(getFieldState("name").borderClass)}
-              />
-              <FieldMessage error={getFieldState("name").error} />
-            </div>
 
-            {/* Código Interno */}
-            <div className="space-y-1">
-              <Label>Código Interno</Label>
-              <Input
-                value={form.internal_code || ""}
-                onChange={(e) => updateField("internal_code", e.target.value)}
-                onBlur={() => handleBlur("internal_code")}
-                placeholder="SKU ou código"
-                className={cn(getFieldState("internal_code").borderClass)}
-              />
-              <FieldMessage error={getFieldState("internal_code").error} />
-            </div>
+          <TabsContent value="geral" className="mt-3 space-y-3">
+            <Section title="Identificação">
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="space-y-1 sm:col-span-2">
+                  <Label className="text-xs">Nome *</Label>
+                  <Input
+                    value={form.name}
+                    onChange={(e) => updateField("name", e.target.value)}
+                    onBlur={() => handleBlur("name")}
+                    placeholder="Ex: Coca-Cola 350ml"
+                    className={cn("h-9", getFieldState("name").borderClass)}
+                  />
+                  <FieldMessage error={getFieldState("name").error} />
+                </div>
 
-            {/* Código de Barras */}
-            <div className="space-y-1">
-              <Label>Código de Barras</Label>
-              <Input
-                value={form.barcode || ""}
-                onChange={(e) => updateField("barcode", e.target.value)}
-                onBlur={() => handleBlur("barcode")}
-                placeholder="EAN-13 ou EAN-8"
-                className={cn(getFieldState("barcode").borderClass)}
-              />
-              <FieldMessage error={getFieldState("barcode").error} />
-            </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Código Interno</Label>
+                  <Input
+                    value={form.internal_code || ""}
+                    onChange={(e) => updateField("internal_code", e.target.value)}
+                    onBlur={() => handleBlur("internal_code")}
+                    placeholder="SKU"
+                    className={cn("h-9", getFieldState("internal_code").borderClass)}
+                  />
+                  <FieldMessage error={getFieldState("internal_code").error} />
+                </div>
 
-            {/* Categoria */}
-            <div className="space-y-1">
-              <Label>Categoria</Label>
-              <Input
-                value={form.category || ""}
-                onChange={(e) => updateField("category", e.target.value)}
-                onBlur={() => handleBlur("category")}
-                placeholder="Ex: Bebidas"
-                className={cn(getFieldState("category").borderClass)}
-              />
-              <FieldMessage error={getFieldState("category").error} />
-            </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Código de Barras</Label>
+                  <Input
+                    value={form.barcode || ""}
+                    onChange={(e) => updateField("barcode", e.target.value)}
+                    onBlur={() => handleBlur("barcode")}
+                    placeholder="EAN-13"
+                    className={cn("h-9", getFieldState("barcode").borderClass)}
+                  />
+                  <FieldMessage error={getFieldState("barcode").error} />
+                </div>
 
-            {/* Unidade */}
-            <div className="space-y-1">
-              <Label>Unidade</Label>
-              <Input
-                value={form.unit || "UN"}
-                onChange={(e) => updateField("unit", e.target.value)}
-                onBlur={() => handleBlur("unit")}
-                placeholder="UN, KG, L..."
-                className={cn(getFieldState("unit").borderClass)}
-              />
-              <FieldMessage error={getFieldState("unit").error} />
-            </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Categoria</Label>
+                  <Input
+                    value={form.category || ""}
+                    onChange={(e) => updateField("category", e.target.value)}
+                    onBlur={() => handleBlur("category")}
+                    placeholder="Ex: Bebidas"
+                    list="product-categories"
+                    className={cn("h-9", getFieldState("category").borderClass)}
+                  />
+                  <datalist id="product-categories">
+                    {categories.map((c) => (
+                      <option key={c} value={c} />
+                    ))}
+                  </datalist>
+                  <FieldMessage error={getFieldState("category").error} />
+                </div>
 
-            {/* Preço de Venda */}
-            <div className="space-y-1">
-              <Label>Preço de Venda *</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={form.sale_price || ""}
-                onChange={(e) => updateField("sale_price", parseFloat(e.target.value) || 0)}
-                onBlur={() => handleBlur("sale_price")}
-                placeholder="0,00"
-                className={cn(getFieldState("sale_price").borderClass)}
-              />
-              <FieldMessage error={getFieldState("sale_price").error} />
-            </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Unidade</Label>
+                  <Select value={form.unit || "UN"} onValueChange={(v) => updateField("unit", v)}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {UNITS.map((u) => (
+                        <SelectItem key={u.value} value={u.value}>
+                          {u.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </Section>
 
-            {/* Preço de Custo */}
-            <div className="space-y-1">
-              <Label>Preço de Custo</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={form.cost_price || ""}
-                onChange={(e) => updateField("cost_price", parseFloat(e.target.value) || null)}
-                onBlur={() => handleBlur("cost_price")}
-                placeholder="0,00"
-                className={cn(getFieldState("cost_price").borderClass)}
-              />
-              <FieldMessage error={getFieldState("cost_price").error} />
+            <Section title="Preços">
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Preço de Custo</Label>
+                  <CurrencyInput
+                    value={form.cost_price}
+                    onChange={(v) => updateField("cost_price", v)}
+                    onBlur={() => handleBlur("cost_price")}
+                    className={getFieldState("cost_price").borderClass}
+                  />
+                  <FieldMessage error={getFieldState("cost_price").error} />
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs">Preço de Venda *</Label>
+                  <CurrencyInput
+                    value={form.sale_price || null}
+                    onChange={(v) => updateField("sale_price", v ?? 0)}
+                    onBlur={() => handleBlur("sale_price")}
+                    className={getFieldState("sale_price").borderClass}
+                  />
+                  <FieldMessage error={getFieldState("sale_price").error} />
+                </div>
+              </div>
+
+              {form.cost_price && form.cost_price > 0 ? (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[11px] text-muted-foreground mr-1">Markup rápido:</span>
+                  {[20, 30, 50, 100].map((pct) => (
+                    <Button
+                      key={pct}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-2 text-xs"
+                      onClick={() => applyMarkup(pct)}
+                    >
+                      +{pct}%
+                    </Button>
+                  ))}
+                </div>
+              ) : null}
+
               {margin !== null && (
-                <p className={cn("text-xs mt-0.5", margin >= 0 ? "text-emerald-600" : "text-destructive")}>
-                  Margem: {margin.toFixed(1)}%
-                </p>
+                <div
+                  className={cn(
+                    "flex items-center justify-between rounded-md px-2.5 py-1.5 text-xs",
+                    margin >= 0 ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive",
+                  )}
+                >
+                  <span>Margem de lucro</span>
+                  <span className="font-semibold tabular-nums">
+                    {margin.toFixed(1)}% · {formatCurrency((form.sale_price || 0) - (form.cost_price || 0))}
+                  </span>
+                </div>
               )}
-            </div>
 
-            {/* Preço Atacado */}
-            <div className="space-y-1">
-              <Label>Preço Atacado</Label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={form.wholesale_price || ""}
-                onChange={(e) => updateField("wholesale_price", parseFloat(e.target.value) || null)}
-                onBlur={() => handleBlur("wholesale_price")}
-                placeholder="0,00"
-                className={cn(getFieldState("wholesale_price").borderClass)}
-              />
-              <FieldMessage error={getFieldState("wholesale_price").error} />
-            </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Preço Atacado</Label>
+                  <CurrencyInput
+                    value={form.wholesale_price ?? null}
+                    onChange={(v) => updateField("wholesale_price", v)}
+                    onBlur={() => handleBlur("wholesale_price")}
+                    className={getFieldState("wholesale_price").borderClass}
+                  />
+                  <FieldMessage error={getFieldState("wholesale_price").error} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Qtd. mínima para atacado</Label>
+                  <QuantityInput
+                    value={form.wholesale_min_qty ?? null}
+                    onChange={(v) => updateField("wholesale_min_qty", v)}
+                    suffix={form.unit || "UN"}
+                    placeholder="1"
+                  />
+                </div>
+              </div>
+            </Section>
 
-            {/* Qtd Mín Atacado */}
-            <div className="space-y-1">
-              <Label>Qtd Mín. Atacado</Label>
-              <Input
-                type="number"
-                step="0.001"
-                min="0"
-                value={form.wholesale_min_qty || ""}
-                onChange={(e) => updateField("wholesale_min_qty", parseFloat(e.target.value) || null)}
-                placeholder="1"
-              />
-            </div>
+            <Section title="Estoque">
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs">Estoque Atual</Label>
+                  <QuantityInput
+                    value={form.stock_current ?? 0}
+                    onChange={(v) => updateField("stock_current", v ?? 0)}
+                    onBlur={() => handleBlur("stock_current")}
+                    suffix={form.unit || "UN"}
+                    className={getFieldState("stock_current").borderClass}
+                  />
+                  <FieldMessage error={getFieldState("stock_current").error} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Estoque Mínimo</Label>
+                  <QuantityInput
+                    value={form.min_stock ?? null}
+                    onChange={(v) => updateField("min_stock", v)}
+                    onBlur={() => handleBlur("min_stock")}
+                    suffix={form.unit || "UN"}
+                    className={getFieldState("min_stock").borderClass}
+                  />
+                  <FieldMessage error={getFieldState("min_stock").error} />
+                </div>
+              </div>
 
-            {/* Estoque Atual */}
-            <div className="space-y-1">
-              <Label>Estoque Atual</Label>
-              <Input
-                type="number"
-                step="0.001"
-                min="0"
-                value={form.stock_current || 0}
-                onChange={(e) => updateField("stock_current", parseFloat(e.target.value) || 0)}
-                onBlur={() => handleBlur("stock_current")}
-                className={cn(getFieldState("stock_current").borderClass)}
-              />
-              <FieldMessage error={getFieldState("stock_current").error} />
-            </div>
-
-            {/* Estoque Mínimo */}
-            <div className="space-y-1">
-              <Label>Estoque Mínimo</Label>
-              <Input
-                type="number"
-                step="0.001"
-                min="0"
-                value={form.min_stock || ""}
-                onChange={(e) => updateField("min_stock", parseFloat(e.target.value) || null)}
-                onBlur={() => handleBlur("min_stock")}
-                className={cn(getFieldState("min_stock").borderClass)}
-              />
-              <FieldMessage error={getFieldState("min_stock").error} />
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <Switch checked={form.active} onCheckedChange={(checked) => updateField("active", checked)} />
-              <Label>Produto ativo</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch checked={form.controls_lot} onCheckedChange={(checked) => updateField("controls_lot", checked)} />
-              <Label>Controla lote/validade</Label>
-            </div>
-          </div>
-
-          <Button
-            className="w-full"
-            onClick={handleSubmit}
-            disabled={isPending || !isFormValid}
-          >
-            {isPending ? "Salvando..." : editingProduct ? "Salvar" : "Criar Produto"}
-          </Button>
-            </div>
+              <div className="flex flex-wrap gap-4 pt-1">
+                <div className="flex items-center gap-2">
+                  <Switch checked={form.active} onCheckedChange={(checked) => updateField("active", checked)} />
+                  <Label className="text-xs">Produto ativo</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={form.controls_lot}
+                    onCheckedChange={(checked) => updateField("controls_lot", checked)}
+                  />
+                  <Label className="text-xs">Controla lote/validade</Label>
+                </div>
+              </div>
+            </Section>
           </TabsContent>
-          <TabsContent value="fiscal">
-            <div className="pt-4">
-              <FiscalProductTab
-                values={form as FiscalFields}
-                onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
-              />
-            </div>
+
+          <TabsContent value="fiscal" className="mt-3">
+            <FiscalProductTab
+              values={form as FiscalFields}
+              onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+            />
           </TabsContent>
         </Tabs>
+
+        <div className="sticky bottom-0 -mx-4 sm:-mx-5 -mb-4 sm:-mb-5 mt-1 flex items-center justify-end gap-2 border-t border-border/60 bg-background/95 backdrop-blur px-4 sm:px-5 py-3">
+          <Button variant="ghost" size="sm" onClick={() => handleOpenChange(false)} disabled={isPending}>
+            Cancelar
+          </Button>
+          <Button size="sm" onClick={handleSubmit} disabled={isPending || !isFormValid} className="min-w-[140px]">
+            {isPending ? "Salvando..." : editingProduct ? "Salvar alterações" : "Criar produto"}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
 }
+
