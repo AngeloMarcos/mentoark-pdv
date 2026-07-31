@@ -354,6 +354,7 @@ const Products = () => {
           editingProduct={editingProduct}
           onSubmit={handleSubmit}
           isPending={createProduct.isPending || updateProduct.isPending}
+          categories={categories}
         />
 
         {/* Barcode Management Dialog */}
