@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CurrencyInput, QuantityInput } from "@/components/ui/currency-input";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Product, ProductInput } from "@/hooks/useProducts";
 import { FiscalProductTab, FiscalFields } from "@/components/fiscal/FiscalProductTab";
@@ -108,7 +108,7 @@ function FieldMessage({ error, success }: { error?: string | null; success?: str
   if (error) {
     return (
       <p className="text-xs text-destructive flex items-center gap-1 mt-1">
-        <AlertCircle className="w-3 h-3" />
+        <AlertTriangle className="w-3 h-3" />
         {error}
       </p>
     );

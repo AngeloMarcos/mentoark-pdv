@@ -4,29 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTenant } from "@/contexts/TenantContext";
 import { useCompany } from "@/contexts/CompanyContext";
 import { Button } from "@/components/ui/button";
-import {
-  LayoutDashboard,
-  ShoppingBag,
-  Package,
-  Boxes,
-  Warehouse,
-  CalendarClock,
-  Building2,
-  LogOut,
-  Menu,
-  UtensilsCrossed,
-  Users,
-  Settings,
-  BarChart2,
-  Wallet,
-  DollarSign,
-  RotateCcw,
-  Truck,
-  Tag,
-  UserCog,
-  FileText,
-  ShieldCheck,
-} from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Package, Boxes, Warehouse, CalendarClock, Building2, LogOut, Menu, UtensilsCrossed, Users, Settings, BarChart3, Wallet, DollarSign, RotateCcw, Truck, Tag, UserCog, FileText, ShieldCheck } from "lucide-react";
 import { useIsSuperAdmin } from "@/hooks/useSuperAdmin";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -42,7 +20,7 @@ const NAV_GROUPS = ["Geral", "Operação", "Catálogo & Estoque", "Gestão"] as 
 
 const ALL_NAV_ITEMS: NavItem[] = [
   { path: "/dashboard", label: "Painel", icon: LayoutDashboard, feature: null, permission: "dashboard", group: "Geral" },
-  { path: "/pdv", label: "PDV", icon: ShoppingBag, feature: null, permission: "pdv", group: "Operação" },
+  { path: "/pdv", label: "PDV", icon: ShoppingCart, feature: null, permission: "pdv", group: "Operação" },
   { path: "/returns", label: "Devoluções", icon: RotateCcw, feature: null, permission: "returns", group: "Operação" },
   { path: "/cash-register", label: "Caixa", icon: Wallet, feature: "cash_register", permission: "cash_register", group: "Operação" },
   { path: "/tables", label: "Mesas", icon: UtensilsCrossed, feature: "tables", permission: "tables", group: "Operação" },
@@ -53,7 +31,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { path: "/compras", label: "Compras", icon: Truck, feature: null, permission: "compras", group: "Catálogo & Estoque" },
   { path: "/promotions", label: "Promoções", icon: Tag, feature: null, permission: "promotions", group: "Catálogo & Estoque" },
   { path: "/customers", label: "Clientes", icon: Users, feature: null, permission: "customers", group: "Gestão" },
-  { path: "/reports", label: "Relatórios", icon: BarChart2, feature: null, permission: "reports", group: "Gestão" },
+  { path: "/reports", label: "Relatórios", icon: BarChart3, feature: null, permission: "reports", group: "Gestão" },
   { path: "/financial", label: "Financeiro", icon: DollarSign, feature: null, permission: "financial", group: "Gestão" },
   { path: "/team", label: "Equipe", icon: UserCog, feature: null, permission: "team", group: "Gestão" },
   { path: "/fiscal", label: "Fiscal", icon: FileText, feature: null, permission: "fiscal", group: "Gestão" },

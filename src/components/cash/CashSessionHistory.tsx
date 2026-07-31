@@ -20,15 +20,7 @@ import {
 } from "@/components/ui/select";
 import { ExportButtons } from "@/components/reports/ExportButtons";
 import { CashSession, CashRegister } from "@/hooks/useCashRegister";
-import {
-  Search,
-  CalendarIcon,
-  Filter,
-  DollarSign,
-  CheckCircle,
-  X,
-  User,
-} from "lucide-react";
+import { Search, Calendar as CalendarIcon, Filter, DollarSign, CheckCircle2, X, User } from "lucide-react";
 
 interface CashSessionHistoryProps {
   sessions: (CashSession & { register: CashRegister })[];
@@ -287,7 +279,7 @@ export function CashSessionHistory({
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
+                  <CalendarIcon
                     mode="single"
                     selected={startDate}
                     onSelect={setStartDate}
@@ -309,7 +301,7 @@ export function CashSessionHistory({
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
+                  <CalendarIcon
                     mode="single"
                     selected={endDate}
                     onSelect={setEndDate}
@@ -426,7 +418,7 @@ export function CashSessionHistory({
                     {session.status === "open" ? (
                       <DollarSign className="w-5 h-5 text-success" />
                     ) : (
-                      <CheckCircle className="w-5 h-5 text-muted-foreground" />
+                      <CheckCircle2 className="w-5 h-5 text-muted-foreground" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">

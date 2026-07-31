@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAcceptInvitation, useInvitationInfo } from "@/hooks/useTenantUsers";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Building2, CheckCircle, XCircle, Loader2, LogIn } from "lucide-react";
+import { Building2, CheckCircle2, XCircle, Loader2, LogIn } from "lucide-react";
 
 const AcceptInvitation = () => {
   const { token } = useParams<{ token: string }>();
@@ -93,7 +93,7 @@ const AcceptInvitation = () => {
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardContent className="flex flex-col items-center justify-center p-8">
-            <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
+            <CheckCircle2 className="h-16 w-16 text-green-500 mb-4" />
             <h2 className="text-xl font-semibold mb-2">Convite aceito!</h2>
             <p className="text-muted-foreground text-center mb-4">
               Você agora tem acesso à empresa <strong>{invitationInfo.tenant_name}</strong>.

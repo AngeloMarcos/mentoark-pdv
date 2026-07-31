@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Package, Plus, AlertTriangle, CheckCircle, Ban } from "lucide-react";
+import { Package, Plus, AlertTriangle, CheckCircle2, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -83,7 +83,7 @@ export function LotManager({ productId, productName }: LotManagerProps) {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "active":
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
       case "expired":
         return <AlertTriangle className="h-4 w-4 text-destructive" />;
       case "blocked":

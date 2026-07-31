@@ -21,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreVertical, Shield, User, Trash2, Loader2 } from "lucide-react";
+import { MoreHorizontal, Shield, User, Trash2, Loader2 } from "lucide-react";
 
 export function TeamMemberList() {
   const { data: users = [], isLoading } = useTenantUsers();
@@ -97,7 +97,7 @@ export function TeamMemberList() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" size="icon">
-                      <MoreVertical className="h-4 w-4" />
+                      <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">

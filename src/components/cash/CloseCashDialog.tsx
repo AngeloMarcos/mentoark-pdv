@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useCloseCash, useSessionSummary, CashSession, CashRegister } from "@/hooks/useCashRegister";
-import { Lock, AlertTriangle, CheckCircle, Banknote, CreditCard, Smartphone, Wallet } from "lucide-react";
+import { Lock, AlertTriangle, CheckCircle2, Banknote, CreditCard, Smartphone, Wallet } from "lucide-react";
 
 interface CloseCashDialogProps {
   session: CashSession & { register: CashRegister };
@@ -267,7 +267,7 @@ export function CloseCashDialog({ session, onSuccess }: CloseCashDialogProps) {
           {hasCashDifference ? (
             <AlertTriangle className="w-5 h-5 text-destructive" />
           ) : (
-            <CheckCircle className="w-5 h-5 text-success" />
+            <CheckCircle2 className="w-5 h-5 text-success" />
           )}
           <div className="flex-1">
             <p className={`font-medium ${hasCashDifference ? "text-destructive" : "text-success"}`}>

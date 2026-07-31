@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Users, UserPlus, ShoppingBag, Receipt } from "lucide-react";
+import { Users, UserPlus, ShoppingCart, Receipt } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
 import { KpiCard } from "../KpiCard";
@@ -21,7 +21,7 @@ export function CustomersTab({ start, end }: Props) {
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Total de clientes" value={String(kpi?.total_customers || 0)} icon={Users} />
         <KpiCard label="Novos no período" value={String(kpi?.new_in_period || 0)} icon={UserPlus} />
-        <KpiCard label="Ativos no período" value={String(kpi?.active_in_period || 0)} icon={ShoppingBag} />
+        <KpiCard label="Ativos no período" value={String(kpi?.active_in_period || 0)} icon={ShoppingCart} />
         <KpiCard label="Ticket médio/cliente" value={formatCurrency(kpi?.avg_ticket || 0)} icon={Receipt} />
       </div>
 

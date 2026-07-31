@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, TrendingUp, Percent, ShoppingCart, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { DollarSign, TrendingUp, Percent, ShoppingCart, TrendingDown } from "lucide-react";
 import { formatCurrency, formatPercent } from "@/lib/export-utils";
 import { cn } from "@/lib/utils";
 
@@ -50,9 +50,9 @@ export function SummaryCards({
               )}
             >
               {revenueChange >= 0 ? (
-                <ArrowUpRight className="w-3 h-3 mr-1" />
+                <TrendingUp className="w-3 h-3 mr-1" />
               ) : (
-                <ArrowDownRight className="w-3 h-3 mr-1" />
+                <TrendingDown className="w-3 h-3 mr-1" />
               )}
               {formatPercent(Math.abs(revenueChange))} vs período anterior
             </div>
@@ -90,9 +90,9 @@ export function SummaryCards({
               )}
             >
               {profitChange >= 0 ? (
-                <ArrowUpRight className="w-3 h-3 mr-1" />
+                <TrendingUp className="w-3 h-3 mr-1" />
               ) : (
-                <ArrowDownRight className="w-3 h-3 mr-1" />
+                <TrendingDown className="w-3 h-3 mr-1" />
               )}
               {formatPercent(Math.abs(profitChange))} vs período anterior
             </div>

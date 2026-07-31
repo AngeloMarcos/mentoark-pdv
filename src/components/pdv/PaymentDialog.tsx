@@ -8,7 +8,7 @@ import { usePaymentMethods, PaymentMethod, SalePayment, useSeedDefaultPaymentMet
 import { PaymentMethodCard } from "./PaymentMethodCard";
 import { PixPaymentSection } from "./PixPaymentSection";
 import { useTenant } from "@/contexts/TenantContext";
-import { AlertCircle, Plus, Check, Loader2 } from "lucide-react";
+import { AlertTriangle, Plus, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PaymentDialogProps {
@@ -262,7 +262,7 @@ export function PaymentDialog({
         {/* Aviso de valor insuficiente */}
         {totalPaid > 0 && remaining > 0 && (
           <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
+            <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               Faltam {formatCurrency(remaining)} para completar o pagamento
             </AlertDescription>
@@ -272,7 +272,7 @@ export function PaymentDialog({
         {/* Fiado exige cliente */}
         {missingCustomerForCredit && (
           <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
+            <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               Venda no fiado exige um cliente. Selecione o cliente no PDV antes de confirmar — será gerada uma Conta a Receber.
             </AlertDescription>
@@ -281,7 +281,7 @@ export function PaymentDialog({
 
         {hasCreditPayment && hasCustomer && (
           <Alert>
-            <AlertCircle className="h-4 w-4" />
+            <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               O valor no fiado não entra no caixa: será gerada uma Conta a Receber para o cliente.
             </AlertDescription>

@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Minus, Trash2, ShoppingCart, Check, Barcode, Printer, AlertCircle, DollarSign, Wallet, Tag, Loader2 } from "lucide-react";
+import { Search, Plus, Minus, Trash2, ShoppingCart, Check, Barcode, Printer, AlertTriangle, DollarSign, Wallet, Tag, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ReceiptPreview } from "@/components/print/ReceiptPreview";
 import { useTenant } from "@/contexts/TenantContext";
@@ -326,7 +326,7 @@ const PDV = () => {
           {/* Cash register warning */}
           {!sessionLoading && !activeSession && (
             <Alert variant="destructive" className="mb-2">
-              <AlertCircle className="h-4 w-4" />
+              <AlertTriangle className="h-4 w-4" />
               <AlertDescription className="flex items-center justify-between">
                 <span>Nenhum caixa aberto. Abra o caixa para realizar vendas.</span>
                 <Button variant="outline" size="sm" onClick={() => navigate("/cash-register")}>

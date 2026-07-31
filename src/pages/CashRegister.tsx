@@ -17,13 +17,7 @@ import { CloseCashDialog } from "@/components/cash/CloseCashDialog";
 import { CashMovementDialog } from "@/components/cash/CashMovementDialog";
 import { CashSessionSummary } from "@/components/cash/CashSessionSummary";
 import { CashSessionHistory } from "@/components/cash/CashSessionHistory";
-import { 
-  DollarSign, 
-  Lock, 
-  ArrowDownCircle, 
-  ArrowUpCircle, 
-  Clock,
-} from "lucide-react";
+import { DollarSign, Lock, ArrowDownCircle, ArrowUpCircle, Clock } from "lucide-react";
 
 const CashRegister = () => {
   const [openDialog, setOpenDialog] = useState<"open" | "close" | "movement" | "history" | null>(null);
