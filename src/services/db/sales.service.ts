@@ -38,7 +38,7 @@ export const salesService = {
    */
   async checkoutSale(payload: CheckoutSalePayload): Promise<{ sale_id: string }> {
     const { data, error } = await supabase.rpc("checkout_sale_transaction", {
-      p_payload: payload as unknown as Record<string, unknown>,
+      p_payload: payload as any,
     });
 
     if (error) {
