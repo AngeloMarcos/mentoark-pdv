@@ -10,6 +10,8 @@ import { useActiveSession } from "@/hooks/useCashRegister";
 import { SalePayment } from "@/hooks/usePaymentMethods";
 import { PaymentDialog } from "@/components/pdv/PaymentDialog";
 import { EmployeeSelector } from "@/components/pdv/EmployeeSelector";
+import { CustomerSelector } from "@/components/pdv/CustomerSelector";
+import type { Customer } from "@/hooks/useCustomers";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +45,7 @@ const PDV = () => {
   const [lastSale, setLastSale] = useState<{ id: string; netTotal: number; payments: SalePayment[] } | null>(null);
   const [showReceipt, setShowReceipt] = useState(false);
   const [employee, setEmployee] = useState<string | null>(null);
+  const [customer, setCustomer] = useState<Customer | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const [promoTarget, setPromoTarget] = useState<CartItem | null>(null);
   const [emittingNfce, setEmittingNfce] = useState(false);
@@ -192,6 +195,7 @@ const PDV = () => {
     const sale = await createSale.mutateAsync({
       items: cart,
       payments,
+      customer_id: customer?.id ?? null,
       session_id: activeSession.id,
     });
 
@@ -232,7 +236,7 @@ const PDV = () => {
     setShowSuccess(true);
     setTimeout(() => {
       setShowSuccess(false);
-      setCart([]);
+      setCart([]); setCustomer(null);
       searchRef.current?.focus();
     }, 1500);
   };
@@ -313,6 +317,7 @@ const PDV = () => {
           {/* Employee selector */}
           {hasFeature('employee_selection') && (
             <EmployeeSelector employee={employee} onSelect={setEmployee} />
+            <CustomerSelector customer={customer} onSelect={setCustomer} />
           )}
 
           {/* Cash register warning */}
@@ -458,6 +463,7 @@ const PDV = () => {
         total={netTotal}
         onConfirm={handlePaymentConfirm}
         isProcessing={createSale.isPending}
+        hasCustomer={!!customer}
       />
 
       {/* Apply Promotion Dialog */}

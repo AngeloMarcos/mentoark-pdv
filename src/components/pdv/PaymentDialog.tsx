@@ -17,7 +17,9 @@ interface PaymentDialogProps {
   total: number;
   onConfirm: (payments: SalePayment[]) => void;
   isProcessing?: boolean;
+  hasCustomer?: boolean;
 }
+
 
 interface PaymentEntry {
   method: PaymentMethod;
@@ -32,7 +34,9 @@ export function PaymentDialog({
   total,
   onConfirm,
   isProcessing = false,
+  hasCustomer = false,
 }: PaymentDialogProps) {
+
   const { currentTenant } = useTenant();
   const { data: paymentMethods = [], isLoading } = usePaymentMethods();
   const seedDefaults = useSeedDefaultPaymentMethods();
@@ -67,7 +71,12 @@ export function PaymentDialog({
     return sum;
   }, 0);
 
-  const canFinish = totalPaid >= total && payments.every(p => p.amount > 0);
+  const hasCreditPayment = payments.some(p => p.method.type === "credit" || p.method.code === "fiado");
+  const missingCustomerForCredit = hasCreditPayment && !hasCustomer;
+
+  const canFinish =
+    totalPaid >= total && payments.every(p => p.amount > 0) && !missingCustomerForCredit;
+
 
   const addPayment = (method: PaymentMethod) => {
     // Em modo simples, substitui
@@ -259,6 +268,26 @@ export function PaymentDialog({
             </AlertDescription>
           </Alert>
         )}
+
+        {/* Fiado exige cliente */}
+        {missingCustomerForCredit && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Venda no fiado exige um cliente. Selecione o cliente no PDV antes de confirmar — será gerada uma Conta a Receber.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {hasCreditPayment && hasCustomer && (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              O valor no fiado não entra no caixa: será gerada uma Conta a Receber para o cliente.
+            </AlertDescription>
+          </Alert>
+        )}
+
 
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing}>
