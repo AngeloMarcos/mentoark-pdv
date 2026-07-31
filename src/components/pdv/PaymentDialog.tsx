@@ -17,7 +17,9 @@ interface PaymentDialogProps {
   total: number;
   onConfirm: (payments: SalePayment[]) => void;
   isProcessing?: boolean;
+  hasCustomer?: boolean;
 }
+
 
 interface PaymentEntry {
   method: PaymentMethod;
