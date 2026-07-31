@@ -212,6 +212,8 @@ export function useCreateSale() {
       const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
       if (totalPayments < netTotal) throw new Error("Valor dos pagamentos insuficiente");
 
+      const primaryPaymentMethod = payments[0].payment_method_code;
+
       // Despacha toda a carga para o serviço especializado
       const response = await salesService.checkoutSale({
         tenant_id: currentTenant.id,

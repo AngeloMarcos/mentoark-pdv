@@ -2727,6 +2727,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      checkout_sale_transaction: { Args: { p_payload: Json }; Returns: Json }
       consume_lots_fefo: {
         Args: { _product_id: string; _quantity: number; _tenant_id: string }
         Returns: Json
