@@ -34,7 +34,9 @@ export function PaymentDialog({
   total,
   onConfirm,
   isProcessing = false,
+  hasCustomer = false,
 }: PaymentDialogProps) {
+
   const { currentTenant } = useTenant();
   const { data: paymentMethods = [], isLoading } = usePaymentMethods();
   const seedDefaults = useSeedDefaultPaymentMethods();
