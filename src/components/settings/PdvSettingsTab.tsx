@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, Save, Loader2 } from "lucide-react";
+import { ShoppingCart, Save, Loader2 } from "lucide-react";
 import { useCompanySettings, useUpdateCompanySettings } from "@/hooks/useCompanySettings";
 import { toast } from "sonner";
 
@@ -39,7 +39,7 @@ export function PdvSettingsTab() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5" /> Operação do PDV
+            <ShoppingCart className="w-5 h-5" /> Operação do PDV
           </CardTitle>
           <CardDescription>Comportamento padrão do ponto de venda.</CardDescription>
         </CardHeader>

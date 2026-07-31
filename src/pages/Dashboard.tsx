@@ -6,19 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTodaySales } from "@/hooks/useSales";
 import { useLowStockProducts } from "@/hooks/useProducts";
 import { useSalesLast7Days, useRecentSales } from "@/hooks/useSalesChart";
-import { 
-  ShoppingBag, 
-  DollarSign, 
-  CreditCard, 
-  Banknote, 
-  QrCode, 
-  AlertTriangle, 
-  TrendingUp, 
-  Clock,
-  ArrowRight,
-  Hash,
-  Receipt
-} from "lucide-react";
+import { ShoppingCart, DollarSign, CreditCard, Banknote, QrCode, AlertTriangle, TrendingUp, Clock, ArrowRight, Hash, Receipt } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { format } from "date-fns";
 import { KPICardSkeleton, ChartSkeleton, ListItemSkeleton } from "@/components/ui/skeletons";
@@ -51,7 +39,7 @@ const Dashboard = () => {
             <CardContent className="p-6 lg:p-8">
               <div className="flex items-center gap-6">
                 <div className="w-16 h-16 lg:w-20 lg:h-20 bg-primary/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                  <ShoppingBag className="w-8 h-8 lg:w-10 lg:h-10 text-primary" />
+                  <ShoppingCart className="w-8 h-8 lg:w-10 lg:h-10 text-primary" />
                 </div>
                 <div className="flex-1">
                   <h2 className="text-2xl lg:text-3xl font-bold text-foreground">Nova Venda</h2>

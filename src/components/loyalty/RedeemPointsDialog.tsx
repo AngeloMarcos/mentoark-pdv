@@ -17,7 +17,7 @@ import {
   useRedeemPoints,
   calculatePointsValue,
 } from "@/hooks/useLoyalty";
-import { Gift, AlertCircle, Loader2, Check } from "lucide-react";
+import { Gift, AlertTriangle, Loader2, Check } from "lucide-react";
 
 interface RedeemPointsDialogProps {
   open: boolean;
@@ -165,7 +165,7 @@ export function RedeemPointsDialog({
           {/* Alertas */}
           {pointsToRedeem < minPoints && pointsToRedeem > 0 && (
             <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
+              <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
                 Mínimo para resgate: {minPoints.toLocaleString("pt-BR")} pontos
               </AlertDescription>
@@ -174,7 +174,7 @@ export function RedeemPointsDialog({
 
           {maxDiscount && discountValue > maxDiscount && (
             <Alert>
-              <AlertCircle className="h-4 w-4" />
+              <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
                 Desconto limitado ao valor da compra: {formatCurrency(maxDiscount)}
               </AlertDescription>

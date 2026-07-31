@@ -1,17 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useCashMovements, CashSession, CashRegister, useSessionSummary } from "@/hooks/useCashRegister";
-import { 
-  ArrowDownCircle, 
-  ArrowUpCircle, 
-  ShoppingCart, 
-  DollarSign, 
-  Lock, 
-  Banknote, 
-  CreditCard, 
-  Smartphone,
-  Wallet 
-} from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, ShoppingCart, DollarSign, Lock, Banknote, CreditCard, Smartphone, Wallet } from "lucide-react";
 
 interface CashSessionSummaryProps {
   session: CashSession & { register: CashRegister };

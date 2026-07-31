@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Upload, FileText, Download, AlertCircle, CheckCircle } from "lucide-react";
+import { Upload, FileText, Download, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -219,9 +219,9 @@ export function ProductImporter({ open, onOpenChange }: ProductImporterProps) {
           <div className="space-y-4 py-4">
             <div className="text-center">
               {result.errors.length === 0 ? (
-                <CheckCircle className="h-16 w-16 mx-auto text-green-500 mb-4" />
+                <CheckCircle2 className="h-16 w-16 mx-auto text-green-500 mb-4" />
               ) : (
-                <AlertCircle className="h-16 w-16 mx-auto text-yellow-500 mb-4" />
+                <AlertTriangle className="h-16 w-16 mx-auto text-yellow-500 mb-4" />
               )}
               <h3 className="text-xl font-semibold mb-2">Importação Concluída</h3>
             </div>
@@ -248,7 +248,7 @@ export function ProductImporter({ open, onOpenChange }: ProductImporterProps) {
                 <div className="space-y-2">
                   {result.errors.map((error, index) => (
                     <div key={index} className="text-sm text-destructive flex items-start gap-2">
-                      <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                      <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                       {error}
                     </div>
                   ))}

@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Trash2, Barcode, Tag, Printer, Wand2, Upload, Download, Package, PowerOff, Power, FileSpreadsheet } from "lucide-react";
+import { Plus, Pencil, Trash2, Barcode, Tag, Printer, Wand2, Upload, Download, Package, PowerOff, Power, FileSpreadsheet } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { ProductCardSkeleton } from "@/components/ui/skeletons";
 import { BarcodeGenerator } from "@/components/barcode/BarcodeGenerator";
@@ -297,7 +297,7 @@ const Products = () => {
                         <TableCell>
                           <div className="flex justify-end gap-1">
                             <Button variant="ghost" size="icon" onClick={() => openBarcodeDialog(product)} title="Códigos de barras"><Barcode className="w-4 h-4" /></Button>
-                            <Button variant="ghost" size="icon" onClick={() => openEditDialog(product)}><Edit className="w-4 h-4" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => openEditDialog(product)}><Pencil className="w-4 h-4" /></Button>
                             <Button variant="ghost" size="icon" onClick={() => { setDeletingId(product.id); setDeleteDialogOpen(true); }}><Trash2 className="w-4 h-4 text-destructive" /></Button>
                           </div>
                         </TableCell>
@@ -337,7 +337,7 @@ const Products = () => {
                     <div className="flex gap-1">
                       {extProduct.controls_lot && (<LotManager productId={product.id} productName={product.name} />)}
                       <Button variant="ghost" size="icon" onClick={() => openBarcodeDialog(product)} title="Gerenciar códigos de barras"><Barcode className="w-4 h-4" /></Button>
-                      <Button variant="ghost" size="icon" onClick={() => openEditDialog(product)}><Edit className="w-4 h-4" /></Button>
+                      <Button variant="ghost" size="icon" onClick={() => openEditDialog(product)}><Pencil className="w-4 h-4" /></Button>
                       <Button variant="ghost" size="icon" onClick={() => { setDeletingId(product.id); setDeleteDialogOpen(true); }}><Trash2 className="w-4 h-4 text-destructive" /></Button>
                     </div>
                   </CardContent>
@@ -347,7 +347,7 @@ const Products = () => {
           </div>
         )}
 
-        {/* Create/Edit Dialog */}
+        {/* Create/Pencil Dialog */}
         <ProductFormDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}

@@ -2,7 +2,7 @@ import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PermissionGuard } from "@/components/auth/PermissionGuard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, ShoppingBag, FileText, Plug, ShieldCheck } from "lucide-react";
+import { Building2, ShoppingCart, FileText, Plug, ShieldCheck } from "lucide-react";
 import { CompanyDataTab } from "@/components/settings/CompanyDataTab";
 import { PdvSettingsTab } from "@/components/settings/PdvSettingsTab";
 import { FiscalSettingsTab } from "@/components/settings/FiscalSettingsTab";
@@ -30,7 +30,7 @@ const Settings = () => {
                 <span className="hidden sm:inline">Empresa</span>
               </TabsTrigger>
               <TabsTrigger value="pdv" className="gap-2">
-                <ShoppingBag className="w-4 h-4" />
+                <ShoppingCart className="w-4 h-4" />
                 <span className="hidden sm:inline">PDV</span>
               </TabsTrigger>
               <TabsTrigger value="fiscal" className="gap-2">
