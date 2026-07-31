@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Download, TrendingUp, TrendingDown } from "lucide-react";
+import { Download, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { useCashFlow } from "@/hooks/useCashFlow";
 import { format } from "date-fns";
 import { downloadCSV } from "@/lib/csv-utils";
@@ -104,11 +104,11 @@ export function CashFlowView() {
                     <td className="p-3">
                       {r.type === "income" ? (
                         <span className="inline-flex items-center gap-1 text-success">
-                          <TrendingUp className="w-3 h-3" /> Entrada
+                          <ArrowUpCircle className="w-3 h-3" /> Entrada
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-destructive">
-                          <TrendingDown className="w-3 h-3" /> Saída
+                          <ArrowDownCircle className="w-3 h-3" /> Saída
                         </span>
                       )}
                     </td>
