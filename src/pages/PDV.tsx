@@ -317,8 +317,11 @@ const PDV = () => {
           {/* Employee selector */}
           {hasFeature('employee_selection') && (
             <EmployeeSelector employee={employee} onSelect={setEmployee} />
-            <CustomerSelector customer={customer} onSelect={setCustomer} />
           )}
+
+          {/* Customer selector */}
+          <CustomerSelector customer={customer} onSelect={setCustomer} />
+
 
           {/* Cash register warning */}
           {!sessionLoading && !activeSession && (
