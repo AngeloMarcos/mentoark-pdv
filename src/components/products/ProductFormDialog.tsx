@@ -124,6 +124,16 @@ function FieldMessage({ error, success }: { error?: string | null; success?: str
   return null;
 }
 
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-lg border border-border/60 bg-card/40 p-3 space-y-3">
+      <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</h4>
+      {children}
+    </section>
+  );
+}
+
+
 export function ProductFormDialog({ open, onOpenChange, editingProduct, onSubmit, isPending, categories = [] }: ProductFormDialogProps) {
   const [form, setForm] = useState<ExtendedProductInput>(INITIAL_FORM);
   const [touched, setTouched] = useState<Set<string>>(new Set());
