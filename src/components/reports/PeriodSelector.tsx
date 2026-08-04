@@ -76,7 +76,7 @@ export function PeriodSelector({ preset, start, end, onPresetChange, onCustomCha
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
-              <CalendarIcon
+              <Calendar
                 mode="single"
                 selected={start}
                 onSelect={(d) => { if (d) { onCustomChange(d, end); setOpenStart(false); } }}
@@ -93,7 +93,7 @@ export function PeriodSelector({ preset, start, end, onPresetChange, onCustomCha
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
-              <CalendarIcon
+              <Calendar
                 mode="single"
                 selected={end}
                 onSelect={(d) => { if (d) { onCustomChange(start, d); setOpenEnd(false); } }}
