@@ -279,7 +279,7 @@ export function CashSessionHistory({
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarIcon
+                  <Calendar
                     mode="single"
                     selected={startDate}
                     onSelect={setStartDate}
@@ -301,7 +301,7 @@ export function CashSessionHistory({
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarIcon
+                  <Calendar
                     mode="single"
                     selected={endDate}
                     onSelect={setEndDate}
