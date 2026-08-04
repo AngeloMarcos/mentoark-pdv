@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -128,8 +128,8 @@ export function ProductFormDialog({ open, onOpenChange, editingProduct, onSubmit
   const [form, setForm] = useState<ExtendedProductInput>(INITIAL_FORM);
   const [touched, setTouched] = useState<Set<string>>(new Set());
 
-  // Reset form when dialog opens
-  const handleOpenChange = useCallback((isOpen: boolean) => {
+  // Popula/reseta o formulário sempre que o dialog abre ou o produto muda
+  const syncForm = useCallback((isOpen: boolean) => {
     if (isOpen && !editingProduct) {
       setForm(INITIAL_FORM);
       setTouched(new Set());
@@ -163,8 +163,16 @@ export function ProductFormDialog({ open, onOpenChange, editingProduct, onSubmit
       });
       setTouched(new Set());
     }
+  }, [editingProduct]);
+
+  useEffect(() => {
+    syncForm(open);
+  }, [open, syncForm]);
+
+  const handleOpenChange = useCallback((isOpen: boolean) => {
+    syncForm(isOpen);
     onOpenChange(isOpen);
-  }, [editingProduct, onOpenChange]);
+  }, [syncForm, onOpenChange]);
 
   const errors = useMemo(() => {
     const result: Record<string, FieldError | null> = {};
