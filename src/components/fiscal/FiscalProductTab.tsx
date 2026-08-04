@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -75,10 +75,10 @@ export function FiscalProductTab({ values, onChange, regime = "simples" }: Props
     { ignoreInputs: false, minLength: 6 }
   );
   // Start paused — only activates when user clicks scan
-  if (typeof window !== "undefined" && !scanActive) {
-    // idempotent
-    pause();
-  }
+  useEffect(() => {
+    if (!scanActive) pause();
+  }, [scanActive, pause]);
+
   const startScan = () => {
     setScanActive(true);
     resume();

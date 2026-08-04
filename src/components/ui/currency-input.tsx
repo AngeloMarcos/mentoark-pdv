@@ -14,14 +14,21 @@ interface CurrencyInputProps
 /** Campo monetário em BRL: digita-se apenas números e o valor preenche da direita para a esquerda. */
 export const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
   ({ value, onChange, className, placeholder = "0,00", ...rest }, ref) => {
-    const display =
+    const [draft, setDraft] = React.useState<string | null>(null);
+
+    const formatted =
       value === null || value === undefined || Number.isNaN(value)
         ? ""
         : formatBRL(Math.round(value * 100));
+    const display = draft !== null ? draft : formatted;
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const digits = e.target.value.replace(/\D/g, "").slice(0, 12);
-      if (!digits) return onChange(null);
+      if (!digits) {
+        setDraft("");
+        return onChange(null);
+      }
+      setDraft(formatBRL(parseInt(digits, 10)));
       onChange(parseInt(digits, 10) / 100);
     };
 
@@ -35,6 +42,10 @@ export const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputPro
           inputMode="numeric"
           value={display}
           onChange={handleChange}
+          onBlur={(e) => {
+            setDraft(null);
+            rest.onBlur?.(e);
+          }}
           placeholder={placeholder}
           className={cn("h-9 pl-8 text-right tabular-nums", className)}
           {...rest}
@@ -43,6 +54,7 @@ export const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputPro
     );
   },
 );
+
 CurrencyInput.displayName = "CurrencyInput";
 
 interface QuantityInputProps
