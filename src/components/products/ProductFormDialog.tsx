@@ -240,12 +240,8 @@ export function ProductFormDialog({ open, onOpenChange, editingProduct, onSubmit
     updateField("sale_price", price);
   };
 
-  const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <section className="rounded-lg border border-border/60 bg-card/40 p-3 space-y-3">
-      <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</h4>
-      {children}
-    </section>
-  );
+
+
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
