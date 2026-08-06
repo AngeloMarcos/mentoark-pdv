@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { ArrowLeft, LayoutGrid, Plus, ClipboardList, Send, LogOut } from 'lucide-react';
+import { ArrowLeft, LayoutGrid, Plus, ClipboardList, Send, LogOut, Receipt } from 'lucide-react';
+import { CloseTabDialog } from '@/components/restaurant/CloseTabDialog';
 import { useTables } from '@/hooks/useTables';
 import { useOpenTabs, useCreateTab } from '@/hooks/useTabs';
 import { useMenuItems } from '@/hooks/useMenus';
@@ -34,6 +35,7 @@ const Garcom = () => {
 
   const [view, setView] = useState<'tables' | 'orders'>('tables');
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
+  const [closingTabId, setClosingTabId] = useState<string | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [newTab, setNewTab] = useState<{ open: boolean; tableId?: string }>({ open: false });
   const [customerName, setCustomerName] = useState('');
