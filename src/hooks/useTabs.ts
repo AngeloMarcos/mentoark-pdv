@@ -17,6 +17,9 @@ export interface Tab {
   user_id: string | null;
   notes: string | null;
   created_at: string;
+  people_count?: number | null;
+  service_fee_pct?: number | null;
+  couvert_total?: number | null;
   table?: {
     id: string;
     number: string;
