@@ -203,13 +203,25 @@ const Garcom = () => {
           <div className="flex-1 overflow-auto px-4">
             <OrderComposer items={menuItems} cart={cart} onChange={setCart} compact />
           </div>
-          <div className="p-4 border-t border-border">
+          <div className="p-4 border-t border-border space-y-2">
             <Button className="w-full h-12" disabled={cart.length === 0 || createOrder.isPending} onClick={submitOrder}>
               <Send className="w-4 h-4 mr-2" /> Enviar para produção · {brl(cartTotal(cart))}
+            </Button>
+            <Button variant="outline" className="w-full h-11" onClick={() => setClosingTabId(activeTab?.id ?? null)}>
+              <Receipt className="w-4 h-4 mr-2" /> Fechar conta
             </Button>
           </div>
         </SheetContent>
       </Sheet>
+
+      {closingTabId && (
+        <CloseTabDialog
+          open={!!closingTabId}
+          onOpenChange={(o) => !o && setClosingTabId(null)}
+          tabId={closingTabId}
+          onClosed={() => { setClosingTabId(null); setActiveTabId(null); setCart([]); }}
+        />
+      )}
     </div>
   );
 };
