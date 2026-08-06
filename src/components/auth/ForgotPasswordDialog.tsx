@@ -19,12 +19,14 @@ const emailSchema = z.string().email("Por favor, insira um email válido");
 
 interface ForgotPasswordDialogProps {
   trigger?: React.ReactNode;
+  /** Email pré-preenchido (ex.: o que o usuário digitou no login) */
+  defaultEmail?: string;
 }
 
-export function ForgotPasswordDialog({ trigger }: ForgotPasswordDialogProps) {
+export function ForgotPasswordDialog({ trigger, defaultEmail = "" }: ForgotPasswordDialogProps) {
   const { resetPassword } = useAuth();
   const [open, setOpen] = useState(false);
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(defaultEmail);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -55,7 +57,10 @@ export function ForgotPasswordDialog({ trigger }: ForgotPasswordDialogProps) {
 
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen);
-    if (!isOpen) {
+    if (isOpen) {
+      setEmail(defaultEmail);
+      setSent(false);
+    } else {
       setEmail("");
       setSent(false);
     }
