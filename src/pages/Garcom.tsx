@@ -216,6 +216,12 @@ const Garcom = () => {
           <LayoutGrid className="w-5 h-5" /> Mesas
         </button>
         <button
+          className={cn('flex-1 flex flex-col items-center justify-center gap-1 text-xs', view === 'tabs' && 'text-primary')}
+          onClick={() => setView('tabs')}
+        >
+          <ScrollText className="w-5 h-5" /> Comandas
+        </button>
+        <button
           className={cn('flex-1 flex flex-col items-center justify-center gap-1 text-xs', view === 'orders' && 'text-primary')}
           onClick={() => setView('orders')}
         >
@@ -226,7 +232,9 @@ const Garcom = () => {
       {/* Nova comanda */}
       <Dialog open={newTab.open} onOpenChange={(o) => setNewTab({ open: o })}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Abrir comanda</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{newTab.tableId ? 'Abrir comanda da mesa' : 'Abrir comanda avulsa'}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-2">
             <Label>Nome do cliente (opcional)</Label>
             <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="h-11" />
@@ -241,7 +249,8 @@ const Garcom = () => {
                 });
                 setCustomerName('');
                 setNewTab({ open: false });
-                setActiveTabId((tab as any)?.id ?? null);
+                const id = (tab as any)?.id ?? null;
+                if (id) openTab(id);
               }}
             >
               <Plus className="w-4 h-4 mr-1" /> Abrir
@@ -250,34 +259,68 @@ const Garcom = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Lançar pedido */}
+      {/* Comanda: pedir + conta */}
       <Sheet open={!!activeTab} onOpenChange={(o) => { if (!o) { setActiveTabId(null); setCart([]); } }}>
         <SheetContent side="bottom" className="h-[92vh] p-0 flex flex-col">
-          <SheetHeader className="p-4 pb-2">
-            <SheetTitle>
-              {activeTab?.table ? `Mesa ${activeTab.table.number}` : 'Comanda'}
-              {activeTab?.customer_name ? ` · ${activeTab.customer_name}` : ''}
+          <SheetHeader className="p-4 pb-2 flex-row items-center justify-between space-y-0">
+            <SheetTitle className="text-left">
+              {activeLabel}
+              {activeTab?.table && activeTab?.customer_name ? ` · ${activeTab.customer_name}` : ''}
             </SheetTitle>
+            <Button variant="ghost" size="icon" onClick={() => setActionsOpen(true)} title="Ações da comanda">
+              <Settings2 className="w-5 h-5" />
+            </Button>
           </SheetHeader>
-          <div className="flex-1 overflow-auto px-4">
-            <OrderComposer items={menuItems} cart={cart} onChange={setCart} compact />
-          </div>
-          <div className="p-4 border-t border-border space-y-2">
-            <Button className="w-full h-12" disabled={cart.length === 0 || createOrder.isPending} onClick={submitOrder}>
-              <Send className="w-4 h-4 mr-2" /> Enviar para produção · {brl(cartTotal(cart))}
-            </Button>
-            <Button variant="outline" className="w-full h-11" onClick={() => setClosingTabId(activeTab?.id ?? null)}>
-              <Receipt className="w-4 h-4 mr-2" /> Fechar conta
-            </Button>
-          </div>
+
+          <Tabs value={sheetTab} onValueChange={(v) => setSheetTab(v as 'pedir' | 'conta')} className="flex-1 flex flex-col min-h-0">
+            <TabsList className="mx-4 grid grid-cols-2">
+              <TabsTrigger value="pedir">Pedir</TabsTrigger>
+              <TabsTrigger value="conta">Conta</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="pedir" className="flex-1 min-h-0 flex flex-col mt-2">
+              <div className="flex-1 overflow-auto px-4">
+                <OrderComposer items={menuItems} cart={cart} onChange={setCart} compact />
+              </div>
+              <div className="p-4 border-t border-border">
+                <Button className="w-full h-12" disabled={cart.length === 0 || createOrder.isPending} onClick={submitOrder}>
+                  <Send className="w-4 h-4 mr-2" /> Enviar para produção · {brl(cartTotal(cart))}
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="conta" className="flex-1 min-h-0 overflow-auto px-4 pb-6 mt-2">
+              {activeTab && (
+                <TabBillPanel
+                  tabId={activeTab.id}
+                  tabLabel={activeLabel}
+                  peopleCount={activeTab.people_count ?? null}
+                  servicePct={Number(activeTab.service_fee_pct ?? 10)}
+                  onCloseBill={() => setClosingTabId(activeTab.id)}
+                />
+              )}
+            </TabsContent>
+          </Tabs>
         </SheetContent>
       </Sheet>
+
+      {activeTab && (
+        <TabActionsDialog
+          open={actionsOpen}
+          onOpenChange={setActionsOpen}
+          tabId={activeTab.id}
+          currentTableId={activeTab.table_id}
+          peopleCount={activeTab.people_count ?? null}
+          onDone={() => setActionsOpen(false)}
+        />
+      )}
 
       {closingTabId && (
         <CloseTabDialog
           open={!!closingTabId}
           onOpenChange={(o) => !o && setClosingTabId(null)}
           tabId={closingTabId}
+          tabLabel={activeLabel}
           onClosed={() => { setClosingTabId(null); setActiveTabId(null); setCart([]); }}
         />
       )}
