@@ -86,6 +86,18 @@ const SelectTenant = () => {
         </div>
 
         <div className="grid gap-4">
+          {tenants.length === 0 && (
+            <Card className="border-dashed">
+              <CardHeader>
+                <CardTitle className="text-base">Você ainda não tem acesso a nenhuma empresa</CardTitle>
+                <CardDescription>
+                  Se alguém te convidou, abra o link do convite enviado para <strong>{user?.email}</strong>.
+                  Caso contrário, cadastre seu próprio estabelecimento abaixo.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          )}
+
           {tenants.map((tenant) => (
             <Card
               key={tenant.id}
