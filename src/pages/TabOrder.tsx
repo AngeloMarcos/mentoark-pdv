@@ -32,6 +32,8 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { useTab, useTabItems, useAddTabItem, useRemoveTabItem, useCloseTab, useCancelTab } from '@/hooks/useTabs';
+import { CloseTabDialog } from '@/components/restaurant/CloseTabDialog';
+import { useTabBill } from '@/hooks/useTabBilling';
 import { useProducts, type Product } from '@/hooks/useProducts';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -216,7 +218,7 @@ const TabOrder = () => {
             </Button>
             <Button
               onClick={() => setIsCloseDialogOpen(true)}
-              disabled={tabItems.length === 0}
+              disabled={(bill?.lines.length ?? 0) === 0}
             >
               <Receipt className="h-4 w-4 mr-2" />
               Fechar Conta
