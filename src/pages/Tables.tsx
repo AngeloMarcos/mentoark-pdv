@@ -19,17 +19,21 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Users, Clock, Settings, UtensilsCrossed } from 'lucide-react';
+import { Plus, Users, Clock, Settings, UtensilsCrossed, Receipt } from 'lucide-react';
 import { useTables, useCreateTable, useUpdateTable, useUpdateTableStatus, type Table } from '@/hooks/useTables';
 import { useOpenTabs, useCreateTab, type Tab } from '@/hooks/useTabs';
+import { useOpenTabTotals } from '@/hooks/useTabBilling';
+import { CloseTabDialog } from '@/components/restaurant/CloseTabDialog';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { TableGridSkeleton } from '@/components/ui/skeletons';
+
 
 export default function Tables() {
   const navigate = useNavigate();
   const { data: tables = [], isLoading: tablesLoading } = useTables();
   const { data: openTabs = [] } = useOpenTabs();
+  const { data: tabTotals = {} } = useOpenTabTotals();
   const createTable = useCreateTable();
   const updateTable = useUpdateTable();
   const updateTableStatus = useUpdateTableStatus();
@@ -37,7 +41,9 @@ export default function Tables() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isManageOpen, setIsManageOpen] = useState(false);
+  const [closingTab, setClosingTab] = useState<{ id: string; label: string; people?: number | null } | null>(null);
   const [formData, setFormData] = useState({ number: '', name: '', capacity: '' });
+
 
   // Map tables to their active tabs
   const tabsByTable = openTabs.reduce((acc, tab) => {
@@ -229,16 +235,37 @@ export default function Tables() {
                       </div>
                     )}
                     {activeTab && (
-                      <div className="flex items-center justify-center gap-1 mt-2 text-xs">
-                        <Clock className="h-3 w-3" />
-                        <span>
-                          {formatDistanceToNow(new Date(activeTab.opened_at), {
-                            addSuffix: false,
-                            locale: ptBR,
-                          })}
-                        </span>
-                      </div>
+                      <>
+                        <div className="flex items-center justify-center gap-1 mt-2 text-xs">
+                          <Clock className="h-3 w-3" />
+                          <span>
+                            {formatDistanceToNow(new Date(activeTab.opened_at), {
+                              addSuffix: false,
+                              locale: ptBR,
+                            })}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm font-semibold">
+                          {(tabTotals[activeTab.id] ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </p>
+                        <Button
+                          size="sm"
+                          className="w-full mt-2 h-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setClosingTab({
+                              id: activeTab.id,
+                              label: `Mesa ${table.number}`,
+                              people: activeTab.people_count,
+                            });
+                          }}
+                        >
+                          <Receipt className="h-3 w-3 mr-1" />
+                          Fechar conta
+                        </Button>
+                      </>
                     )}
+
                   </CardContent>
                 </Card>
               );
@@ -283,13 +310,43 @@ export default function Tables() {
                         })}
                       </span>
                     </div>
+                    <p className="mt-1 text-sm font-semibold">
+                      {(tabTotals[tab.id] ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </p>
+                    <Button
+                      size="sm"
+                      className="w-full mt-2 h-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setClosingTab({
+                          id: tab.id,
+                          label: tab.customer_name || `#${tab.id.slice(0, 6)}`,
+                          people: tab.people_count,
+                        });
+                      }}
+                    >
+                      <Receipt className="h-3 w-3 mr-1" />
+                      Fechar conta
+                    </Button>
                   </CardContent>
                 </Card>
               ))}
             </div>
           </div>
         )}
+
+        {closingTab && (
+          <CloseTabDialog
+            open={!!closingTab}
+            onOpenChange={(o) => !o && setClosingTab(null)}
+            tabId={closingTab.id}
+            tabLabel={closingTab.label}
+            peopleCount={closingTab.people}
+            onClosed={() => setClosingTab(null)}
+          />
+        )}
       </div>
+
     </AppLayout>
   );
 }
