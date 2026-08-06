@@ -219,6 +219,25 @@ const Auth = () => {
             </TabsContent>
 
             <TabsContent value="signup" className="space-y-4">
+              {pendingConfirmation && (
+                <Alert>
+                  <Mail className="h-4 w-4" />
+                  <AlertDescription className="space-y-2">
+                    <p>
+                      Enviamos um link de confirmação para{" "}
+                      <strong>{pendingConfirmation}</strong>. Confirme o email para poder entrar.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleResend}
+                      disabled={loading}
+                    >
+                      Reenviar email
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="signup-email">Email</Label>
                 <Input
