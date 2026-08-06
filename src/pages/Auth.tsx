@@ -1,19 +1,21 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Loader2, Check, X } from "lucide-react";
+import { Loader2, Check, X, Mail, Info } from "lucide-react";
 import brandLogo from "@/assets/mentoark-logo.png.asset.json";
 import { AuthSkeleton } from "@/components/ui/skeletons";
 import { PasswordInput } from "@/components/auth/PasswordInput";
 import { PasswordStrength } from "@/components/auth/PasswordStrength";
 import { ForgotPasswordDialog } from "@/components/auth/ForgotPasswordDialog";
+
 
 const signinSchema = z.object({
   email: z.string().min(1, "Email é obrigatório").email("Email inválido"),
