@@ -179,7 +179,28 @@ const Auth = () => {
               {signinNotice && (
                 <Alert>
                   <Info className="h-4 w-4" />
-                  <AlertDescription>{signinNotice}</AlertDescription>
+                  <AlertDescription className="space-y-2">
+                    <p>{signinNotice}</p>
+                    {pendingConfirmation ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleResend}
+                        disabled={loading}
+                      >
+                        Reenviar email de confirmação
+                      </Button>
+                    ) : (
+                      <ForgotPasswordDialog
+                        defaultEmail={signinEmail}
+                        trigger={
+                          <Button variant="outline" size="sm">
+                            Redefinir minha senha
+                          </Button>
+                        }
+                      />
+                    )}
+                  </AlertDescription>
                 </Alert>
               )}
               <div className="space-y-2">
