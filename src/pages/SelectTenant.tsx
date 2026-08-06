@@ -24,7 +24,7 @@ const SEGMENTS = [
 const SelectTenant = () => {
   const navigate = useNavigate();
   const { user, isLoading: authLoading, signOut } = useAuth();
-  const { currentTenant, tenants, setCurrentTenant, isLoading: tenantsLoading, refetchTenants } = useTenant();
+  const { currentTenant, tenants, setCurrentTenant, isLoading: tenantsLoading, error: tenantsError, refetchTenants } = useTenant();
   const createTenant = useCreateTenant();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -86,7 +86,23 @@ const SelectTenant = () => {
         </div>
 
         <div className="grid gap-4">
-          {tenants.length === 0 && (
+          {tenantsError && (
+            <Card className="border-destructive/50">
+              <CardHeader>
+                <CardTitle className="text-base">Não foi possível carregar suas empresas</CardTitle>
+                <CardDescription className="space-y-3">
+                  <span className="block">
+                    Houve uma falha de conexão ou permissão. Suas empresas continuam salvas — tente novamente.
+                  </span>
+                  <Button size="sm" variant="outline" onClick={() => refetchTenants()}>
+                    Tentar novamente
+                  </Button>
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          )}
+
+          {!tenantsError && tenants.length === 0 && (
             <Card className="border-dashed">
               <CardHeader>
                 <CardTitle className="text-base">Você ainda não tem acesso a nenhuma empresa</CardTitle>

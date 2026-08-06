@@ -3,13 +3,22 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
 
+export type TenantRole =
+  | "admin"
+  | "manager"
+  | "operator"
+  | "cashier"
+  | "financial"
+  | "stock"
+  | "waiter";
+
 export interface Tenant {
   id: string;
   name: string;
   document: string | null;
   phone: string | null;
   segment: string | null;
-  role: "admin" | "operator";
+  role: TenantRole;
 }
 
 interface TenantContextType {
@@ -17,6 +26,7 @@ interface TenantContextType {
   setCurrentTenant: (tenant: Tenant | null) => void;
   tenants: Tenant[];
   isLoading: boolean;
+  error: Error | null;
   refetchTenants: () => void;
 }
 
@@ -29,7 +39,12 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const [currentTenant, setCurrentTenantState] = useState<Tenant | null>(null);
   const [hasResolvedTenant, setHasResolvedTenant] = useState(false);
 
-  const { data: tenants = [], isLoading: tenantsQueryLoading, refetch: refetchTenants } = useQuery({
+  const {
+    data: tenants = [],
+    isLoading: tenantsQueryLoading,
+    error: tenantsError,
+    refetch: refetchTenants,
+  } = useQuery<Tenant[]>({
     queryKey: ["tenants", user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -50,16 +65,19 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
 
-      return data.map((item) => ({
-        id: (item.tenants as any).id,
-        name: (item.tenants as any).name,
-        document: (item.tenants as any).document,
-        phone: (item.tenants as any).phone,
-        segment: (item.tenants as any).segment,
-        role: item.role as "admin" | "operator",
-      }));
+      return (data ?? [])
+        .filter((item) => !!item.tenants)
+        .map((item) => ({
+          id: (item.tenants as any).id,
+          name: (item.tenants as any).name,
+          document: (item.tenants as any).document,
+          phone: (item.tenants as any).phone,
+          segment: (item.tenants as any).segment,
+          role: item.role as TenantRole,
+        }));
     },
     enabled: !!user,
+    retry: 2,
   });
 
   useEffect(() => {
@@ -119,6 +137,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         setCurrentTenant,
         tenants,
         isLoading: authLoading || (!!user && (!hasResolvedTenant || tenantsQueryLoading)),
+        error: (tenantsError as Error | null) ?? null,
         refetchTenants,
       }}
     >
