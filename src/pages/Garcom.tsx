@@ -34,12 +34,15 @@ const Garcom = () => {
   const { data: tabs = [] } = useOpenTabs();
   const { data: menuItems = [] } = useMenuItems();
   const { data: orders = [] } = useOrders({ statuses: ['received', 'preparing', 'ready'] });
+  const { data: tabTotals = {} } = useOpenTabTotals();
   const createTab = useCreateTab();
   const createOrder = useCreateOrder();
 
-  const [view, setView] = useState<'tables' | 'orders'>('tables');
+  const [view, setView] = useState<'tables' | 'tabs' | 'orders'>('tables');
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
+  const [sheetTab, setSheetTab] = useState<'pedir' | 'conta'>('pedir');
   const [closingTabId, setClosingTabId] = useState<string | null>(null);
+  const [actionsOpen, setActionsOpen] = useState(false);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [newTab, setNewTab] = useState<{ open: boolean; tableId?: string }>({ open: false });
   const [customerName, setCustomerName] = useState('');
@@ -55,11 +58,21 @@ const Garcom = () => {
   }, [tabs]);
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? null;
+  const activeLabel = activeTab
+    ? activeTab.table
+      ? `Mesa ${activeTab.table.number}`
+      : activeTab.customer_name || 'Comanda avulsa'
+    : '';
+
+  const openTab = (id: string) => {
+    setActiveTabId(id);
+    setSheetTab('pedir');
+  };
 
   const submitOrder = async () => {
     if (!activeTab || cart.length === 0) return;
     await createOrder.mutateAsync({
-      order_type: 'mesa',
+      order_type: activeTab.table_id ? 'mesa' : 'balcao',
       tab_id: activeTab.id,
       table_id: activeTab.table_id,
       items: cart.map((l) => ({
@@ -70,8 +83,9 @@ const Garcom = () => {
       })),
     });
     setCart([]);
-    setActiveTabId(null);
+    setSheetTab('conta');
   };
+
 
   if (!currentTenant) {
     return (
