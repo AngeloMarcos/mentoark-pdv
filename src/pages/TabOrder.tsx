@@ -32,6 +32,8 @@ import {
   MessageSquare,
 } from 'lucide-react';
 import { useTab, useTabItems, useAddTabItem, useRemoveTabItem, useCloseTab, useCancelTab } from '@/hooks/useTabs';
+import { CloseTabDialog } from '@/components/restaurant/CloseTabDialog';
+import { useTabBill } from '@/hooks/useTabBilling';
 import { useProducts, type Product } from '@/hooks/useProducts';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -56,6 +58,7 @@ const TabOrder = () => {
   const { data: tab, isLoading: tabLoading } = useTab(tabId);
   const { data: tabItems = [], isLoading: itemsLoading } = useTabItems(tabId);
   const { data: products = [] } = useProducts();
+  const { data: bill } = useTabBill(tabId);
   const addItem = useAddTabItem();
   const removeItem = useRemoveTabItem();
   const closeTab = useCloseTab();
@@ -216,7 +219,7 @@ const TabOrder = () => {
             </Button>
             <Button
               onClick={() => setIsCloseDialogOpen(true)}
-              disabled={tabItems.length === 0}
+              disabled={(bill?.lines.length ?? 0) === 0}
             >
               <Receipt className="h-4 w-4 mr-2" />
               Fechar Conta
@@ -388,13 +391,29 @@ const TabOrder = () => {
                 </div>
               )}
 
-              {/* Totals */}
-              {tabItems.length > 0 && (
+              {/* Pedidos lançados pelo garçom / cozinha */}
+              {(bill?.lines.filter((l) => l.origin === 'order_item').length ?? 0) > 0 && (
                 <div className="mt-4 pt-4 border-t space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Subtotal</span>
-                    <span>R$ {totals.gross.toFixed(2)}</span>
-                  </div>
+                  <p className="text-sm font-semibold">Pedidos da cozinha</p>
+                  {bill!.lines
+                    .filter((l) => l.origin === 'order_item')
+                    .map((l) => (
+                      <div key={l.id} className="flex justify-between text-sm">
+                        <span>
+                          {l.quantity}x {l.name}
+                          {l.order_number ? (
+                            <Badge variant="outline" className="ml-1 text-[10px]">#{l.order_number}</Badge>
+                          ) : null}
+                        </span>
+                        <span>R$ {l.total.toFixed(2)}</span>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {/* Totals */}
+              {(bill?.lines.length ?? 0) > 0 && (
+                <div className="mt-4 pt-4 border-t space-y-2">
                   {totals.discount > 0 && (
                     <div className="flex justify-between text-sm text-destructive">
                       <span>Descontos</span>
@@ -402,8 +421,8 @@ const TabOrder = () => {
                     </div>
                   )}
                   <div className="flex justify-between text-xl font-bold">
-                    <span>Total</span>
-                    <span className="text-primary">R$ {totals.net.toFixed(2)}</span>
+                    <span>Total da comanda</span>
+                    <span className="text-primary">R$ {(bill?.subtotal ?? 0).toFixed(2)}</span>
                   </div>
                 </div>
               )}
@@ -411,58 +430,17 @@ const TabOrder = () => {
           </Card>
         </div>
 
-        {/* Close Tab Dialog */}
-        <Dialog open={isCloseDialogOpen} onOpenChange={setIsCloseDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Fechar Conta</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-6 py-4">
-              <div className="space-y-3">
-                {tabItems.map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span>
-                      {item.quantity}x {item.product?.name}
-                    </span>
-                    <span>R$ {item.total.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="border-t pt-4">
-                <div className="flex justify-between text-xl font-bold mb-4">
-                  <span>Total</span>
-                  <span className="text-primary">R$ {totals.net.toFixed(2)}</span>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Forma de Pagamento</label>
-                  <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PAYMENT_METHODS.map((method) => (
-                        <SelectItem key={method.value} value={method.value}>
-                          {method.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <Button
-                onClick={handleCloseTab}
-                className="w-full"
-                size="lg"
-                disabled={closeTab.isPending}
-              >
-                {closeTab.isPending ? 'Finalizando...' : 'Confirmar Pagamento'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        {/* Close Tab Dialog (conta completa: produtos + pedidos do restaurante) */}
+        {tabId && (
+          <CloseTabDialog
+            open={isCloseDialogOpen}
+            onOpenChange={setIsCloseDialogOpen}
+            tabId={tabId}
+            tabLabel={title}
+            peopleCount={(tab as any)?.people_count ?? null}
+            onClosed={() => navigate('/tables')}
+          />
+        )}
       </div>
     </AppLayout>
   );

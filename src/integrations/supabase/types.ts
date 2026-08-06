@@ -2241,7 +2241,9 @@ export type Database = {
         Row: {
           discount: number | null
           id: string
-          product_id: string
+          item_name: string | null
+          menu_item_id: string | null
+          product_id: string | null
           quantity: number
           sale_id: string
           total: number
@@ -2250,7 +2252,9 @@ export type Database = {
         Insert: {
           discount?: number | null
           id?: string
-          product_id: string
+          item_name?: string | null
+          menu_item_id?: string | null
+          product_id?: string | null
           quantity: number
           sale_id: string
           total: number
@@ -2259,13 +2263,22 @@ export type Database = {
         Update: {
           discount?: number | null
           id?: string
-          product_id?: string
+          item_name?: string | null
+          menu_item_id?: string | null
+          product_id?: string | null
           quantity?: number
           sale_id?: string
           total?: number
           unit_price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "sale_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sale_items_product_id_fkey"
             columns: ["product_id"]
@@ -3482,6 +3495,7 @@ export type Database = {
         }
       }
       checkout_sale_transaction: { Args: { p_payload: Json }; Returns: Json }
+      close_restaurant_tab: { Args: { p_payload: Json }; Returns: Json }
       consume_lots_fefo: {
         Args: { _product_id: string; _quantity: number; _tenant_id: string }
         Returns: Json

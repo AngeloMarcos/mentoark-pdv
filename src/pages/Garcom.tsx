@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { ArrowLeft, LayoutGrid, Plus, ClipboardList, Send, LogOut } from 'lucide-react';
+import { ArrowLeft, LayoutGrid, Plus, ClipboardList, Send, LogOut, Receipt } from 'lucide-react';
+import { CloseTabDialog } from '@/components/restaurant/CloseTabDialog';
 import { useTables } from '@/hooks/useTables';
 import { useOpenTabs, useCreateTab } from '@/hooks/useTabs';
 import { useMenuItems } from '@/hooks/useMenus';
@@ -34,6 +35,7 @@ const Garcom = () => {
 
   const [view, setView] = useState<'tables' | 'orders'>('tables');
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
+  const [closingTabId, setClosingTabId] = useState<string | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [newTab, setNewTab] = useState<{ open: boolean; tableId?: string }>({ open: false });
   const [customerName, setCustomerName] = useState('');
@@ -203,13 +205,25 @@ const Garcom = () => {
           <div className="flex-1 overflow-auto px-4">
             <OrderComposer items={menuItems} cart={cart} onChange={setCart} compact />
           </div>
-          <div className="p-4 border-t border-border">
+          <div className="p-4 border-t border-border space-y-2">
             <Button className="w-full h-12" disabled={cart.length === 0 || createOrder.isPending} onClick={submitOrder}>
               <Send className="w-4 h-4 mr-2" /> Enviar para produção · {brl(cartTotal(cart))}
+            </Button>
+            <Button variant="outline" className="w-full h-11" onClick={() => setClosingTabId(activeTab?.id ?? null)}>
+              <Receipt className="w-4 h-4 mr-2" /> Fechar conta
             </Button>
           </div>
         </SheetContent>
       </Sheet>
+
+      {closingTabId && (
+        <CloseTabDialog
+          open={!!closingTabId}
+          onOpenChange={(o) => !o && setClosingTabId(null)}
+          tabId={closingTabId}
+          onClosed={() => { setClosingTabId(null); setActiveTabId(null); setCart([]); }}
+        />
+      )}
     </div>
   );
 };
