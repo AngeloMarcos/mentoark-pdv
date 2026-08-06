@@ -174,6 +174,12 @@ const Auth = () => {
             </TabsList>
 
             <TabsContent value="signin" className="space-y-4">
+              {signinNotice && (
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>{signinNotice}</AlertDescription>
+                </Alert>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="signin-email">Email</Label>
                 <Input
