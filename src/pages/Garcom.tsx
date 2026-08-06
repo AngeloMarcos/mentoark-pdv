@@ -119,10 +119,11 @@ const Garcom = () => {
             {tables.map((table) => {
               const tab = tabByTable.get(table.id);
               const open = !!tab;
+              const total = tab ? tabTotals[tab.id] ?? 0 : 0;
               return (
                 <button
                   key={table.id}
-                  onClick={() => (open ? setActiveTabId(tab!.id) : setNewTab({ open: true, tableId: table.id }))}
+                  onClick={() => (open ? openTab(tab!.id) : setNewTab({ open: true, tableId: table.id }))}
                   className={cn(
                     'rounded-2xl border p-4 text-left min-h-24 transition-all active:scale-[0.97]',
                     open ? 'border-primary bg-primary/10' : 'border-border bg-card'
@@ -133,6 +134,14 @@ const Garcom = () => {
                   <Badge variant={open ? 'default' : 'secondary'} className="mt-2">
                     {open ? 'Ocupada' : 'Livre'}
                   </Badge>
+                  {open && (
+                    <>
+                      {tab?.customer_name && (
+                        <p className="text-[11px] text-muted-foreground truncate mt-1">{tab.customer_name}</p>
+                      )}
+                      <p className="text-sm font-semibold text-primary mt-1 tabular-nums">{brl(total)}</p>
+                    </>
+                  )}
                 </button>
               );
             })}
@@ -143,6 +152,36 @@ const Garcom = () => {
             )}
           </div>
         )}
+
+        {view === 'tabs' && (
+          <div className="space-y-2">
+            <Button
+              variant="outline"
+              className="w-full h-11"
+              onClick={() => setNewTab({ open: true })}
+            >
+              <Plus className="w-4 h-4 mr-2" /> Nova comanda avulsa (balcão)
+            </Button>
+            {tabs.map((t) => (
+              <Card key={t.id} className="p-3 flex items-center gap-3" onClick={() => openTab(t.id)}>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold truncate">
+                    {t.table ? `Mesa ${t.table.number}` : t.customer_name || 'Comanda avulsa'}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Aberta às {new Date(t.opened_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    {t.people_count ? ` · ${t.people_count} pessoa(s)` : ''}
+                  </p>
+                </div>
+                <span className="font-bold tabular-nums text-primary">{brl(tabTotals[t.id] ?? 0)}</span>
+              </Card>
+            ))}
+            {tabs.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-10">Nenhuma comanda aberta.</p>
+            )}
+          </div>
+        )}
+
 
         {view === 'orders' && (
           <div className="space-y-2">
