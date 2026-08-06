@@ -17,6 +17,9 @@ export interface Tab {
   user_id: string | null;
   notes: string | null;
   created_at: string;
+  people_count?: number | null;
+  service_fee_pct?: number | null;
+  couvert_total?: number | null;
   table?: {
     id: string;
     number: string;
@@ -243,128 +246,28 @@ export function useRemoveTabItem() {
   });
 }
 
-export function useCloseTab() {
+/** Atualiza dados da comanda (pessoas, cliente, observações, taxa de serviço). */
+export function useUpdateTab() {
   const queryClient = useQueryClient();
-  const { currentTenant } = useTenant();
-  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({
       tabId,
-      tableId,
-      paymentMethod,
-      items,
+      ...values
     }: {
       tabId: string;
-      tableId: string | null;
-      paymentMethod: string;
-      items: TabItem[];
+      people_count?: number;
+      customer_name?: string | null;
+      notes?: string | null;
+      service_fee_pct?: number;
     }) => {
-      if (!currentTenant?.id) throw new Error('Nenhum tenant selecionado');
-      if (!paymentMethod || paymentMethod.length === 0) throw new Error('Forma de pagamento é obrigatória');
-      if (items.length === 0) throw new Error('Comanda deve ter pelo menos um item');
-
-      const grossTotal = items.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
-      const discountTotal = items.reduce((sum, item) => sum + item.discount, 0);
-      const netTotal = grossTotal - discountTotal;
-
-      // Validate totals
-      if (netTotal < 0) throw new Error('Total líquido não pode ser negativo');
-      if (discountTotal > grossTotal) throw new Error('Desconto não pode ser maior que o valor bruto');
-
-      // Create sale
-      const { data: sale, error: saleError } = await supabase
-        .from('sales')
-        .insert({
-          tenant_id: currentTenant.id,
-          user_id: user?.id || null,
-          payment_method: paymentMethod,
-          gross_total: grossTotal,
-          discount_total: discountTotal,
-          net_total: netTotal,
-          notes: `Comanda #${tabId.slice(0, 8)}`,
-        })
-        .select()
-        .single();
-
-      if (saleError) throw saleError;
-
-      // Create sale items
-      const saleItems = items.map(item => ({
-        sale_id: sale.id,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        discount: item.discount,
-        total: item.total,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('sale_items')
-        .insert(saleItems);
-
-      if (itemsError) throw itemsError;
-
-      // Update stock atomically using RPC for each product
-      for (const item of items) {
-        // Use atomic decrement_stock function to prevent race conditions
-        const { error: stockError } = await supabase.rpc('decrement_stock', {
-          p_product_id: item.product_id,
-          p_quantity: item.quantity,
-        });
-
-        if (stockError) {
-          console.error('[Stock Update Error]', stockError);
-          // Continue with sale even if stock update fails
-        }
-
-        // Create stock movement
-        await supabase.from('stock_movements').insert({
-          tenant_id: currentTenant.id,
-          product_id: item.product_id,
-          movement_type: 'saida',
-          quantity: -item.quantity,
-          description: `Venda (comanda) #${sale.id.slice(0, 8)}`,
-          sale_id: sale.id,
-        });
-      }
-
-      // Create financial entry
-      await supabase.from('financial_entries').insert({
-        tenant_id: currentTenant.id,
-        type: 'receita',
-        description: `Venda (comanda) #${sale.id.slice(0, 8)}`,
-        amount: netTotal,
-        payment_method: paymentMethod,
-        sale_id: sale.id,
-      });
-
-      // Close the tab
-      await supabase
-        .from('tabs')
-        .update({
-          status: 'closed',
-          closed_at: new Date().toISOString(),
-        })
-        .eq('id', tabId);
-
-      // Free the table if linked
-      if (tableId) {
-        await supabase
-          .from('tables')
-          .update({ status: 'available' })
-          .eq('id', tableId);
-      }
-
-      return sale;
+      const { error } = await supabase.from('tabs').update(values).eq('id', tabId);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tabs'] });
-      queryClient.invalidateQueries({ queryKey: ['tables'] });
-      queryClient.invalidateQueries({ queryKey: ['sales'] });
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['financial'] });
-      toast.success('Comanda fechada com sucesso');
+      queryClient.invalidateQueries({ queryKey: ['tab'] });
+      toast.success('Comanda atualizada');
     },
     onError: (error: Error) => {
       toast.error(getUserFriendlyError(error));

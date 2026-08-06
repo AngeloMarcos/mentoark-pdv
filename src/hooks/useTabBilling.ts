@@ -128,3 +128,52 @@ export function useCloseRestaurantTab() {
     onError: (e: Error) => toast.error(getUserFriendlyError(e)),
   });
 }
+
+/** Totais consolidados (itens diretos + pedidos) de todas as comandas abertas. */
+export function useOpenTabTotals() {
+  const { currentTenant } = useTenant();
+
+  return useQuery({
+    queryKey: ['tab-totals', currentTenant?.id],
+    queryFn: async (): Promise<Record<string, number>> => {
+      if (!currentTenant?.id) return {};
+
+      const { data: tabs, error: eTabs } = await supabase
+        .from('tabs')
+        .select('id')
+        .eq('tenant_id', currentTenant.id)
+        .eq('status', 'open');
+      if (eTabs) throw eTabs;
+
+      const ids = (tabs ?? []).map((t: any) => t.id);
+      if (!ids.length) return {};
+
+      const [{ data: items, error: e1 }, { data: orders, error: e2 }] = await Promise.all([
+        supabase.from('tab_items').select('tab_id, total').in('tab_id', ids),
+        supabase
+          .from('orders')
+          .select('tab_id, items:order_items(total, status)')
+          .in('tab_id', ids)
+          .neq('status', 'cancelled'),
+      ]);
+      if (e1) throw e1;
+      if (e2) throw e2;
+
+      const totals: Record<string, number> = {};
+      ids.forEach((id) => (totals[id] = 0));
+      (items ?? []).forEach((i: any) => {
+        totals[i.tab_id] = (totals[i.tab_id] ?? 0) + Number(i.total);
+      });
+      (orders ?? []).forEach((o: any) => {
+        (o.items ?? [])
+          .filter((it: any) => it.status !== 'cancelled')
+          .forEach((it: any) => {
+            totals[o.tab_id] = (totals[o.tab_id] ?? 0) + Number(it.total);
+          });
+      });
+      return totals;
+    },
+    enabled: !!currentTenant?.id,
+    refetchInterval: 30000,
+  });
+}

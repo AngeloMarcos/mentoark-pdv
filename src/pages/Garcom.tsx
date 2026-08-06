@@ -9,10 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { ArrowLeft, LayoutGrid, Plus, ClipboardList, Send, LogOut, Receipt } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, LayoutGrid, Plus, ClipboardList, Send, LogOut, Receipt, Settings2, ScrollText } from 'lucide-react';
 import { CloseTabDialog } from '@/components/restaurant/CloseTabDialog';
+import { TabBillPanel } from '@/components/restaurant/TabBillPanel';
+import { TabActionsDialog } from '@/components/restaurant/TabActionsDialog';
 import { useTables } from '@/hooks/useTables';
 import { useOpenTabs, useCreateTab } from '@/hooks/useTabs';
+import { useOpenTabTotals } from '@/hooks/useTabBilling';
 import { useMenuItems } from '@/hooks/useMenus';
 import { useCreateOrder, useOrders, useOrdersRealtime, ORDER_STATUS_LABELS } from '@/hooks/useOrders';
 import { OrderComposer, cartTotal, type CartLine } from '@/components/restaurant/OrderComposer';
@@ -30,12 +34,15 @@ const Garcom = () => {
   const { data: tabs = [] } = useOpenTabs();
   const { data: menuItems = [] } = useMenuItems();
   const { data: orders = [] } = useOrders({ statuses: ['received', 'preparing', 'ready'] });
+  const { data: tabTotals = {} } = useOpenTabTotals();
   const createTab = useCreateTab();
   const createOrder = useCreateOrder();
 
-  const [view, setView] = useState<'tables' | 'orders'>('tables');
+  const [view, setView] = useState<'tables' | 'tabs' | 'orders'>('tables');
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
+  const [sheetTab, setSheetTab] = useState<'pedir' | 'conta'>('pedir');
   const [closingTabId, setClosingTabId] = useState<string | null>(null);
+  const [actionsOpen, setActionsOpen] = useState(false);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [newTab, setNewTab] = useState<{ open: boolean; tableId?: string }>({ open: false });
   const [customerName, setCustomerName] = useState('');
@@ -51,11 +58,21 @@ const Garcom = () => {
   }, [tabs]);
 
   const activeTab = tabs.find((t) => t.id === activeTabId) ?? null;
+  const activeLabel = activeTab
+    ? activeTab.table
+      ? `Mesa ${activeTab.table.number}`
+      : activeTab.customer_name || 'Comanda avulsa'
+    : '';
+
+  const openTab = (id: string) => {
+    setActiveTabId(id);
+    setSheetTab('pedir');
+  };
 
   const submitOrder = async () => {
     if (!activeTab || cart.length === 0) return;
     await createOrder.mutateAsync({
-      order_type: 'mesa',
+      order_type: activeTab.table_id ? 'mesa' : 'balcao',
       tab_id: activeTab.id,
       table_id: activeTab.table_id,
       items: cart.map((l) => ({
@@ -66,8 +83,9 @@ const Garcom = () => {
       })),
     });
     setCart([]);
-    setActiveTabId(null);
+    setSheetTab('conta');
   };
+
 
   if (!currentTenant) {
     return (
@@ -101,10 +119,11 @@ const Garcom = () => {
             {tables.map((table) => {
               const tab = tabByTable.get(table.id);
               const open = !!tab;
+              const total = tab ? tabTotals[tab.id] ?? 0 : 0;
               return (
                 <button
                   key={table.id}
-                  onClick={() => (open ? setActiveTabId(tab!.id) : setNewTab({ open: true, tableId: table.id }))}
+                  onClick={() => (open ? openTab(tab!.id) : setNewTab({ open: true, tableId: table.id }))}
                   className={cn(
                     'rounded-2xl border p-4 text-left min-h-24 transition-all active:scale-[0.97]',
                     open ? 'border-primary bg-primary/10' : 'border-border bg-card'
@@ -115,6 +134,14 @@ const Garcom = () => {
                   <Badge variant={open ? 'default' : 'secondary'} className="mt-2">
                     {open ? 'Ocupada' : 'Livre'}
                   </Badge>
+                  {open && (
+                    <>
+                      {tab?.customer_name && (
+                        <p className="text-[11px] text-muted-foreground truncate mt-1">{tab.customer_name}</p>
+                      )}
+                      <p className="text-sm font-semibold text-primary mt-1 tabular-nums">{brl(total)}</p>
+                    </>
+                  )}
                 </button>
               );
             })}
@@ -125,6 +152,36 @@ const Garcom = () => {
             )}
           </div>
         )}
+
+        {view === 'tabs' && (
+          <div className="space-y-2">
+            <Button
+              variant="outline"
+              className="w-full h-11"
+              onClick={() => setNewTab({ open: true })}
+            >
+              <Plus className="w-4 h-4 mr-2" /> Nova comanda avulsa (balcão)
+            </Button>
+            {tabs.map((t) => (
+              <Card key={t.id} className="p-3 flex items-center gap-3" onClick={() => openTab(t.id)}>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold truncate">
+                    {t.table ? `Mesa ${t.table.number}` : t.customer_name || 'Comanda avulsa'}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Aberta às {new Date(t.opened_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    {t.people_count ? ` · ${t.people_count} pessoa(s)` : ''}
+                  </p>
+                </div>
+                <span className="font-bold tabular-nums text-primary">{brl(tabTotals[t.id] ?? 0)}</span>
+              </Card>
+            ))}
+            {tabs.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-10">Nenhuma comanda aberta.</p>
+            )}
+          </div>
+        )}
+
 
         {view === 'orders' && (
           <div className="space-y-2">
@@ -159,6 +216,12 @@ const Garcom = () => {
           <LayoutGrid className="w-5 h-5" /> Mesas
         </button>
         <button
+          className={cn('flex-1 flex flex-col items-center justify-center gap-1 text-xs', view === 'tabs' && 'text-primary')}
+          onClick={() => setView('tabs')}
+        >
+          <ScrollText className="w-5 h-5" /> Comandas
+        </button>
+        <button
           className={cn('flex-1 flex flex-col items-center justify-center gap-1 text-xs', view === 'orders' && 'text-primary')}
           onClick={() => setView('orders')}
         >
@@ -169,7 +232,9 @@ const Garcom = () => {
       {/* Nova comanda */}
       <Dialog open={newTab.open} onOpenChange={(o) => setNewTab({ open: o })}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Abrir comanda</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{newTab.tableId ? 'Abrir comanda da mesa' : 'Abrir comanda avulsa'}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-2">
             <Label>Nome do cliente (opcional)</Label>
             <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} className="h-11" />
@@ -184,7 +249,8 @@ const Garcom = () => {
                 });
                 setCustomerName('');
                 setNewTab({ open: false });
-                setActiveTabId((tab as any)?.id ?? null);
+                const id = (tab as any)?.id ?? null;
+                if (id) openTab(id);
               }}
             >
               <Plus className="w-4 h-4 mr-1" /> Abrir
@@ -193,34 +259,68 @@ const Garcom = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Lançar pedido */}
+      {/* Comanda: pedir + conta */}
       <Sheet open={!!activeTab} onOpenChange={(o) => { if (!o) { setActiveTabId(null); setCart([]); } }}>
         <SheetContent side="bottom" className="h-[92vh] p-0 flex flex-col">
-          <SheetHeader className="p-4 pb-2">
-            <SheetTitle>
-              {activeTab?.table ? `Mesa ${activeTab.table.number}` : 'Comanda'}
-              {activeTab?.customer_name ? ` · ${activeTab.customer_name}` : ''}
+          <SheetHeader className="p-4 pb-2 flex-row items-center justify-between space-y-0">
+            <SheetTitle className="text-left">
+              {activeLabel}
+              {activeTab?.table && activeTab?.customer_name ? ` · ${activeTab.customer_name}` : ''}
             </SheetTitle>
+            <Button variant="ghost" size="icon" onClick={() => setActionsOpen(true)} title="Ações da comanda">
+              <Settings2 className="w-5 h-5" />
+            </Button>
           </SheetHeader>
-          <div className="flex-1 overflow-auto px-4">
-            <OrderComposer items={menuItems} cart={cart} onChange={setCart} compact />
-          </div>
-          <div className="p-4 border-t border-border space-y-2">
-            <Button className="w-full h-12" disabled={cart.length === 0 || createOrder.isPending} onClick={submitOrder}>
-              <Send className="w-4 h-4 mr-2" /> Enviar para produção · {brl(cartTotal(cart))}
-            </Button>
-            <Button variant="outline" className="w-full h-11" onClick={() => setClosingTabId(activeTab?.id ?? null)}>
-              <Receipt className="w-4 h-4 mr-2" /> Fechar conta
-            </Button>
-          </div>
+
+          <Tabs value={sheetTab} onValueChange={(v) => setSheetTab(v as 'pedir' | 'conta')} className="flex-1 flex flex-col min-h-0">
+            <TabsList className="mx-4 grid grid-cols-2">
+              <TabsTrigger value="pedir">Pedir</TabsTrigger>
+              <TabsTrigger value="conta">Conta</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="pedir" className="flex-1 min-h-0 flex flex-col mt-2">
+              <div className="flex-1 overflow-auto px-4">
+                <OrderComposer items={menuItems} cart={cart} onChange={setCart} compact />
+              </div>
+              <div className="p-4 border-t border-border">
+                <Button className="w-full h-12" disabled={cart.length === 0 || createOrder.isPending} onClick={submitOrder}>
+                  <Send className="w-4 h-4 mr-2" /> Enviar para produção · {brl(cartTotal(cart))}
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="conta" className="flex-1 min-h-0 overflow-auto px-4 pb-6 mt-2">
+              {activeTab && (
+                <TabBillPanel
+                  tabId={activeTab.id}
+                  tabLabel={activeLabel}
+                  peopleCount={activeTab.people_count ?? null}
+                  servicePct={Number(activeTab.service_fee_pct ?? 10)}
+                  onCloseBill={() => setClosingTabId(activeTab.id)}
+                />
+              )}
+            </TabsContent>
+          </Tabs>
         </SheetContent>
       </Sheet>
+
+      {activeTab && (
+        <TabActionsDialog
+          open={actionsOpen}
+          onOpenChange={setActionsOpen}
+          tabId={activeTab.id}
+          currentTableId={activeTab.table_id}
+          peopleCount={activeTab.people_count ?? null}
+          onDone={() => setActionsOpen(false)}
+        />
+      )}
 
       {closingTabId && (
         <CloseTabDialog
           open={!!closingTabId}
           onOpenChange={(o) => !o && setClosingTabId(null)}
           tabId={closingTabId}
+          tabLabel={activeLabel}
           onClosed={() => { setClosingTabId(null); setActiveTabId(null); setCart([]); }}
         />
       )}
