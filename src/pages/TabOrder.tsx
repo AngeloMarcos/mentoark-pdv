@@ -58,6 +58,7 @@ const TabOrder = () => {
   const { data: tab, isLoading: tabLoading } = useTab(tabId);
   const { data: tabItems = [], isLoading: itemsLoading } = useTabItems(tabId);
   const { data: products = [] } = useProducts();
+  const { data: bill } = useTabBill(tabId);
   const addItem = useAddTabItem();
   const removeItem = useRemoveTabItem();
   const closeTab = useCloseTab();
