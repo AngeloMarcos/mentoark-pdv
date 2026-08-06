@@ -3639,6 +3639,21 @@ export type Database = {
           tenant_name: string
         }[]
       }
+      get_my_employee_profile: {
+        Args: never
+        Returns: {
+          active: boolean
+          department: string
+          email: string
+          hire_date: string
+          id: string
+          name: string
+          phone: string
+          photo_url: string
+          role: string
+          tenant_id: string
+        }[]
+      }
       get_session_payment_breakdown: {
         Args: { p_session_id: string }
         Returns: {
