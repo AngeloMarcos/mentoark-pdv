@@ -198,7 +198,7 @@ export function CloseTabDialog({ open, onOpenChange, tabId, tabLabel, peopleCoun
 
             <div className="space-y-1">
               <Label>Cliente (necessário para fiado e fidelidade)</Label>
-              <CustomerSelector selectedCustomerId={customerId} onSelect={setCustomerId} />
+              <CustomerSelector customer={customer} onSelect={setCustomer} />
             </div>
 
             <Button
