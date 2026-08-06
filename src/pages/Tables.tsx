@@ -19,12 +19,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Users, Clock, Settings, UtensilsCrossed } from 'lucide-react';
+import { Plus, Users, Clock, Settings, UtensilsCrossed, Receipt } from 'lucide-react';
 import { useTables, useCreateTable, useUpdateTable, useUpdateTableStatus, type Table } from '@/hooks/useTables';
 import { useOpenTabs, useCreateTab, type Tab } from '@/hooks/useTabs';
+import { useOpenTabTotals } from '@/hooks/useTabBilling';
+import { CloseTabDialog } from '@/components/restaurant/CloseTabDialog';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { TableGridSkeleton } from '@/components/ui/skeletons';
+
 
 export default function Tables() {
   const navigate = useNavigate();
