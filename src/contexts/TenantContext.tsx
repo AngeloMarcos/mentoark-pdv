@@ -39,7 +39,12 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const [currentTenant, setCurrentTenantState] = useState<Tenant | null>(null);
   const [hasResolvedTenant, setHasResolvedTenant] = useState(false);
 
-  const { data: tenants = [], isLoading: tenantsQueryLoading, refetch: refetchTenants } = useQuery({
+  const {
+    data: tenants = [],
+    isLoading: tenantsQueryLoading,
+    error: tenantsError,
+    refetch: refetchTenants,
+  } = useQuery<Tenant[]>({
     queryKey: ["tenants", user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -60,16 +65,19 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
       if (error) throw error;
 
-      return data.map((item) => ({
-        id: (item.tenants as any).id,
-        name: (item.tenants as any).name,
-        document: (item.tenants as any).document,
-        phone: (item.tenants as any).phone,
-        segment: (item.tenants as any).segment,
-        role: item.role as "admin" | "operator",
-      }));
+      return (data ?? [])
+        .filter((item) => !!item.tenants)
+        .map((item) => ({
+          id: (item.tenants as any).id,
+          name: (item.tenants as any).name,
+          document: (item.tenants as any).document,
+          phone: (item.tenants as any).phone,
+          segment: (item.tenants as any).segment,
+          role: item.role as TenantRole,
+        }));
     },
     enabled: !!user,
+    retry: 2,
   });
 
   useEffect(() => {
