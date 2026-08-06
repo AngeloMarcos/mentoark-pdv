@@ -31,19 +31,15 @@ import {
   XCircle,
   MessageSquare,
 } from 'lucide-react';
-import { useTab, useTabItems, useAddTabItem, useRemoveTabItem, useCloseTab, useCancelTab } from '@/hooks/useTabs';
+import { useTab, useTabItems, useAddTabItem, useRemoveTabItem, useCancelTab } from '@/hooks/useTabs';
 import { CloseTabDialog } from '@/components/restaurant/CloseTabDialog';
+import { TabBillPanel } from '@/components/restaurant/TabBillPanel';
+import { TabActionsDialog } from '@/components/restaurant/TabActionsDialog';
 import { useTabBill } from '@/hooks/useTabBilling';
 import { useProducts, type Product } from '@/hooks/useProducts';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-const PAYMENT_METHODS = [
-  { value: 'dinheiro', label: 'Dinheiro' },
-  { value: 'pix', label: 'PIX' },
-  { value: 'debito', label: 'Débito' },
-  { value: 'credito', label: 'Crédito' },
-];
 
 const TabOrder = () => {
   const { tabId } = useParams<{ tabId: string }>();
