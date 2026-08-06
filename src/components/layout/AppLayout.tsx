@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTenant } from "@/contexts/TenantContext";
 import { useCompany } from "@/contexts/CompanyContext";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, ShoppingCart, Package, Boxes, Warehouse, CalendarClock, Building2, LogOut, Menu, UtensilsCrossed, Users, Settings, BarChart3, Wallet, DollarSign, RotateCcw, Truck, Tag, UserCog, FileText, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Package, Boxes, Warehouse, CalendarClock, Building2, LogOut, Menu, UtensilsCrossed, Users, Settings, BarChart3, Wallet, DollarSign, RotateCcw, Truck, Tag, UserCog, FileText, ShieldCheck, ClipboardList, ChefHat, ConciergeBell, BookOpen } from "lucide-react";
 import { useIsSuperAdmin } from "@/hooks/useSuperAdmin";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -24,6 +24,10 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { path: "/returns", label: "Devoluções", icon: RotateCcw, feature: null, permission: "returns", group: "Operação" },
   { path: "/cash-register", label: "Caixa", icon: Wallet, feature: "cash_register", permission: "cash_register", group: "Operação" },
   { path: "/tables", label: "Mesas", icon: UtensilsCrossed, feature: "tables", permission: "tables", group: "Operação" },
+  { path: "/pedidos", label: "Pedidos", icon: ClipboardList, feature: null, permission: "orders", group: "Operação" },
+  { path: "/cozinha", label: "Cozinha", icon: ChefHat, feature: null, permission: "kitchen", group: "Operação" },
+  { path: "/garcom", label: "Modo Garçom", icon: ConciergeBell, feature: null, permission: "waiter", group: "Operação" },
+  { path: "/cardapio", label: "Cardápio", icon: BookOpen, feature: null, permission: "menu", group: "Catálogo & Estoque" },
   { path: "/products", label: "Produtos", icon: Package, feature: null, permission: "products", group: "Catálogo & Estoque" },
   { path: "/stock", label: "Estoque", icon: Boxes, feature: null, permission: "stock", group: "Catálogo & Estoque" },
   { path: "/warehouses", label: "Depósitos", icon: Warehouse, feature: null, permission: "stock", group: "Catálogo & Estoque" },
