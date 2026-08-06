@@ -8,7 +8,9 @@ import { TenantProvider } from "@/contexts/TenantContext";
 import { CompanyProvider } from "@/contexts/CompanyContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { OnboardingGuard } from "@/components/onboarding/OnboardingGuard";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import Index from "./pages/Index";
+import ResetPassword from "./pages/ResetPassword";
 import Auth from "./pages/Auth";
 import SelectTenant from "./pages/SelectTenant";
 import Dashboard from "./pages/Dashboard";
@@ -54,35 +56,36 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/select-tenant" element={<SelectTenant />} />
-                <Route path="/dashboard" element={<OnboardingGuard><Dashboard /></OnboardingGuard>} />
-                <Route path="/products" element={<OnboardingGuard><Products /></OnboardingGuard>} />
-                <Route path="/pdv" element={<OnboardingGuard><PDV /></OnboardingGuard>} />
-                <Route path="/sales-report" element={<OnboardingGuard><SalesReport /></OnboardingGuard>} />
-                <Route path="/reports" element={<OnboardingGuard><Reports /></OnboardingGuard>} />
-                <Route path="/stock" element={<OnboardingGuard><Stock /></OnboardingGuard>} />
-                <Route path="/financial" element={<OnboardingGuard><Financial /></OnboardingGuard>} />
-                <Route path="/tables" element={<OnboardingGuard><Tables /></OnboardingGuard>} />
-                <Route path="/tabs/:tabId" element={<OnboardingGuard><TabOrder /></OnboardingGuard>} />
-                <Route path="/customers" element={<OnboardingGuard><Customers /></OnboardingGuard>} />
-                <Route path="/settings" element={<OnboardingGuard><Settings /></OnboardingGuard>} />
-                <Route path="/cash-register" element={<OnboardingGuard><CashRegister /></OnboardingGuard>} />
-                <Route path="/inventory" element={<OnboardingGuard><Inventory /></OnboardingGuard>} />
-                <Route path="/returns" element={<OnboardingGuard><Returns /></OnboardingGuard>} />
-                <Route path="/compras" element={<OnboardingGuard><Compras /></OnboardingGuard>} />
-                <Route path="/suppliers" element={<OnboardingGuard><Compras /></OnboardingGuard>} />
-                <Route path="/purchase-orders" element={<OnboardingGuard><Compras /></OnboardingGuard>} />
-                <Route path="/promotions" element={<OnboardingGuard><Promotions /></OnboardingGuard>} />
-                <Route path="/team" element={<OnboardingGuard><Team /></OnboardingGuard>} />
-                <Route path="/fiscal" element={<OnboardingGuard><Fiscal /></OnboardingGuard>} />
-                <Route path="/warehouses" element={<OnboardingGuard><Warehouses /></OnboardingGuard>} />
-                <Route path="/validades" element={<OnboardingGuard><Validades /></OnboardingGuard>} />
-                <Route path="/cardapio" element={<OnboardingGuard><Cardapio /></OnboardingGuard>} />
-                <Route path="/cozinha" element={<OnboardingGuard><Cozinha /></OnboardingGuard>} />
-                <Route path="/pedidos" element={<OnboardingGuard><Pedidos /></OnboardingGuard>} />
-                <Route path="/garcom" element={<Garcom />} />
-                <Route path="/super-admin" element={<SuperAdmin />} />
-                <Route path="/invite/:token" element={<AcceptInvitation />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/select-tenant" element={<AuthGuard requireTenant={false}><SelectTenant /></AuthGuard>} />
+                <Route path="/dashboard" element={<AuthGuard><OnboardingGuard><Dashboard /></OnboardingGuard></AuthGuard>} />
+                <Route path="/products" element={<AuthGuard><OnboardingGuard><Products /></OnboardingGuard></AuthGuard>} />
+                <Route path="/pdv" element={<AuthGuard><OnboardingGuard><PDV /></OnboardingGuard></AuthGuard>} />
+                <Route path="/sales-report" element={<AuthGuard><OnboardingGuard><SalesReport /></OnboardingGuard></AuthGuard>} />
+                <Route path="/reports" element={<AuthGuard><OnboardingGuard><Reports /></OnboardingGuard></AuthGuard>} />
+                <Route path="/stock" element={<AuthGuard><OnboardingGuard><Stock /></OnboardingGuard></AuthGuard>} />
+                <Route path="/financial" element={<AuthGuard><OnboardingGuard><Financial /></OnboardingGuard></AuthGuard>} />
+                <Route path="/tables" element={<AuthGuard><OnboardingGuard><Tables /></OnboardingGuard></AuthGuard>} />
+                <Route path="/tabs/:tabId" element={<AuthGuard><OnboardingGuard><TabOrder /></OnboardingGuard></AuthGuard>} />
+                <Route path="/customers" element={<AuthGuard><OnboardingGuard><Customers /></OnboardingGuard></AuthGuard>} />
+                <Route path="/settings" element={<AuthGuard><OnboardingGuard><Settings /></OnboardingGuard></AuthGuard>} />
+                <Route path="/cash-register" element={<AuthGuard><OnboardingGuard><CashRegister /></OnboardingGuard></AuthGuard>} />
+                <Route path="/inventory" element={<AuthGuard><OnboardingGuard><Inventory /></OnboardingGuard></AuthGuard>} />
+                <Route path="/returns" element={<AuthGuard><OnboardingGuard><Returns /></OnboardingGuard></AuthGuard>} />
+                <Route path="/compras" element={<AuthGuard><OnboardingGuard><Compras /></OnboardingGuard></AuthGuard>} />
+                <Route path="/suppliers" element={<AuthGuard><OnboardingGuard><Compras /></OnboardingGuard></AuthGuard>} />
+                <Route path="/purchase-orders" element={<AuthGuard><OnboardingGuard><Compras /></OnboardingGuard></AuthGuard>} />
+                <Route path="/promotions" element={<AuthGuard><OnboardingGuard><Promotions /></OnboardingGuard></AuthGuard>} />
+                <Route path="/team" element={<AuthGuard><OnboardingGuard><Team /></OnboardingGuard></AuthGuard>} />
+                <Route path="/fiscal" element={<AuthGuard><OnboardingGuard><Fiscal /></OnboardingGuard></AuthGuard>} />
+                <Route path="/warehouses" element={<AuthGuard><OnboardingGuard><Warehouses /></OnboardingGuard></AuthGuard>} />
+                <Route path="/validades" element={<AuthGuard><OnboardingGuard><Validades /></OnboardingGuard></AuthGuard>} />
+                <Route path="/cardapio" element={<AuthGuard><OnboardingGuard><Cardapio /></OnboardingGuard></AuthGuard>} />
+                <Route path="/cozinha" element={<AuthGuard><OnboardingGuard><Cozinha /></OnboardingGuard></AuthGuard>} />
+                <Route path="/pedidos" element={<AuthGuard><OnboardingGuard><Pedidos /></OnboardingGuard></AuthGuard>} />
+                <Route path="/garcom" element={<AuthGuard><Garcom /></AuthGuard>} />
+                <Route path="/super-admin" element={<AuthGuard requireTenant={false} requireSuperAdmin><SuperAdmin /></AuthGuard>} />
+                <Route path="/invite/:token" element={<AuthGuard requireTenant={false}><AcceptInvitation /></AuthGuard>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
