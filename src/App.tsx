@@ -34,6 +34,10 @@ import NotFound from "./pages/NotFound";
 import AcceptInvitation from "./pages/AcceptInvitation";
 import Warehouses from "./pages/Warehouses";
 import Validades from "./pages/Validades";
+import Cardapio from "./pages/Cardapio";
+import Cozinha from "./pages/Cozinha";
+import Pedidos from "./pages/Pedidos";
+import Garcom from "./pages/Garcom";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +77,10 @@ const App = () => (
                 <Route path="/fiscal" element={<OnboardingGuard><Fiscal /></OnboardingGuard>} />
                 <Route path="/warehouses" element={<OnboardingGuard><Warehouses /></OnboardingGuard>} />
                 <Route path="/validades" element={<OnboardingGuard><Validades /></OnboardingGuard>} />
+                <Route path="/cardapio" element={<OnboardingGuard><Cardapio /></OnboardingGuard>} />
+                <Route path="/cozinha" element={<OnboardingGuard><Cozinha /></OnboardingGuard>} />
+                <Route path="/pedidos" element={<OnboardingGuard><Pedidos /></OnboardingGuard>} />
+                <Route path="/garcom" element={<Garcom />} />
                 <Route path="/super-admin" element={<SuperAdmin />} />
                 <Route path="/invite/:token" element={<AcceptInvitation />} />
                 <Route path="*" element={<NotFound />} />
