@@ -182,26 +182,83 @@ export function CloseTabDialog({ open, onOpenChange, tabId, tabLabel, peopleCoun
             </div>
 
             <div className="space-y-2">
-              {payments.map((p, i) => (
-                <div key={i} className="flex items-center gap-2 rounded-lg border border-border p-2">
-                  <span className="text-sm flex-1 truncate">
-                    {methods.find((m) => m.code === p.payment_method_code)?.name ?? p.payment_method_code}
-                  </span>
-                  <div className="w-32">
-                    <CurrencyInput value={p.amount} onChange={(v) => updateAmount(i, v)} />
+              {payments.map((p, i) => {
+                const method = methods.find((m) => m.code === p.payment_method_code);
+                const isCash = method?.type === 'cash' || p.payment_method_code === 'dinheiro';
+                const dueBefore = Number(
+                  (total - payments.slice(0, i).reduce((a, x) => a + x.amount - (x.change_amount ?? 0), 0)).toFixed(2)
+                );
+                return (
+                  <div key={i} className="rounded-lg border border-border p-2 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm flex-1 truncate">{method?.name ?? p.payment_method_code}</span>
+                      <div className="w-32">
+                        <CurrencyInput value={p.amount} onChange={(v) => updateAmount(i, v)} />
+                      </div>
+                      <Button size="icon" variant="ghost" className="text-destructive h-8 w-8"
+                        onClick={() => setPayments((prev) => prev.filter((_, idx) => idx !== i))}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {isCash && (
+                      <div className="flex items-center justify-between gap-2 text-xs">
+                        <span className="text-muted-foreground">Valor recebido</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-28">
+                            <CurrencyInput
+                              value={p.amount}
+                              onChange={(v) =>
+                                setPayments((prev) =>
+                                  prev.map((x, idx) =>
+                                    idx === i
+                                      ? { ...x, amount: v, change_amount: Math.max(0, Number((v - Math.min(dueBefore, v)).toFixed(2))) }
+                                      : x
+                                  )
+                                )
+                              }
+                            />
+                          </div>
+                          <span className="whitespace-nowrap font-medium">
+                            Troco {brl(p.change_amount ?? 0)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <Button size="icon" variant="ghost" className="text-destructive h-8 w-8"
-                    onClick={() => setPayments((prev) => prev.filter((_, idx) => idx !== i))}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            <div className={cn('flex justify-between text-sm font-medium', remaining > 0 ? 'text-destructive' : 'text-emerald-600')}>
-              <span>{remaining > 0 ? 'Falta pagar' : 'Troco / excedente'}</span>
+            <div className={cn('flex justify-between text-sm font-medium', remaining > 0.009 ? 'text-destructive' : 'text-emerald-600')}>
+              <span>{remaining > 0.009 ? 'Falta pagar' : 'Conta quitada'}</span>
               <span>{brl(Math.abs(remaining))}</span>
             </div>
+
+            <div className={cn(
+              'flex items-start gap-2 rounded-lg border p-2 text-xs',
+              activeSession ? 'border-border text-muted-foreground' : 'border-destructive/40 bg-destructive/5 text-destructive'
+            )}>
+              {activeSession ? (
+                <>
+                  <Wallet className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span>
+                    Os recebimentos entram no caixa <b>{activeSession.register?.name ?? 'aberto'}</b> e no fluxo financeiro.
+                    Vendas no fiado geram conta a receber.
+                  </span>
+                </>
+              ) : (
+                <>
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span className="flex-1">
+                    Nenhum caixa aberto — os pagamentos não serão lançados no caixa (apenas no financeiro).
+                  </span>
+                  <Button size="sm" variant="outline" className="h-7" onClick={() => navigate('/cash-register')}>
+                    Abrir caixa
+                  </Button>
+                </>
+              )}
+            </div>
+
 
             <div className="space-y-1">
               <Label>Cliente (necessário para fiado e fidelidade)</Label>
