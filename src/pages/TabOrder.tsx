@@ -311,92 +311,26 @@ const TabOrder = () => {
             </CardContent>
           </Card>
 
-          {/* Order Items */}
+          {/* Conta consolidada (itens diretos + pedidos da cozinha) */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">Itens do Pedido</CardTitle>
-              <Badge variant="secondary">{tabItems.length} itens</Badge>
+              <CardTitle className="text-lg">Conta da comanda</CardTitle>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">{bill?.lines.length ?? 0} itens</Badge>
+                <Button variant="outline" size="sm" onClick={() => setIsActionsOpen(true)}>
+                  Ações
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              {tabItems.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Receipt className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Nenhum item adicionado</p>
-                </div>
-              ) : (
-                <div className="space-y-3 max-h-80 overflow-auto">
-                  {tabItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-start justify-between p-3 border rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{item.quantity}x</span>
-                          <span>{item.product?.name}</span>
-                        </div>
-                        {item.notes && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            📝 {item.notes}
-                          </p>
-                        )}
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(item.added_at).toLocaleTimeString('pt-BR', {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-bold">R$ {item.total.toFixed(2)}</p>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive"
-                          onClick={() => handleRemoveItem(item.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Pedidos lançados pelo garçom / cozinha */}
-              {(bill?.lines.filter((l) => l.origin === 'order_item').length ?? 0) > 0 && (
-                <div className="mt-4 pt-4 border-t space-y-2">
-                  <p className="text-sm font-semibold">Pedidos da cozinha</p>
-                  {bill!.lines
-                    .filter((l) => l.origin === 'order_item')
-                    .map((l) => (
-                      <div key={l.id} className="flex justify-between text-sm">
-                        <span>
-                          {l.quantity}x {l.name}
-                          {l.order_number ? (
-                            <Badge variant="outline" className="ml-1 text-[10px]">#{l.order_number}</Badge>
-                          ) : null}
-                        </span>
-                        <span>R$ {l.total.toFixed(2)}</span>
-                      </div>
-                    ))}
-                </div>
-              )}
-
-              {/* Totals */}
-              {(bill?.lines.length ?? 0) > 0 && (
-                <div className="mt-4 pt-4 border-t space-y-2">
-                  {totals.discount > 0 && (
-                    <div className="flex justify-between text-sm text-destructive">
-                      <span>Descontos</span>
-                      <span>-R$ {totals.discount.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-xl font-bold">
-                    <span>Total da comanda</span>
-                    <span className="text-primary">R$ {(bill?.subtotal ?? 0).toFixed(2)}</span>
-                  </div>
-                </div>
+              {tabId && (
+                <TabBillPanel
+                  tabId={tabId}
+                  tabLabel={title}
+                  peopleCount={(tab as any)?.people_count ?? null}
+                  servicePct={Number((tab as any)?.service_fee_pct ?? 10)}
+                  onCloseBill={() => setIsCloseDialogOpen(true)}
+                />
               )}
             </CardContent>
           </Card>
@@ -404,14 +338,23 @@ const TabOrder = () => {
 
         {/* Close Tab Dialog (conta completa: produtos + pedidos do restaurante) */}
         {tabId && (
-          <CloseTabDialog
-            open={isCloseDialogOpen}
-            onOpenChange={setIsCloseDialogOpen}
-            tabId={tabId}
-            tabLabel={title}
-            peopleCount={(tab as any)?.people_count ?? null}
-            onClosed={() => navigate('/tables')}
-          />
+          <>
+            <CloseTabDialog
+              open={isCloseDialogOpen}
+              onOpenChange={setIsCloseDialogOpen}
+              tabId={tabId}
+              tabLabel={title}
+              peopleCount={(tab as any)?.people_count ?? null}
+              onClosed={() => navigate('/tables')}
+            />
+            <TabActionsDialog
+              open={isActionsOpen}
+              onOpenChange={setIsActionsOpen}
+              tabId={tabId}
+              currentTableId={tab?.table_id ?? null}
+              peopleCount={(tab as any)?.people_count ?? null}
+            />
+          </>
         )}
       </div>
     </AppLayout>
