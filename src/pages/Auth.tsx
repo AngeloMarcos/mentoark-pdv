@@ -81,6 +81,8 @@ const Auth = () => {
       if (error) {
         toast.error(error.message);
         setSigninNotice(error.message);
+        const needsConfirm = /confirm/i.test(error.message);
+        setPendingConfirmation(needsConfirm ? signinEmail.trim().toLowerCase() : null);
         return;
       }
 
