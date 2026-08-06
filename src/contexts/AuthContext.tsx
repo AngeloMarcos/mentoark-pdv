@@ -68,22 +68,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim().toLowerCase(),
       password,
     });
-    return { error: error ? new Error(error.message) : null };
+    return { error: error ? new Error(translateAuthError(error.message)) : null };
   };
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string): Promise<SignUpResult> => {
     const redirectUrl = `${window.location.origin}/`;
-    const { error } = await supabase.auth.signUp({
-      email,
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim().toLowerCase(),
       password,
-      options: {
-        emailRedirectTo: redirectUrl,
-      },
+      options: { emailRedirectTo: redirectUrl },
     });
-    return { error: error ? new Error(error.message) : null };
+
+    if (error) {
+      const isRegistered = /already registered|already been registered/i.test(error.message);
+      return {
+        error: new Error(translateAuthError(error.message)),
+        alreadyRegistered: isRegistered,
+        needsEmailConfirmation: false,
+        session: null,
+      };
+    }
+
+    // Supabase devolve um usuário "vazio" (sem identities) quando o email já existe.
+    const alreadyRegistered = !!data.user && (data.user.identities?.length ?? 0) === 0;
+
+    return {
+      error: null,
+      alreadyRegistered,
+      needsEmailConfirmation: !alreadyRegistered && !data.session,
+      session: data.session ?? null,
+    };
   };
 
   const signOut = async () => {
@@ -91,12 +108,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const resetPassword = async (email: string) => {
-    const redirectUrl = `${window.location.origin}/auth`;
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const redirectUrl = `${window.location.origin}/reset-password`;
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
       redirectTo: redirectUrl,
     });
-    return { error: error ? new Error(error.message) : null };
+    return { error: error ? new Error(translateAuthError(error.message)) : null };
   };
+
+  const resendConfirmation = async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: email.trim().toLowerCase(),
+      options: { emailRedirectTo: `${window.location.origin}/` },
+    });
+    return { error: error ? new Error(translateAuthError(error.message)) : null };
+  };
+
 
   return (
     <AuthContext.Provider
