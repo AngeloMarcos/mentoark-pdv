@@ -137,6 +137,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         setCurrentTenant,
         tenants,
         isLoading: authLoading || (!!user && (!hasResolvedTenant || tenantsQueryLoading)),
+        error: (tenantsError as Error | null) ?? null,
         refetchTenants,
       }}
     >
