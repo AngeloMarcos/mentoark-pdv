@@ -3,13 +3,22 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
 
+export type TenantRole =
+  | "admin"
+  | "manager"
+  | "operator"
+  | "cashier"
+  | "financial"
+  | "stock"
+  | "waiter";
+
 export interface Tenant {
   id: string;
   name: string;
   document: string | null;
   phone: string | null;
   segment: string | null;
-  role: "admin" | "operator";
+  role: TenantRole;
 }
 
 interface TenantContextType {
@@ -17,6 +26,7 @@ interface TenantContextType {
   setCurrentTenant: (tenant: Tenant | null) => void;
   tenants: Tenant[];
   isLoading: boolean;
+  error: Error | null;
   refetchTenants: () => void;
 }
 
