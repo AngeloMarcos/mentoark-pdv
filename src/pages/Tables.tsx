@@ -33,6 +33,7 @@ export default function Tables() {
   const navigate = useNavigate();
   const { data: tables = [], isLoading: tablesLoading } = useTables();
   const { data: openTabs = [] } = useOpenTabs();
+  const { data: tabTotals = {} } = useOpenTabTotals();
   const createTable = useCreateTable();
   const updateTable = useUpdateTable();
   const updateTableStatus = useUpdateTableStatus();
@@ -40,7 +41,9 @@ export default function Tables() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isManageOpen, setIsManageOpen] = useState(false);
+  const [closingTab, setClosingTab] = useState<{ id: string; label: string; people?: number | null } | null>(null);
   const [formData, setFormData] = useState({ number: '', name: '', capacity: '' });
+
 
   // Map tables to their active tabs
   const tabsByTable = openTabs.reduce((acc, tab) => {
