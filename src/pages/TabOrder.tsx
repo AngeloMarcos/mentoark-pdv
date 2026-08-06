@@ -48,8 +48,8 @@ const TabOrder = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('dinheiro');
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
 
   const { data: tab, isLoading: tabLoading } = useTab(tabId);
   const { data: tabItems = [], isLoading: itemsLoading } = useTabItems(tabId);
@@ -57,7 +57,6 @@ const TabOrder = () => {
   const { data: bill } = useTabBill(tabId);
   const addItem = useAddTabItem();
   const removeItem = useRemoveTabItem();
-  const closeTab = useCloseTab();
   const cancelTab = useCancelTab();
 
   const filteredProducts = useMemo(() => {
