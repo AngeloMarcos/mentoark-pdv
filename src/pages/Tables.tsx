@@ -310,13 +310,43 @@ export default function Tables() {
                         })}
                       </span>
                     </div>
+                    <p className="mt-1 text-sm font-semibold">
+                      {(tabTotals[tab.id] ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </p>
+                    <Button
+                      size="sm"
+                      className="w-full mt-2 h-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setClosingTab({
+                          id: tab.id,
+                          label: tab.customer_name || `#${tab.id.slice(0, 6)}`,
+                          people: tab.people_count,
+                        });
+                      }}
+                    >
+                      <Receipt className="h-3 w-3 mr-1" />
+                      Fechar conta
+                    </Button>
                   </CardContent>
                 </Card>
               ))}
             </div>
           </div>
         )}
+
+        {closingTab && (
+          <CloseTabDialog
+            open={!!closingTab}
+            onOpenChange={(o) => !o && setClosingTab(null)}
+            tabId={closingTab.id}
+            tabLabel={closingTab.label}
+            peopleCount={closingTab.people}
+            onClosed={() => setClosingTab(null)}
+          />
+        )}
       </div>
+
     </AppLayout>
   );
 }
