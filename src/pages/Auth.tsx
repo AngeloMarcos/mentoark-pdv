@@ -229,7 +229,7 @@ const Auth = () => {
                 />
               </div>
               <div className="flex justify-end">
-                <ForgotPasswordDialog />
+                <ForgotPasswordDialog defaultEmail={signinEmail} />
               </div>
               <Button 
                 className="w-full touch-target" 
