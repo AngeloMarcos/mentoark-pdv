@@ -11,6 +11,7 @@ import { Users, Minus, Plus, Receipt, Trash2 } from 'lucide-react';
 import { usePaymentMethods } from '@/hooks/usePaymentMethods';
 import { useTabBill, useCloseRestaurantTab, type CloseTabPayment } from '@/hooks/useTabBilling';
 import { CustomerSelector } from '@/components/pdv/CustomerSelector';
+import type { Customer } from '@/hooks/useCustomers';
 import { cn } from '@/lib/utils';
 
 const brl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -34,7 +35,7 @@ export function CloseTabDialog({ open, onOpenChange, tabId, tabLabel, peopleCoun
   const [couvert, setCouvert] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [people, setPeople] = useState(peopleCount && peopleCount > 0 ? peopleCount : 1);
-  const [customerId, setCustomerId] = useState<string | null>(null);
+  const [customer, setCustomer] = useState<Customer | null>(null);
   const [payments, setPayments] = useState<CloseTabPayment[]>([]);
 
   const subtotal = bill?.subtotal ?? 0;
