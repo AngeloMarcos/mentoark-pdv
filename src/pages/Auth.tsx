@@ -33,24 +33,29 @@ const signupSchema = z.object({
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { user, signIn, signUp, isLoading } = useAuth();
-  
+  const location = useLocation();
+  const { user, signIn, signUp, isLoading, resendConfirmation } = useAuth();
+
   // Separate state for each tab
   const [signinEmail, setSigninEmail] = useState("");
   const [signinPassword, setSigninPassword] = useState("");
-  
+
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
-  
+
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("signin");
+  const [signinNotice, setSigninNotice] = useState<string | null>(null);
+  const [pendingConfirmation, setPendingConfirmation] = useState<string | null>(null);
+
+  const redirectTo = (location.state as { from?: string } | null)?.from ?? "/select-tenant";
 
   useEffect(() => {
     if (!isLoading && user) {
-      navigate("/select-tenant");
+      navigate(redirectTo, { replace: true });
     }
-  }, [user, isLoading, navigate]);
+  }, [user, isLoading, navigate, redirectTo]);
 
   const passwordsMatch = useMemo(() => {
     if (!signupConfirmPassword) return null;
@@ -58,32 +63,43 @@ const Auth = () => {
   }, [signupPassword, signupConfirmPassword]);
 
   const handleSignIn = async () => {
-    const validation = signinSchema.safeParse({ 
-      email: signinEmail, 
-      password: signinPassword 
+    const validation = signinSchema.safeParse({
+      email: signinEmail,
+      password: signinPassword,
     });
-    
+
     if (!validation.success) {
       toast.error(validation.error.errors[0].message);
       return;
     }
 
     setLoading(true);
+    setSigninNotice(null);
     try {
       const { error } = await signIn(signinEmail, signinPassword);
-      
+
       if (error) {
-        if (error.message.includes("Invalid login")) {
-          toast.error("Email ou senha incorretos. Verifique e tente novamente.");
-        } else if (error.message.includes("Email not confirmed")) {
-          toast.error("Email não confirmado. Verifique sua caixa de entrada.");
-        } else {
-          toast.error(error.message);
-        }
+        toast.error(error.message);
+        setSigninNotice(error.message);
         return;
       }
-      
-      navigate("/select-tenant");
+
+      // O redirecionamento acontece no efeito acima, após a sessão existir.
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!pendingConfirmation) return;
+    setLoading(true);
+    try {
+      const { error } = await resendConfirmation(pendingConfirmation);
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success("Email de confirmação reenviado.");
     } finally {
       setLoading(false);
     }
@@ -95,7 +111,7 @@ const Auth = () => {
       password: signupPassword,
       confirmPassword: signupConfirmPassword,
     });
-    
+
     if (!validation.success) {
       toast.error(validation.error.errors[0].message);
       return;
@@ -103,26 +119,35 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      const { error } = await signUp(signupEmail, signupPassword);
-      
-      if (error) {
-        if (error.message.includes("already registered")) {
-          toast.error("Este email já possui uma conta. Tente fazer login.");
-        } else if (error.message.includes("Password should be")) {
-          toast.error("A senha precisa ter no mínimo 6 caracteres.");
-        } else if (error.message.includes("Invalid email")) {
-          toast.error("Por favor, insira um email válido (ex: seu@email.com)");
-        } else {
-          toast.error(error.message);
-        }
+      const result = await signUp(signupEmail, signupPassword);
+
+      if (result.error) {
+        toast.error(result.error.message);
+        return;
+      }
+
+      if (result.alreadyRegistered) {
+        toast.error("Este email já possui uma conta. Faça login ou recupere a senha.");
+        setSigninEmail(signupEmail);
+        setSigninNotice(
+          "Este email já possui uma conta. Se você não lembra a senha, use \"Esqueci minha senha\"."
+        );
+        setActiveTab("signin");
+        return;
+      }
+
+      if (result.needsEmailConfirmation) {
+        setPendingConfirmation(signupEmail);
+        toast.success("Conta criada. Confirme seu email para entrar.");
         return;
       }
 
       toast.success("Conta criada com sucesso!");
-      navigate("/select-tenant");
+      // Sessão ativa: o efeito de redirecionamento cuida da navegação.
     } finally {
       setLoading(false);
     }
+
   };
 
   if (isLoading) {
