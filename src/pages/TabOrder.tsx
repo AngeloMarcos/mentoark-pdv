@@ -411,58 +411,17 @@ const TabOrder = () => {
           </Card>
         </div>
 
-        {/* Close Tab Dialog */}
-        <Dialog open={isCloseDialogOpen} onOpenChange={setIsCloseDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Fechar Conta</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-6 py-4">
-              <div className="space-y-3">
-                {tabItems.map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span>
-                      {item.quantity}x {item.product?.name}
-                    </span>
-                    <span>R$ {item.total.toFixed(2)}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="border-t pt-4">
-                <div className="flex justify-between text-xl font-bold mb-4">
-                  <span>Total</span>
-                  <span className="text-primary">R$ {totals.net.toFixed(2)}</span>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Forma de Pagamento</label>
-                  <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PAYMENT_METHODS.map((method) => (
-                        <SelectItem key={method.value} value={method.value}>
-                          {method.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <Button
-                onClick={handleCloseTab}
-                className="w-full"
-                size="lg"
-                disabled={closeTab.isPending}
-              >
-                {closeTab.isPending ? 'Finalizando...' : 'Confirmar Pagamento'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        {/* Close Tab Dialog (conta completa: produtos + pedidos do restaurante) */}
+        {tabId && (
+          <CloseTabDialog
+            open={isCloseDialogOpen}
+            onOpenChange={setIsCloseDialogOpen}
+            tabId={tabId}
+            tabLabel={title}
+            peopleCount={(tab as any)?.people_count ?? null}
+            onClosed={() => navigate('/tables')}
+          />
+        )}
       </div>
     </AppLayout>
   );
