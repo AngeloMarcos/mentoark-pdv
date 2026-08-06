@@ -73,7 +73,7 @@ export function CloseTabDialog({ open, onOpenChange, tabId, tabLabel, peopleCoun
       discount,
       service_fee_pct: serviceFee ? servicePct : 0,
       couvert_total: couvert,
-      customer_id: customerId,
+      customer_id: customer?.id ?? null,
     });
     onOpenChange(false);
     onClosed?.();
