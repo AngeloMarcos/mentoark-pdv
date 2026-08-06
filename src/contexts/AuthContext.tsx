@@ -1,16 +1,28 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { translateAuthError } from "@/lib/auth-errors";
+
+export interface SignUpResult {
+  error: Error | null;
+  /** Email já cadastrado (o Supabase responde sem identidades vinculadas) */
+  alreadyRegistered: boolean;
+  /** Cadastro criado, mas exige confirmação por email (sem sessão) */
+  needsEmailConfirmation: boolean;
+  session: Session | null;
+}
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string) => Promise<SignUpResult>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  resendConfirmation: (email: string) => Promise<{ error: Error | null }>;
 }
+
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
