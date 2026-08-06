@@ -235,16 +235,37 @@ export default function Tables() {
                       </div>
                     )}
                     {activeTab && (
-                      <div className="flex items-center justify-center gap-1 mt-2 text-xs">
-                        <Clock className="h-3 w-3" />
-                        <span>
-                          {formatDistanceToNow(new Date(activeTab.opened_at), {
-                            addSuffix: false,
-                            locale: ptBR,
-                          })}
-                        </span>
-                      </div>
+                      <>
+                        <div className="flex items-center justify-center gap-1 mt-2 text-xs">
+                          <Clock className="h-3 w-3" />
+                          <span>
+                            {formatDistanceToNow(new Date(activeTab.opened_at), {
+                              addSuffix: false,
+                              locale: ptBR,
+                            })}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm font-semibold">
+                          {(tabTotals[activeTab.id] ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </p>
+                        <Button
+                          size="sm"
+                          className="w-full mt-2 h-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setClosingTab({
+                              id: activeTab.id,
+                              label: `Mesa ${table.number}`,
+                              people: activeTab.people_count,
+                            });
+                          }}
+                        >
+                          <Receipt className="h-3 w-3 mr-1" />
+                          Fechar conta
+                        </Button>
+                      </>
                     )}
+
                   </CardContent>
                 </Card>
               );
