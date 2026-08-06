@@ -184,7 +184,7 @@ export function CloseTabDialog({ open, onOpenChange, tabId, tabLabel, peopleCoun
             <div className="space-y-2">
               {payments.map((p, i) => {
                 const method = methods.find((m) => m.code === p.payment_method_code);
-                const isCash = method?.type === 'cash' || p.payment_method_code === 'dinheiro';
+                const isCash = method?.type === 'money' || p.payment_method_code === 'dinheiro';
                 const dueBefore = Number(
                   (total - payments.slice(0, i).reduce((a, x) => a + x.amount - (x.change_amount ?? 0), 0)).toFixed(2)
                 );
