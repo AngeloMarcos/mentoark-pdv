@@ -70,17 +70,6 @@ const TabOrder = () => {
     );
   }, [products, search]);
 
-  const totals = useMemo(() => {
-    return tabItems.reduce(
-      (acc, item) => ({
-        gross: acc.gross + item.total + (item.discount || 0),
-        discount: acc.discount + (item.discount || 0),
-        net: acc.net + item.total,
-      }),
-      { gross: 0, discount: 0, net: 0 }
-    );
-  }, [tabItems]);
-
   const handleAddItem = async () => {
     if (!selectedProduct || !tabId) return;
     await addItem.mutateAsync({
@@ -100,18 +89,6 @@ const TabOrder = () => {
     await removeItem.mutateAsync({ itemId, tabId });
   };
 
-  const handleCloseTab = async () => {
-    if (!tab || !tabId) return;
-
-    await closeTab.mutateAsync({
-      tabId,
-      tableId: tab.table_id,
-      paymentMethod,
-      items: tabItems,
-    });
-
-    navigate('/tables');
-  };
 
   const handleCancelTab = async () => {
     if (!tab || !tabId) return;
