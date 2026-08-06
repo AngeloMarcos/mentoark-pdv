@@ -7,12 +7,15 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CurrencyInput } from '@/components/ui/currency-input';
-import { Users, Minus, Plus, Receipt, Trash2 } from 'lucide-react';
+import { Users, Minus, Plus, Receipt, Trash2, AlertTriangle, Wallet } from 'lucide-react';
 import { usePaymentMethods } from '@/hooks/usePaymentMethods';
+import { useActiveSession } from '@/hooks/useCashRegister';
 import { useTabBill, useCloseRestaurantTab, type CloseTabPayment } from '@/hooks/useTabBilling';
 import { CustomerSelector } from '@/components/pdv/CustomerSelector';
 import type { Customer } from '@/hooks/useCustomers';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
+
 
 const brl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
