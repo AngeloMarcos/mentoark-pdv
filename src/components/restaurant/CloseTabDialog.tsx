@@ -31,7 +31,10 @@ interface Props {
 export function CloseTabDialog({ open, onOpenChange, tabId, tabLabel, peopleCount, onClosed }: Props) {
   const { data: bill } = useTabBill(open ? tabId : undefined);
   const { data: methods = [] } = usePaymentMethods();
+  const { data: activeSession } = useActiveSession();
   const closeTab = useCloseRestaurantTab();
+  const navigate = useNavigate();
+
 
   const [serviceFee, setServiceFee] = useState(true);
   const [servicePct, setServicePct] = useState(10);
