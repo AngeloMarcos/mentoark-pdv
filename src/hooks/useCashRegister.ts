@@ -298,11 +298,14 @@ export function useCloseCash() {
       if (session.status === "closed") throw new Error("Este caixa já foi fechado");
 
       // Calcula saldo esperado
-      const { data: expectedData } = await supabase
+      const { data: expectedData, error: expectedError } = await supabase
         .rpc("calculate_expected_balance", { p_session_id: input.session_id });
 
-      const expectedBalance = expectedData || session.opening_balance;
-      const difference = input.closing_balance - expectedBalance;
+      if (expectedError) throw expectedError;
+
+      const expectedBalance = Number(expectedData ?? session.opening_balance);
+      const difference = Number((input.closing_balance - expectedBalance).toFixed(2));
+
 
       // Valida motivo se houver diferença
       if (Math.abs(difference) >= 0.01 && !input.difference_reason) {
