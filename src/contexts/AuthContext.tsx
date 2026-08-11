@@ -42,6 +42,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
+        // Mantém o socket de realtime autenticado com o token novo,
+        // senão as telas de Cozinha/Pedidos param de atualizar sozinhas.
+        if (session?.access_token) {
+          try { supabase.realtime.setAuth(session.access_token); } catch { /* noop */ }
+        }
         // Track last_seen on sign in (deferred to avoid blocking auth callback)
         if (event === "SIGNED_IN" && session?.user) {
           setTimeout(() => {
@@ -91,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (!error && refreshed.session) {
             setSession(refreshed.session);
             setUser(refreshed.session.user);
+            try { supabase.realtime.setAuth(refreshed.session.access_token); } catch { /* noop */ }
           }
         }
       } catch {
