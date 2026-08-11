@@ -188,6 +188,9 @@ export function useSessionSummary(sessionId?: string) {
     if (mov.movement_type === "sale") {
       acc.totalSales += mov.amount;
       acc.salesCount += 1;
+      if ((mov.payment_method || "dinheiro") === "dinheiro") {
+        acc.totalCashSales += mov.amount;
+      }
     }
 
     return acc;
@@ -196,8 +199,10 @@ export function useSessionSummary(sessionId?: string) {
     totalSupply: 0,
     totalWithdrawal: 0,
     totalSales: 0,
+    totalCashSales: 0,
     salesCount: 0,
   });
+
 
   return summary;
 }
