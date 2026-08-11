@@ -59,8 +59,11 @@ export function CashSessionSummary({ session }: CashSessionSummaryProps) {
     }
   };
 
-  const expectedBalance = session.opening_balance + summary.totalSales + summary.totalSupply - summary.totalWithdrawal;
+  // Gaveta = apenas dinheiro físico (PIX/cartão não ficam no caixa)
+  const expectedBalance =
+    session.opening_balance + summary.totalCashSales + summary.totalSupply - summary.totalWithdrawal;
   const hasPaymentBreakdown = Object.keys(summary.byPaymentMethod).length > 0;
+
 
   return (
     <Card>
