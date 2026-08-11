@@ -44,7 +44,9 @@ export default function Tables() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isManageOpen, setIsManageOpen] = useState(false);
   const [closingTab, setClosingTab] = useState<{ id: string; label: string; people?: number | null } | null>(null);
+  const [newTab, setNewTab] = useState<{ open: boolean; tableId?: string | null; label?: string | null }>({ open: false });
   const [formData, setFormData] = useState({ number: '', name: '', capacity: '' });
+
 
 
   // Map tables to their active tabs
