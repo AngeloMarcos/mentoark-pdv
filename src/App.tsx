@@ -41,7 +41,22 @@ import Cozinha from "./pages/Cozinha";
 import Pedidos from "./pages/Pedidos";
 import Garcom from "./pages/Garcom";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Após inatividade, revalida ao voltar para a aba / reconectar
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      staleTime: 30_000,
+      retry: (failureCount, error: any) => {
+        const status = error?.status ?? error?.code;
+        if (status === 401 || status === 403) return failureCount < 2;
+        return failureCount < 3;
+      },
+      retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

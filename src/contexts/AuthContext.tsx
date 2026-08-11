@@ -35,6 +35,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        // TOKEN_REFRESHED sem sessão é transitório (aba suspensa): não desloga.
+        if (!session && event !== "SIGNED_OUT" && event !== "INITIAL_SESSION") {
+          return;
+        }
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
@@ -65,6 +69,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Revalida a sessão ao voltar de inatividade (aba oculta / rede caída).
+  // Sem isso as requisições saem com token expirado e a tela fica "vazia".
+  useEffect(() => {
+    let refreshing = false;
+
+    const revalidate = async () => {
+      if (refreshing) return;
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      refreshing = true;
+      try {
+        const { data } = await supabase.auth.getSession();
+        const current = data.session;
+        if (!current) return;
+
+        const expiresAt = (current.expires_at ?? 0) * 1000;
+        // Renova proativamente se falta menos de 5 minutos (ou já expirou)
+        if (expiresAt - Date.now() < 5 * 60 * 1000) {
+          const { data: refreshed, error } = await supabase.auth.refreshSession();
+          if (!error && refreshed.session) {
+            setSession(refreshed.session);
+            setUser(refreshed.session.user);
+          }
+        }
+      } catch {
+        // silencioso: mantém a sessão atual
+      } finally {
+        refreshing = false;
+      }
+    };
+
+    const onVisibility = () => { void revalidate(); };
+    window.addEventListener("visibilitychange", onVisibility);
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("focus", onVisibility);
+    window.addEventListener("online", onVisibility);
+    const interval = window.setInterval(() => { void revalidate(); }, 4 * 60 * 1000);
+
+    return () => {
+      window.removeEventListener("visibilitychange", onVisibility);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("focus", onVisibility);
+      window.removeEventListener("online", onVisibility);
+      window.clearInterval(interval);
+    };
+  }, []);
+
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
