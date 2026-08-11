@@ -77,12 +77,9 @@ export default function Tables() {
     const activeTab = tabsByTable[table.id];
 
     if (activeTab) {
-      // Go to active tab
       navigate(`/tabs/${activeTab.id}`);
     } else {
-      // Create new tab for this table
-      const newTab = await createTab.mutateAsync({ table_id: table.id });
-      navigate(`/tabs/${newTab.id}`);
+      setNewTab({ open: true, tableId: table.id, label: `Mesa ${table.number}` });
     }
   };
 
@@ -90,10 +87,10 @@ export default function Tables() {
     navigate(`/tabs/${tab.id}`);
   };
 
-  const handleCreateLooseTab = async () => {
-    const newTab = await createTab.mutateAsync({});
-    navigate(`/tabs/${newTab.id}`);
+  const handleCreateLooseTab = () => {
+    setNewTab({ open: true, tableId: null });
   };
+
 
   const getStatusColor = (status: string, hasActiveTab: boolean) => {
     if (hasActiveTab || status === 'occupied') return 'bg-destructive/10 border-destructive text-destructive';
