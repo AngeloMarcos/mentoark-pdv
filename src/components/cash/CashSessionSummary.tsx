@@ -133,9 +133,10 @@ export function CashSessionSummary({ session }: CashSessionSummaryProps) {
         {/* Saldo */}
         <div className="p-4 bg-primary/10 rounded-lg">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium">Saldo Esperado:</span>
+            <span className="text-sm font-medium">Saldo Esperado (dinheiro):</span>
             <span className="text-xl font-bold">{formatCurrency(expectedBalance)}</span>
           </div>
+
           {session.status === "closed" && session.closing_balance !== null && (
             <>
               <div className="flex justify-between items-center mt-2">
