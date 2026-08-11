@@ -24,6 +24,8 @@ import { useTables, useCreateTable, useUpdateTable, useUpdateTableStatus, type T
 import { useOpenTabs, useCreateTab, type Tab } from '@/hooks/useTabs';
 import { useOpenTabTotals } from '@/hooks/useTabBilling';
 import { CloseTabDialog } from '@/components/restaurant/CloseTabDialog';
+import { NewTabDialog } from '@/components/restaurant/NewTabDialog';
+
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { TableGridSkeleton } from '@/components/ui/skeletons';
@@ -37,12 +39,14 @@ export default function Tables() {
   const createTable = useCreateTable();
   const updateTable = useUpdateTable();
   const updateTableStatus = useUpdateTableStatus();
-  const createTab = useCreateTab();
+  
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isManageOpen, setIsManageOpen] = useState(false);
   const [closingTab, setClosingTab] = useState<{ id: string; label: string; people?: number | null } | null>(null);
+  const [newTab, setNewTab] = useState<{ open: boolean; tableId?: string | null; label?: string | null }>({ open: false });
   const [formData, setFormData] = useState({ number: '', name: '', capacity: '' });
+
 
 
   // Map tables to their active tabs
@@ -73,12 +77,9 @@ export default function Tables() {
     const activeTab = tabsByTable[table.id];
 
     if (activeTab) {
-      // Go to active tab
       navigate(`/tabs/${activeTab.id}`);
     } else {
-      // Create new tab for this table
-      const newTab = await createTab.mutateAsync({ table_id: table.id });
-      navigate(`/tabs/${newTab.id}`);
+      setNewTab({ open: true, tableId: table.id, label: `Mesa ${table.number}` });
     }
   };
 
@@ -86,10 +87,10 @@ export default function Tables() {
     navigate(`/tabs/${tab.id}`);
   };
 
-  const handleCreateLooseTab = async () => {
-    const newTab = await createTab.mutateAsync({});
-    navigate(`/tabs/${newTab.id}`);
+  const handleCreateLooseTab = () => {
+    setNewTab({ open: true, tableId: null });
   };
+
 
   const getStatusColor = (status: string, hasActiveTab: boolean) => {
     if (hasActiveTab || status === 'occupied') return 'bg-destructive/10 border-destructive text-destructive';
@@ -345,6 +346,15 @@ export default function Tables() {
             onClosed={() => setClosingTab(null)}
           />
         )}
+
+        <NewTabDialog
+          open={newTab.open}
+          onOpenChange={(o) => setNewTab((s) => ({ ...s, open: o }))}
+          tableId={newTab.tableId}
+          tableLabel={newTab.label}
+          onCreated={(tabId) => navigate(`/tabs/${tabId}`)}
+        />
+
       </div>
 
     </AppLayout>
