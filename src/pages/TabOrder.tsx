@@ -55,14 +55,35 @@ const TabOrder = () => {
   const [notes, setNotes] = useState('');
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [cart, setCart] = useState<CartLine[]>([]);
 
+  useOrdersRealtime();
   const { data: tab, isLoading: tabLoading } = useTab(tabId);
   const { data: tabItems = [], isLoading: itemsLoading } = useTabItems(tabId);
   const { data: products = [] } = useProducts();
+  const { data: menuItems = [] } = useMenuItems();
   const { data: bill } = useTabBill(tabId);
   const addItem = useAddTabItem();
   const removeItem = useRemoveTabItem();
   const cancelTab = useCancelTab();
+  const createOrder = useCreateOrder();
+
+  const sendToKitchen = async () => {
+    if (!tabId || !tab || cart.length === 0) return;
+    await createOrder.mutateAsync({
+      order_type: tab.table_id ? 'mesa' : 'balcao',
+      tab_id: tabId,
+      table_id: tab.table_id,
+      items: cart.map((l) => ({
+        menu_item_id: l.menu_item_id,
+        quantity: l.quantity,
+        notes: l.notes ?? null,
+        options: l.options,
+      })),
+    });
+    setCart([]);
+  };
+
 
   const filteredProducts = useMemo(() => {
     if (!search) return products;
