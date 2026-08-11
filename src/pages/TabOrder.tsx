@@ -361,8 +361,10 @@ const TabOrder = () => {
                   )}
                 </div>
               )}
+                </TabsContent>
+              </Tabs>
             </CardContent>
-          </Card>
+
 
           {/* Conta consolidada (itens diretos + pedidos da cozinha) */}
           <Card>
