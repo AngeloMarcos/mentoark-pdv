@@ -106,13 +106,12 @@ export function CloseCashDialog({ session, onSuccess }: CloseCashDialogProps) {
   const handleClose = async () => {
     if (!cashCountEntered) return;
 
-    // Total closing balance is counted cash + expected card/pix amounts
-    const closingBalance = paymentMethods.reduce((sum, m) => {
-      if (m.requiresCount) {
-        return sum + (parseFloat(m.counted) || 0);
-      }
-      return sum + m.expected;
-    }, 0);
+    // O saldo de fechamento representa apenas o dinheiro físico da gaveta.
+    // PIX/cartão não ficam no caixa e são conferidos separadamente por método.
+    const closingBalance = paymentMethods
+      .filter(m => m.requiresCount)
+      .reduce((sum, m) => sum + (parseFloat(m.counted) || 0), 0);
+
 
     const discrepancy_by_method: Record<string, { expected: number; counted: number; difference: number }> = {};
     for (const m of paymentMethods) {
