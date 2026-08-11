@@ -141,21 +141,9 @@ export function useOrdersRealtime() {
         { event: '*', schema: 'public', table: 'order_items', filter: `tenant_id=eq.${currentTenant.id}` },
         () => qc.invalidateQueries({ queryKey: ['orders'] })
       )
-      .subscribe((status) => {
-        // Após queda de rede/aba suspensa o canal pode morrer: revalida ao reconectar
-        if (status === 'SUBSCRIBED') qc.invalidateQueries({ queryKey: ['orders'] });
-      });
-
-    const resync = () => {
-      if (document.visibilityState !== 'visible') return;
-      qc.invalidateQueries({ queryKey: ['orders'] });
-    };
-    document.addEventListener('visibilitychange', resync);
-    window.addEventListener('online', resync);
+      .subscribe();
 
     return () => {
-      document.removeEventListener('visibilitychange', resync);
-      window.removeEventListener('online', resync);
       supabase.removeChannel(channel);
     };
   }, [currentTenant?.id, qc]);
