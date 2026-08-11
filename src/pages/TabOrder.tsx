@@ -229,13 +229,40 @@ const TabOrder = () => {
           {/* Product Search */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Adicionar Itens</CardTitle>
+              <CardTitle className="text-lg">Anotar itens</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <Tabs defaultValue={menuItems.length > 0 ? 'cardapio' : 'produtos'}>
+                <TabsList className="w-full">
+                  <TabsTrigger value="cardapio" className="flex-1">Cardápio (cozinha)</TabsTrigger>
+                  <TabsTrigger value="produtos" className="flex-1">Produtos (balcão)</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="cardapio" className="space-y-3 pt-3">
+                  {menuItems.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      Nenhum item de cardápio cadastrado. Monte o cardápio em Cardápio.
+                    </p>
+                  ) : (
+                    <>
+                      <OrderComposer items={menuItems} cart={cart} onChange={setCart} compact />
+                      <Button
+                        className="w-full h-11"
+                        disabled={cart.length === 0 || createOrder.isPending}
+                        onClick={sendToKitchen}
+                      >
+                        Enviar para a cozinha · R$ {cartTotal(cart).toFixed(2)}
+                      </Button>
+                    </>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="produtos" className="space-y-4 pt-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar produto..."
+
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-10"
