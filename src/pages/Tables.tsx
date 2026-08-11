@@ -24,6 +24,8 @@ import { useTables, useCreateTable, useUpdateTable, useUpdateTableStatus, type T
 import { useOpenTabs, useCreateTab, type Tab } from '@/hooks/useTabs';
 import { useOpenTabTotals } from '@/hooks/useTabBilling';
 import { CloseTabDialog } from '@/components/restaurant/CloseTabDialog';
+import { NewTabDialog } from '@/components/restaurant/NewTabDialog';
+
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { TableGridSkeleton } from '@/components/ui/skeletons';
