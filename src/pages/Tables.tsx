@@ -346,6 +346,15 @@ export default function Tables() {
             onClosed={() => setClosingTab(null)}
           />
         )}
+
+        <NewTabDialog
+          open={newTab.open}
+          onOpenChange={(o) => setNewTab((s) => ({ ...s, open: o }))}
+          tableId={newTab.tableId}
+          tableLabel={newTab.label}
+          onCreated={(tabId) => navigate(`/tabs/${tabId}`)}
+        />
+
       </div>
 
     </AppLayout>
