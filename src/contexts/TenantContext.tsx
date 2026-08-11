@@ -33,6 +33,18 @@ interface TenantContextType {
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
 
 const TENANT_STORAGE_KEY = "pdv_current_tenant_id";
+const TENANT_CACHE_KEY = "pdv_current_tenant_cache";
+
+function readCachedTenant(): Tenant | null {
+  try {
+    const raw = localStorage.getItem(TENANT_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed?.id ? (parsed as Tenant) : null;
+  } catch {
+    return null;
+  }
+}
 
 export function TenantProvider({ children }: { children: ReactNode }) {
   const { user, isLoading: authLoading } = useAuth();
