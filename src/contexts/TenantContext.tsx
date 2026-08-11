@@ -108,6 +108,14 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
     if (tenantsQueryLoading) return;
 
+    // Falha de rede/token: NÃO limpar a empresa selecionada (isso jogava o
+    // usuário na tela de "selecionar/criar empresa" sem motivo).
+    if (tenantsError) {
+      setCurrentTenantState((previousTenant) => previousTenant ?? readCachedTenant());
+      setHasResolvedTenant(true);
+      return;
+    }
+
     const savedTenantId = localStorage.getItem(TENANT_STORAGE_KEY);
     const savedTenant = savedTenantId ? tenants.find((tenant) => tenant.id === savedTenantId) ?? null : null;
 
@@ -124,21 +132,26 @@ export function TenantProvider({ children }: { children: ReactNode }) {
 
     if (savedTenant) {
       localStorage.setItem(TENANT_STORAGE_KEY, savedTenant.id);
+      localStorage.setItem(TENANT_CACHE_KEY, JSON.stringify(savedTenant));
     } else if (tenants.length === 1) {
       localStorage.setItem(TENANT_STORAGE_KEY, tenants[0].id);
+      localStorage.setItem(TENANT_CACHE_KEY, JSON.stringify(tenants[0]));
     } else if (savedTenantId && !tenants.some((tenant) => tenant.id === savedTenantId)) {
       localStorage.removeItem(TENANT_STORAGE_KEY);
+      localStorage.removeItem(TENANT_CACHE_KEY);
     }
 
     setHasResolvedTenant(true);
-  }, [authLoading, user, tenants, tenantsQueryLoading]);
+  }, [authLoading, user, tenants, tenantsQueryLoading, tenantsError]);
 
   const setCurrentTenant = (tenant: Tenant | null) => {
     setCurrentTenantState(tenant);
     if (tenant) {
       localStorage.setItem(TENANT_STORAGE_KEY, tenant.id);
+      localStorage.setItem(TENANT_CACHE_KEY, JSON.stringify(tenant));
     } else {
       localStorage.removeItem(TENANT_STORAGE_KEY);
+      localStorage.removeItem(TENANT_CACHE_KEY);
     }
   };
 
