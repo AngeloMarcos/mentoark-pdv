@@ -39,7 +39,7 @@ export default function Tables() {
   const createTable = useCreateTable();
   const updateTable = useUpdateTable();
   const updateTableStatus = useUpdateTableStatus();
-  const createTab = useCreateTab();
+  
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isManageOpen, setIsManageOpen] = useState(false);
