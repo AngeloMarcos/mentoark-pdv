@@ -200,13 +200,16 @@ const TabOrder = () => {
             </Button>
             <div>
               <h1 className="text-2xl font-bold">{title}</h1>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                <span>
-                  Aberta há{' '}
-                  {formatDistanceToNow(new Date(tab.opened_at), { locale: ptBR })}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  Aberta há {formatDistanceToNow(new Date(tab.opened_at), { locale: ptBR })}
                 </span>
+                {tab.customer_name && tab.table && <span>Cliente: {tab.customer_name}</span>}
+                {!!tab.people_count && tab.people_count > 1 && <span>{tab.people_count} pessoas</span>}
+                {tab.notes && <span className="italic">{tab.notes}</span>}
               </div>
+
             </div>
           </div>
 
