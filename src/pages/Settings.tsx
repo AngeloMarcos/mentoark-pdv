@@ -2,12 +2,13 @@ import { useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PermissionGuard } from "@/components/auth/PermissionGuard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, ShoppingCart, FileText, Plug, ShieldCheck } from "lucide-react";
+import { Building2, ShoppingCart, FileText, Plug, ShieldCheck, SlidersHorizontal } from "lucide-react";
 import { CompanyDataTab } from "@/components/settings/CompanyDataTab";
 import { PdvSettingsTab } from "@/components/settings/PdvSettingsTab";
 import { FiscalSettingsTab } from "@/components/settings/FiscalSettingsTab";
 import { IntegrationsTab } from "@/components/settings/IntegrationsTab";
 import { PrivacyTab } from "@/components/settings/PrivacyTab";
+import { FeaturesTab } from "@/components/settings/FeaturesTab";
 
 const Settings = () => {
   const [params, setParams] = useSearchParams();
@@ -24,10 +25,14 @@ const Settings = () => {
       <AppLayout title="Configurações">
         <div className="max-w-5xl mx-auto animate-fade-in">
           <Tabs value={tab} onValueChange={setTab} className="w-full">
-            <TabsList className="grid grid-cols-3 md:grid-cols-5 w-full">
+            <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full">
               <TabsTrigger value="company" className="gap-2">
                 <Building2 className="w-4 h-4" />
                 <span className="hidden sm:inline">Empresa</span>
+              </TabsTrigger>
+              <TabsTrigger value="features" className="gap-2">
+                <SlidersHorizontal className="w-4 h-4" />
+                <span className="hidden sm:inline">Funcionalidades</span>
               </TabsTrigger>
               <TabsTrigger value="pdv" className="gap-2">
                 <ShoppingCart className="w-4 h-4" />
@@ -49,6 +54,9 @@ const Settings = () => {
 
             <TabsContent value="company" className="mt-6">
               <CompanyDataTab />
+            </TabsContent>
+            <TabsContent value="features" className="mt-6">
+              <FeaturesTab />
             </TabsContent>
             <TabsContent value="pdv" className="mt-6">
               <PdvSettingsTab />
