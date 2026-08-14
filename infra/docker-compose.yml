@@ -49,6 +49,29 @@ services:
         limits:
           memory: 150m
 
+  storage:
+    # supabase/storage-api teve um bug de ENOENT no backend "file" nesta
+    # VPS (ver infra/README.md, secao Storage) que nao valia a pena
+    # perseguir mais. Substituido por um servico minimo proprio
+    # (infra/mini-storage) que fala o mesmo subconjunto do protocolo REST
+    # do Supabase Storage usado pelo app (src/hooks/useProductImages.ts).
+    build:
+      context: ./mini-storage
+    container_name: pdv_storage
+    restart: always
+    environment:
+      JWT_SECRET: __JWT_SECRET__
+      POSTGREST_URL: http://rest:3000
+      DATA_DIR: /data
+    volumes:
+      - storage_data:/data
+    networks:
+      - proxy
+    deploy:
+      resources:
+        limits:
+          memory: 80m
+
   gateway:
     image: nginx:alpine
     container_name: pdv_gateway
@@ -58,6 +81,7 @@ services:
     depends_on:
       - auth
       - rest
+      - storage
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
@@ -75,3 +99,6 @@ services:
 networks:
   proxy:
     external: true
+
+volumes:
+  storage_data:
