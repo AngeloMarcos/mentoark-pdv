@@ -1,7 +1,9 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { translateAuthError } from "@/lib/auth-errors";
+import { TENANT_STORAGE_KEY, TENANT_CACHE_KEY } from "@/lib/tenant-storage";
 
 export interface SignUpResult {
   error: Error | null;
@@ -27,6 +29,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -162,6 +165,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    // Terminal de PDV costuma ser compartilhado entre operadores: sem
+    // limpar isso, o próximo login no mesmo navegador podia herdar a
+    // empresa selecionada e dados em cache do usuário anterior.
+    localStorage.removeItem(TENANT_STORAGE_KEY);
+    localStorage.removeItem(TENANT_CACHE_KEY);
+    queryClient.clear();
   };
 
   const resetPassword = async (email: string) => {
