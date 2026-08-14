@@ -9,6 +9,7 @@ import { CompanyProvider } from "@/contexts/CompanyContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { OnboardingGuard } from "@/components/onboarding/OnboardingGuard";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { useAppVersionCheck } from "@/hooks/useAppVersionCheck";
 import Index from "./pages/Index";
 import ResetPassword from "./pages/ResetPassword";
 import Auth from "./pages/Auth";
@@ -58,7 +59,10 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
+const App = () => {
+  useAppVersionCheck();
+
+  return (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
     <AuthProvider>
@@ -110,6 +114,7 @@ const App = () => (
     </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;

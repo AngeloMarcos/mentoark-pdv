@@ -2,6 +2,7 @@ import { createContext, useContext, useState, ReactNode, useEffect } from "react
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./AuthContext";
+import { TENANT_STORAGE_KEY, TENANT_CACHE_KEY } from "@/lib/tenant-storage";
 
 export type TenantRole =
   | "admin"
@@ -31,9 +32,6 @@ interface TenantContextType {
 }
 
 const TenantContext = createContext<TenantContextType | undefined>(undefined);
-
-const TENANT_STORAGE_KEY = "pdv_current_tenant_id";
-const TENANT_CACHE_KEY = "pdv_current_tenant_cache";
 
 function readCachedTenant(): Tenant | null {
   try {
