@@ -4,12 +4,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Loader2, Check, X, Mail, Info } from "lucide-react";
+import { Loader2, Check, X, Mail, Info, ArrowRight, ShieldCheck } from "lucide-react";
 import brandLogo from "@/assets/mentoark-logo.png.asset.json";
 import { AuthSkeleton } from "@/components/ui/skeletons";
 import { PasswordInput } from "@/components/auth/PasswordInput";
@@ -63,8 +62,9 @@ const Auth = () => {
   }, [signupPassword, signupConfirmPassword]);
 
   const handleSignIn = async () => {
+    if (loading) return;
     const validation = signinSchema.safeParse({
-      email: signinEmail,
+      email: signinEmail.trim(),
       password: signinPassword,
     });
 
@@ -108,8 +108,9 @@ const Auth = () => {
   };
 
   const handleSignUp = async () => {
+    if (loading) return;
     const validation = signupSchema.safeParse({
-      email: signupEmail,
+      email: signupEmail.trim(),
       password: signupPassword,
       confirmPassword: signupConfirmPassword,
     });
@@ -157,25 +158,26 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-secondary/30 p-4">
-      <Card className="w-full max-w-md animate-fade-in">
-        <CardHeader className="text-center space-y-4">
-          <div className="mx-auto w-24 h-24 flex items-center justify-center">
+    <main className="auth-surface min-h-screen flex flex-col items-center justify-center bg-background px-6 py-12">
+      <section className="w-full max-w-md motion-safe:animate-fade-in" aria-label="Acesso MentoArk">
+        <header className="text-center space-y-5 mb-8">
+          <div className="mx-auto w-28 h-28 flex items-center justify-center">
             <img src={brandLogo.url} alt="MentoArk" className="w-full h-full object-contain" />
           </div>
-          <div>
-            <CardTitle className="text-2xl font-bold">MentoArk</CardTitle>
-            <CardDescription>Sistema de Ponto de Venda</CardDescription>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-semibold">MentoArk</h1>
+            <p className="text-sm text-muted-foreground">Sistema de Ponto de Venda</p>
           </div>
-        </CardHeader>
-        <CardContent>
+        </header>
+        <div>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
               <TabsTrigger value="signin">Entrar</TabsTrigger>
               <TabsTrigger value="signup">Criar conta</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="signin" className="space-y-4">
+            <TabsContent value="signin" className="space-y-5">
+              <form className="space-y-5" onSubmit={(event) => { event.preventDefault(); void handleSignIn(); }}>
               {signinNotice && (
                 <Alert>
                   <Info className="h-4 w-4" />
@@ -208,22 +210,24 @@ const Auth = () => {
                 <Input
                   id="signin-email"
                   type="email"
+                  className="h-12"
                   placeholder="seu@email.com"
                   value={signinEmail}
                   onChange={(e) => setSigninEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
                   disabled={loading}
                   autoComplete="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="signin-password">Senha</Label>
                 <PasswordInput
                   id="signin-password"
+                  className="h-12"
                   placeholder="••••••••"
                   value={signinPassword}
                   onChange={(e) => setSigninPassword(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
                   disabled={loading}
                   autoComplete="current-password"
                 />
@@ -232,8 +236,8 @@ const Auth = () => {
                 <ForgotPasswordDialog defaultEmail={signinEmail} />
               </div>
               <Button 
-                className="w-full touch-target" 
-                onClick={handleSignIn}
+                className="w-full h-12 touch-target"
+                type="submit"
                 disabled={loading}
               >
                 {loading ? (
@@ -242,9 +246,10 @@ const Auth = () => {
                     Entrando...
                   </>
                 ) : (
-                  "Entrar"
+                  <>Entrar <ArrowRight className="h-4 w-4" /></>
                 )}
               </Button>
+              </form>
             </TabsContent>
 
             <TabsContent value="signup" className="space-y-4">
@@ -303,7 +308,7 @@ const Auth = () => {
                   autoComplete="new-password"
                 />
                 {signupConfirmPassword && (
-                  <div className={`flex items-center gap-1 text-xs ${passwordsMatch ? 'text-green-600' : 'text-destructive'}`}>
+                  <div className={`flex items-center gap-1 text-xs ${passwordsMatch ? 'text-success' : 'text-destructive'}`}>
                     {passwordsMatch ? (
                       <>
                         <Check className="h-3 w-3" />
@@ -334,9 +339,13 @@ const Auth = () => {
               </Button>
             </TabsContent>
           </Tabs>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+        <footer className="mt-8 border-t border-border pt-5 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <ShieldCheck className="h-4 w-4 text-success" />
+          Acesso seguro · MentoArk
+        </footer>
+      </section>
+    </main>
   );
 };
 
