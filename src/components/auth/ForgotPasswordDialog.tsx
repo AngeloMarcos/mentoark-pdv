@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Mail, Loader2 } from "lucide-react";
+import { Mail, Loader2, CircleAlert } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const emailSchema = z.string().email("Por favor, insira um email válido");
 
@@ -29,11 +30,15 @@ export function ForgotPasswordDialog({ trigger, defaultEmail = "" }: ForgotPassw
   const [email, setEmail] = useState(defaultEmail);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
+    if (loading) return;
+    setErrorMessage(null);
     
-    const validation = emailSchema.safeParse(email);
+    const validation = emailSchema.safeParse(email.trim().toLowerCase());
     if (!validation.success) {
       toast.error(validation.error.errors[0].message);
       return;
@@ -41,21 +46,25 @@ export function ForgotPasswordDialog({ trigger, defaultEmail = "" }: ForgotPassw
 
     setLoading(true);
     try {
-      const { error } = await resetPassword(email);
+      const { error } = await resetPassword(validation.data);
       
       if (error) {
-        toast.error("Erro ao enviar email de recuperação. Tente novamente.");
+        setErrorMessage(error.message);
         return;
       }
       
+      setEmail(validation.data);
       setSent(true);
-      toast.success("Email de recuperação enviado!");
+    } catch {
+      setErrorMessage("Não foi possível enviar o pedido. Verifique sua conexão e tente novamente.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleOpenChange = (isOpen: boolean) => {
+    if (loading && !isOpen) return;
+    setErrorMessage(null);
     setOpen(isOpen);
     if (isOpen) {
       setEmail(defaultEmail);
@@ -70,17 +79,17 @@ export function ForgotPasswordDialog({ trigger, defaultEmail = "" }: ForgotPassw
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button variant="link" className="px-0 h-auto font-normal text-muted-foreground">
+          <Button type="button" variant="link" className="px-0 min-h-11 font-normal text-muted-foreground">
             Esqueci minha senha
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="auth-surface sm:max-w-md rounded-lg">
         <DialogHeader>
           <DialogTitle>Recuperar senha</DialogTitle>
           <DialogDescription>
             {sent 
-              ? "Verifique sua caixa de entrada e siga as instruções para redefinir sua senha."
+              ? "Pedido de recuperação realizado."
               : "Digite seu email para receber um link de recuperação de senha."
             }
           </DialogDescription>
@@ -88,28 +97,34 @@ export function ForgotPasswordDialog({ trigger, defaultEmail = "" }: ForgotPassw
         
         {sent ? (
           <div className="flex flex-col items-center py-6 space-y-4">
-            <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-              <Mail className="w-8 h-8 text-green-600" />
+            <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center">
+              <Mail className="w-8 h-8 text-success" />
             </div>
             <p className="text-center text-sm text-muted-foreground">
-              Enviamos um email para <strong>{email}</strong>
+              Se houver uma conta com <strong className="break-all text-foreground">{email}</strong>, você receberá um link para redefinir a senha.
             </p>
-            <Button variant="outline" onClick={() => handleOpenChange(false)}>
+            <p className="text-center text-sm text-muted-foreground">Verifique também o spam. Se houver mais de um e-mail, use o link mais recente.</p>
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Fechar
             </Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
+            {errorMessage && <Alert variant="destructive" role="alert"><CircleAlert className="h-4 w-4" /><AlertDescription>{errorMessage}</AlertDescription></Alert>}
             <div className="space-y-2">
               <Label htmlFor="reset-email">Email</Label>
               <Input
                 id="reset-email"
                 type="email"
+                className="h-12"
                 placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
                 autoFocus
+                autoComplete="email"
+                autoCapitalize="none"
+                spellCheck={false}
               />
             </div>
             <div className="flex gap-2 justify-end">

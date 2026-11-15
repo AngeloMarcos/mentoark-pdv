@@ -145,6 +145,20 @@
 }
 
 @layer components {
+  .auth-surface {
+    --primary: 22 92% 53%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 22 92% 53%;
+    --radius: 0.5rem;
+  }
+
+  .auth-surface.auth-surface .gradient-brand,
+  .auth-surface.auth-surface [role="tab"][data-state="active"] {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    box-shadow: none;
+  }
+
   .touch-target { @apply min-h-[44px] min-w-[44px]; }
 
   /* Glass card (alias mantido p/ compatibilidade) */
