@@ -47,6 +47,7 @@ const Auth = () => {
   const [activeTab, setActiveTab] = useState("signin");
   const [signinNotice, setSigninNotice] = useState<string | null>(null);
   const [pendingConfirmation, setPendingConfirmation] = useState<string | null>(null);
+  const [logoUnavailable, setLogoUnavailable] = useState(false);
 
   const redirectTo = (location.state as { from?: string } | null)?.from ?? "/select-tenant";
 
@@ -162,7 +163,7 @@ const Auth = () => {
       <section className="w-full max-w-md motion-safe:animate-fade-in" aria-label="Acesso MentoArk">
         <header className="text-center space-y-5 mb-8">
           <div className="mx-auto w-28 h-28 flex items-center justify-center">
-            <img src={brandLogo.url} alt="MentoArk" className="w-full h-full object-contain" />
+            {logoUnavailable ? <span className="text-5xl font-semibold text-primary" aria-hidden="true">M<span className="text-success">A</span></span> : <img src={brandLogo.url} alt="MentoArk" onError={() => setLogoUnavailable(true)} className="w-full h-full object-contain" />}
           </div>
           <div className="space-y-2">
             <h1 className="text-3xl font-semibold">MentoArk</h1>
@@ -177,7 +178,7 @@ const Auth = () => {
             </TabsList>
 
             <TabsContent value="signin" className="space-y-5">
-              <form className="space-y-5" onSubmit={(event) => { event.preventDefault(); void handleSignIn(); }}>
+              <form className="space-y-5" onSubmit={(event) => { event.preventDefault(); if (event.target === event.currentTarget) void handleSignIn(); }}>
               {signinNotice && (
                 <Alert>
                   <Info className="h-4 w-4" />
@@ -186,6 +187,7 @@ const Auth = () => {
                     {pendingConfirmation ? (
                       <Button
                         variant="outline"
+                        type="button"
                         size="sm"
                         onClick={handleResend}
                         disabled={loading}
@@ -196,7 +198,7 @@ const Auth = () => {
                       <ForgotPasswordDialog
                         defaultEmail={signinEmail}
                         trigger={
-                          <Button variant="outline" size="sm">
+                          <Button type="button" variant="outline" size="sm">
                             Redefinir minha senha
                           </Button>
                         }

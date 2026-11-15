@@ -152,9 +152,11 @@
     --radius: 0.5rem;
   }
 
-  .auth-surface .gradient-brand {
+  .auth-surface.auth-surface .gradient-brand,
+  .auth-surface.auth-surface [role="tab"][data-state="active"] {
     background: hsl(var(--primary));
     color: hsl(var(--primary-foreground));
+    box-shadow: none;
   }
 
   .touch-target { @apply min-h-[44px] min-w-[44px]; }

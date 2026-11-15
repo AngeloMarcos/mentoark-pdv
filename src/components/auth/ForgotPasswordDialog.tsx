@@ -34,6 +34,7 @@ export function ForgotPasswordDialog({ trigger, defaultEmail = "" }: ForgotPassw
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (loading) return;
     setErrorMessage(null);
     
@@ -78,7 +79,7 @@ export function ForgotPasswordDialog({ trigger, defaultEmail = "" }: ForgotPassw
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button variant="link" className="px-0 h-auto font-normal text-muted-foreground">
+          <Button type="button" variant="link" className="px-0 min-h-11 font-normal text-muted-foreground">
             Esqueci minha senha
           </Button>
         )}
@@ -103,7 +104,7 @@ export function ForgotPasswordDialog({ trigger, defaultEmail = "" }: ForgotPassw
               Se houver uma conta com <strong className="break-all text-foreground">{email}</strong>, você receberá um link para redefinir a senha.
             </p>
             <p className="text-center text-sm text-muted-foreground">Verifique também o spam. Se houver mais de um e-mail, use o link mais recente.</p>
-            <Button variant="outline" onClick={() => handleOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Fechar
             </Button>
           </div>
