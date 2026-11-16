@@ -11,6 +11,7 @@ import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Product, ProductInput } from "@/hooks/useProducts";
 import { FiscalProductTab, FiscalFields } from "@/components/fiscal/FiscalProductTab";
+import { productTaxFields } from "@/lib/tax/engine";
 
 const UNITS = [
   { value: "UN", label: "UN — Unidade" },
@@ -170,6 +171,8 @@ export function ProductFormDialog({ open, onOpenChange, editingProduct, onSubmit
         cofins_aliquota: ext.cofins_aliquota ?? 3.0,
         unidade_medida: ext.unidade_medida || ext.unit || "UN",
         ean: ext.ean || ext.barcode || null,
+        extra_attributes: editingProduct.extra_attributes || {},
+        tax: productTaxFields(editingProduct).tax || {},
       });
       setTouched(new Set());
     }

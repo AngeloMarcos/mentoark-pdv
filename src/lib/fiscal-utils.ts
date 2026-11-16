@@ -1,4 +1,5 @@
 // Fiscal utilities — local generation of NFC-e (no SEFAZ integration)
+import type { TaxItemResult, TaxResult } from "@/lib/tax/engine";
 
 export interface FiscalCompany {
   name: string;
@@ -14,7 +15,10 @@ export interface FiscalItem {
   product_name: string;
   quantity: number;
   unit_price: number;
+  /** Valor líquido do item (após desconto). */
   total: number;
+  /** Desconto incondicional do item, em R$. */
+  discount?: number | null;
   ncm?: string | null;
   cfop?: string | null;
   csosn?: string | null;
@@ -105,30 +109,114 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
-/** Monta XML NFC-e simplificado (sem assinatura digital) */
+const f2 = (v: number) => (Number(v) || 0).toFixed(2);
+const f4 = (v: number) => (Number(v) || 0).toFixed(4);
+
+/** Grupo ICMS do item. CSOSN 500 = ICMS já recolhido por substituição tributária. */
+function buildIcmsXML(it: FiscalItem): string {
+  const csosn = it.csosn || "400";
+  const group = csosn === "500" ? "ICMSSN500" : "ICMSSN102";
+  return `<${group}>
+          <orig>0</orig>
+          <CSOSN>${escapeXml(csosn)}</CSOSN>
+        </${group}>`;
+}
+
+function buildRedXML(pRedAliq: number, pAliqEfet: number): string {
+  if (!(pRedAliq > 0)) return "";
+  return `<gRed><pRedAliq>${f4(pRedAliq)}</pRedAliq><pAliqEfet>${f4(pAliqEfet)}</pAliqEfet></gRed>`;
+}
+
+/**
+ * Grupos IS e IBSCBS do item, conforme o leiaute da NT 2025.002
+ * (Reforma Tributária do Consumo) da NF-e/NFC-e.
+ */
+export function buildReformaItemXML(tax: TaxItemResult): string {
+  const t = tax.ibscbs;
+  const is = tax.is
+    ? `
+      <IS>
+        <CSTIS>${escapeXml(tax.is.cst)}</CSTIS>
+        <cClassTribIS>${escapeXml(tax.is.cClassTrib)}</cClassTribIS>
+        <vBCIS>${f2(tax.is.vBC)}</vBCIS>
+        <pIS>${f4(tax.is.p)}</pIS>
+        <vIS>${f2(tax.is.v)}</vIS>
+      </IS>`
+    : "";
+  return `${is}
+      <IBSCBS>
+        <CST>${escapeXml(t.cst)}</CST>
+        <cClassTrib>${escapeXml(t.cClassTrib)}</cClassTrib>
+        <gIBSCBS>
+          <vBC>${f2(t.vBC)}</vBC>
+          <gIBSUF><pIBSUF>${f4(t.pIBSUF)}</pIBSUF>${buildRedXML(t.pRedAliq, t.pIBSUFEfet)}<vIBSUF>${f2(t.vIBSUF)}</vIBSUF></gIBSUF>
+          <gIBSMun><pIBSMun>${f4(t.pIBSMun)}</pIBSMun>${buildRedXML(t.pRedAliq, t.pIBSMunEfet)}<vIBSMun>${f2(t.vIBSMun)}</vIBSMun></gIBSMun>
+          <vIBS>${f2(t.vIBS)}</vIBS>
+          <gCBS><pCBS>${f4(t.pCBS)}</pCBS>${buildRedXML(t.pRedAliq, t.pCBSEfet)}<vCBS>${f2(t.vCBS)}</vCBS></gCBS>
+        </gIBSCBS>
+      </IBSCBS>`;
+}
+
+/** Totais ISTot / IBSCBSTot / vNFTot (NT 2025.002). */
+export function buildReformaTotalXML(tax: TaxResult, vNF: number): string {
+  const t = tax.totals;
+  const isTot = t.vIS > 0 ? `
+      <ISTot><vIS>${f2(t.vIS)}</vIS></ISTot>` : "";
+  return `${isTot}
+      <IBSCBSTot>
+        <vBCIBSCBS>${f2(t.vBCIBSCBS)}</vBCIBSCBS>
+        <gIBS>
+          <gIBSUF><vDif>0.00</vDif><vDevTrib>0.00</vDevTrib><vIBSUF>${f2(t.vIBSUF)}</vIBSUF></gIBSUF>
+          <gIBSMun><vDif>0.00</vDif><vDevTrib>0.00</vDevTrib><vIBSMun>${f2(t.vIBSMun)}</vIBSMun></gIBSMun>
+          <vIBS>${f2(t.vIBS)}</vIBS>
+          <vCredPres>0.00</vCredPres>
+          <vCredPresCondSus>0.00</vCredPresCondSus>
+        </gIBS>
+        <gCBS>
+          <vDif>0.00</vDif><vDevTrib>0.00</vDevTrib><vCBS>${f2(t.vCBS)}</vCBS>
+          <vCredPres>0.00</vCredPres>
+          <vCredPresCondSus>0.00</vCredPresCondSus>
+        </gCBS>
+      </IBSCBSTot>
+      <vNFTot>${f2(vNF)}</vNFTot>`;
+}
+
+/**
+ * Monta XML NFC-e simplificado (sem assinatura digital).
+ * Com `tax` (resultado do motor tributário, na mesma ordem dos itens),
+ * inclui os grupos IS e IBSCBS por item e os totais da reforma.
+ */
 export function buildNFCeXML(
   sale: FiscalSale,
   empresa: FiscalCompany,
-  items: FiscalItem[]
+  items: FiscalItem[],
+  tax?: TaxResult | null
 ): string {
   const cnpj = (empresa.cnpj || "").replace(/\D/g, "").padStart(14, "0");
   const tpAmb = sale.ambiente === "producao" ? "1" : "2";
   const dhEmi = sale.datetime.toISOString().replace(/\.\d{3}Z$/, "-03:00");
   const totalImpostos = calcImpostosAproximados(items);
+  const vDescTotal = items.reduce((s, it) => s + (Number(it.discount) || 0), 0);
+  const vProdTotal = items.reduce((s, it) => s + it.total + (Number(it.discount) || 0), 0);
+  // No modo "por fora" os tributos da reforma somam ao total da nota.
+  const vNF = tax ? tax.totals.vTotal : sale.net_total;
 
   const det = items
     .map((it, idx) => {
       const nItem = idx + 1;
       const qCom = it.quantity.toFixed(4);
       const vUnCom = it.unit_price.toFixed(4);
-      const vProd = it.total.toFixed(2);
+      const vDesc = Number(it.discount) || 0;
+      const vProd = (it.total + vDesc).toFixed(2);
       const ean = it.ean || "SEM GTIN";
+      const ncm = (it.ncm || "").replace(/\D/g, "").padStart(8, "0");
+      const itemTax = tax?.items[idx];
       return `  <det nItem="${nItem}">
     <prod>
       <cProd>${escapeXml(it.product_id.slice(0, 60))}</cProd>
       <cEAN>${escapeXml(ean)}</cEAN>
       <xProd>${escapeXml(it.product_name)}</xProd>
-      <NCM>${escapeXml(it.ncm || "00000000")}</NCM>
+      <NCM>${ncm}</NCM>
       <CFOP>${escapeXml(it.cfop || "5102")}</CFOP>
       <uCom>${escapeXml(it.unidade || "UN")}</uCom>
       <qCom>${qCom}</qCom>
@@ -137,18 +225,16 @@ export function buildNFCeXML(
       <cEANTrib>${escapeXml(ean)}</cEANTrib>
       <uTrib>${escapeXml(it.unidade || "UN")}</uTrib>
       <qTrib>${qCom}</qTrib>
-      <vUnTrib>${vUnCom}</vUnTrib>
+      <vUnTrib>${vUnCom}</vUnTrib>${vDesc > 0 ? `
+      <vDesc>${vDesc.toFixed(2)}</vDesc>` : ""}
       <indTot>1</indTot>
     </prod>
     <imposto>
       <ICMS>
-        <ICMSSN102>
-          <orig>0</orig>
-          <CSOSN>${escapeXml(it.csosn || "400")}</CSOSN>
-        </ICMSSN102>
+        ${buildIcmsXML(it)}
       </ICMS>
       <PIS><PISNT><CST>07</CST></PISNT></PIS>
-      <COFINS><COFINSNT><CST>07</CST></COFINSNT></COFINS>
+      <COFINS><COFINSNT><CST>07</CST></COFINSNT></COFINS>${itemTax ? buildReformaItemXML(itemTax) : ""}
     </imposto>
   </det>`;
     })
@@ -185,16 +271,16 @@ ${det}
       <ICMSTot>
         <vBC>0.00</vBC>
         <vICMS>0.00</vICMS>
-        <vProd>${sale.net_total.toFixed(2)}</vProd>
-        <vDesc>${(sale.discount_total || 0).toFixed(2)}</vDesc>
-        <vNF>${sale.net_total.toFixed(2)}</vNF>
+        <vProd>${vProdTotal.toFixed(2)}</vProd>
+        <vDesc>${vDescTotal.toFixed(2)}</vDesc>
+        <vNF>${vNF.toFixed(2)}</vNF>
         <vTotTrib>${totalImpostos.toFixed(2)}</vTotTrib>
-      </ICMSTot>
+      </ICMSTot>${tax ? buildReformaTotalXML(tax, vNF) : ""}
     </total>
     <pag>
       <detPag>
         <tPag>01</tPag>
-        <vPag>${sale.net_total.toFixed(2)}</vPag>
+        <vPag>${vNF.toFixed(2)}</vPag>
       </detPag>
     </pag>
     <infAdic>
@@ -202,6 +288,25 @@ ${det}
     </infAdic>
   </infNFe>
 </NFe>`;
+}
+
+/** Lê os totais de IBS/CBS/IS de um XML gerado por buildNFCeXML (para exibição). */
+export function parseReformaTotals(
+  xml?: string | null
+): { vIBS: number; vCBS: number; vIS: number } | null {
+  if (!xml) return null;
+  const tot = xml.match(/<IBSCBSTot>([\s\S]*?)<\/IBSCBSTot>/);
+  if (!tot) return null;
+  const pick = (src: string, tag: string) => {
+    const m = src.match(new RegExp(`<${tag}>([0-9.]+)</${tag}>`));
+    return m ? parseFloat(m[1]) : 0;
+  };
+  const isTot = xml.match(/<ISTot>([\s\S]*?)<\/ISTot>/);
+  return {
+    vIBS: pick(tot[1], "vIBS"),
+    vCBS: pick(tot[1], "vCBS"),
+    vIS: isTot ? pick(isTot[1], "vIS") : 0,
+  };
 }
 
 export const UF_LIST = [

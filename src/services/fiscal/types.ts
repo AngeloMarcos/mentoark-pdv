@@ -1,6 +1,8 @@
 // Pluggable fiscal provider interface
 // Allows switching between simulated mode and real APIs (Focus NFe, eNotas, etc.)
 
+import type { ProductTax, TaxConfig } from "@/lib/tax/engine";
+
 export interface FiscalEmitPayload {
   tenant_id: string;
   sale_id: string;
@@ -25,6 +27,11 @@ export interface FiscalEmitPayload {
     quantity: number;
     unit_price: number;
     total: number;
+    /** Desconto incondicional do item, em R$. */
+    discount?: number | null;
+    category?: string | null;
+    /** Atributos da reforma tributária (products.extra_attributes.tax). */
+    tax?: ProductTax | null;
     ncm?: string | null;
     cfop?: string | null;
     csosn?: string | null;
@@ -37,6 +44,8 @@ export interface FiscalEmitPayload {
     net: number;
   };
   payment_method: string;
+  /** Configuração IBS/CBS/IS do tenant. Ausente ou desabilitada = XML sem os grupos da reforma. */
+  reforma?: TaxConfig | null;
 }
 
 export interface FiscalEmitResult {

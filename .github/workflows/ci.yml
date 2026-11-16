@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Bloqueante: módulo tributário, worker e componentes novos do PDV.
+      - name: Lint (módulo tributário e PDV)
+        run: npm run lint:tax
+
+      # Informativo: o restante do projeto ainda tem erros antigos de lint
+      # (principalmente no-explicit-any). Tornar bloqueante quando zerar.
+      - name: Lint (projeto inteiro, não bloqueante)
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Testes (unitários + desempenho do motor tributário)
+        run: npm test
+
+      - name: Build
+        run: npm run build

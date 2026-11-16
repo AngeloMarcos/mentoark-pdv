@@ -10,37 +10,42 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { OnboardingGuard } from "@/components/onboarding/OnboardingGuard";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { useAppVersionCheck } from "@/hooks/useAppVersionCheck";
+import { Suspense } from "react";
+import { lazyPage, PageFallback } from "@/lib/lazy-page";
 import Index from "./pages/Index";
-import ResetPassword from "./pages/ResetPassword";
 import Auth from "./pages/Auth";
-import SelectTenant from "./pages/SelectTenant";
-import Dashboard from "./pages/Dashboard";
-import Products from "./pages/Products";
 import PDV from "./pages/PDV";
-import SalesReport from "./pages/SalesReport";
-import Reports from "./pages/Reports";
-import Stock from "./pages/Stock";
-import Financial from "./pages/Financial";
-import Tables from "./pages/Tables";
-import TabOrder from "./pages/TabOrder";
-import Customers from "./pages/Customers";
-import Settings from "./pages/Settings";
-import CashRegister from "./pages/CashRegister";
-import Inventory from "./pages/Inventory";
-import Returns from "./pages/Returns";
-import Compras from "./pages/Compras";
-import Promotions from "./pages/Promotions";
-import Team from "./pages/Team";
-import Fiscal from "./pages/Fiscal";
-import SuperAdmin from "./pages/SuperAdmin";
 import NotFound from "./pages/NotFound";
-import AcceptInvitation from "./pages/AcceptInvitation";
-import Warehouses from "./pages/Warehouses";
-import Validades from "./pages/Validades";
-import Cardapio from "./pages/Cardapio";
-import Cozinha from "./pages/Cozinha";
-import Pedidos from "./pages/Pedidos";
-import Garcom from "./pages/Garcom";
+
+// Code-splitting por rota: login e PDV entram no bundle inicial; as demais
+// telas (relatórios, PDF, planilhas, gráficos...) só baixam quando abertas.
+const ResetPassword = lazyPage(() => import("./pages/ResetPassword"));
+const SelectTenant = lazyPage(() => import("./pages/SelectTenant"));
+const Dashboard = lazyPage(() => import("./pages/Dashboard"));
+const Products = lazyPage(() => import("./pages/Products"));
+const SalesReport = lazyPage(() => import("./pages/SalesReport"));
+const Reports = lazyPage(() => import("./pages/Reports"));
+const Stock = lazyPage(() => import("./pages/Stock"));
+const Financial = lazyPage(() => import("./pages/Financial"));
+const Tables = lazyPage(() => import("./pages/Tables"));
+const TabOrder = lazyPage(() => import("./pages/TabOrder"));
+const Customers = lazyPage(() => import("./pages/Customers"));
+const Settings = lazyPage(() => import("./pages/Settings"));
+const CashRegister = lazyPage(() => import("./pages/CashRegister"));
+const Inventory = lazyPage(() => import("./pages/Inventory"));
+const Returns = lazyPage(() => import("./pages/Returns"));
+const Compras = lazyPage(() => import("./pages/Compras"));
+const Promotions = lazyPage(() => import("./pages/Promotions"));
+const Team = lazyPage(() => import("./pages/Team"));
+const Fiscal = lazyPage(() => import("./pages/Fiscal"));
+const SuperAdmin = lazyPage(() => import("./pages/SuperAdmin"));
+const AcceptInvitation = lazyPage(() => import("./pages/AcceptInvitation"));
+const Warehouses = lazyPage(() => import("./pages/Warehouses"));
+const Validades = lazyPage(() => import("./pages/Validades"));
+const Cardapio = lazyPage(() => import("./pages/Cardapio"));
+const Cozinha = lazyPage(() => import("./pages/Cozinha"));
+const Pedidos = lazyPage(() => import("./pages/Pedidos"));
+const Garcom = lazyPage(() => import("./pages/Garcom"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -72,6 +77,7 @@ const App = () => {
             <Toaster />
             <Sonner />
             <BrowserRouter>
+              <Suspense fallback={<PageFallback />}>
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
@@ -107,6 +113,7 @@ const App = () => {
                 <Route path="/invite/:token" element={<AuthGuard requireTenant={false}><AcceptInvitation /></AuthGuard>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </Suspense>
             </BrowserRouter>
           </TooltipProvider>
         </CompanyProvider>

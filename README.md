@@ -44,3 +44,19 @@ O projeto adota uma barreira arquitetural estrita (Clean Architecture) para maio
 - `src/hooks/`: Camada de estado assíncrono (React Query).
 - `src/services/`: Abstração de infraestrutura. Apenas esta camada conhece o Supabase e dispara as transações ao PostgreSQL.
 - `supabase/migrations/`: Scripts SQL para versionamento das tabelas e Stored Procedures.
+
+## Reforma Tributária (IBS, CBS e IS)
+
+O PDV calcula e destaca IBS, CBS e Imposto Seletivo (EC 132/2023, LC 214/2025), inclui os grupos da reforma no XML da NFC-e e tem um relatório diário/mensal de tributos em **Fiscal → Tributos**. Configuração, testes de desempenho e conferência do XML estão em [docs/reforma-tributaria.md](docs/reforma-tributaria.md).
+
+## Scripts
+
+| Comando | O que faz |
+| --- | --- |
+| `npm run dev` | Servidor de desenvolvimento (porta 8080) |
+| `npm run build` | Build de produção |
+| `npm test` | Testes unitários e de desempenho (Vitest) |
+| `npm run test:perf` | Só os testes de desempenho do motor tributário |
+| `npm run typecheck` | Checagem de tipos |
+| `npm run lint:tax` | Lint do módulo tributário e dos componentes novos do PDV (bloqueante no CI) |
+| `npm run lint` | Lint do projeto inteiro (ainda com erros antigos; não bloqueante no CI) |

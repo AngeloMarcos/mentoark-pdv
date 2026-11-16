@@ -33,6 +33,29 @@ export interface ProductInput {
   extra_attributes?: Record<string, unknown>;
 }
 
+/** Colunas fiscais de products (migração 20260429010729). */
+const FISCAL_COLUMNS = [
+  "ncm", "cfop", "csosn", "cst_icms", "cest", "origem",
+  "icms_aliquota", "pis_aliquota", "cofins_aliquota", "unidade_medida", "ean",
+] as const;
+
+/**
+ * Campos opcionais do formulário: só entram no INSERT/UPDATE quando vieram
+ * preenchidos, para não sobrescrever nada em chamadas que não os conhecem.
+ * Os atributos da reforma tributária ficam em extra_attributes.tax.
+ */
+function optionalColumns(input: ProductInput): Record<string, unknown> {
+  const src = input as unknown as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const col of FISCAL_COLUMNS) {
+    if (src[col] !== undefined) out[col] = src[col] === "" ? null : src[col];
+  }
+  if (src.tax !== undefined) {
+    out.extra_attributes = { ...(input.extra_attributes || {}), tax: src.tax };
+  }
+  return out;
+}
+
 export const productsService = {
   async getProducts(tenantId: string, searchTerm?: string): Promise<Product[]> {
     let query = supabase
@@ -80,6 +103,7 @@ export const productsService = {
         unit: input.unit,
         min_stock: input.min_stock,
         active: input.active,
+        ...optionalColumns(input),
       })
       .select()
       .single();
@@ -102,6 +126,7 @@ export const productsService = {
         unit: input.unit,
         min_stock: input.min_stock,
         active: input.active,
+        ...optionalColumns(input),
       })
       .eq("id", id)
       .select()

@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Printer, X, Copy } from "lucide-react";
 import { FiscalDocument } from "@/hooks/useFiscalDocuments";
-import { formatChave } from "@/lib/fiscal-utils";
+import { formatChave, parseReformaTotals } from "@/lib/fiscal-utils";
 import { useTenant } from "@/contexts/TenantContext";
 import { toast } from "sonner";
 
@@ -29,6 +29,7 @@ export function DanfeViewer({ document, open, onOpenChange, items = [], paymentL
   if (!document) return null;
   const isProd = document.ambiente === "producao";
   const date = new Date(document.created_at);
+  const reforma = parseReformaTotals((document as { xml_content?: string | null }).xml_content);
 
   const copyChave = async () => {
     if (!document.chave_acesso) return;
@@ -88,6 +89,15 @@ export function DanfeViewer({ document, open, onOpenChange, items = [], paymentL
           <div className="space-y-0.5">
             <div className="flex justify-between"><span>SUBTOTAL</span><span>{fmt(document.valor_total)}</span></div>
             <div className="flex justify-between"><span>IMPOSTOS APROX. (Lei 12.741)</span><span>{fmt(document.valor_impostos)}</span></div>
+            {reforma && (
+              <>
+                <div className="flex justify-between"><span>IBS</span><span>{fmt(reforma.vIBS)}</span></div>
+                <div className="flex justify-between"><span>CBS</span><span>{fmt(reforma.vCBS)}</span></div>
+                {reforma.vIS > 0 && (
+                  <div className="flex justify-between"><span>IMPOSTO SELETIVO</span><span>{fmt(reforma.vIS)}</span></div>
+                )}
+              </>
+            )}
             <div className="flex justify-between font-bold text-sm"><span>TOTAL</span><span>{fmt(document.valor_total)}</span></div>
           </div>
 

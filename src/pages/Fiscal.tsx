@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { FileText, Plus, AlertTriangle, Loader2 } from "lucide-react";
 import { FiscalDocumentsTab } from "@/components/fiscal/FiscalDocumentsTab";
 import { FiscalSettingsTab } from "@/components/settings/FiscalSettingsTab";
+import { TaxReportTab } from "@/components/fiscal/TaxReportTab";
 import { useGenerateFiscalDocument } from "@/hooks/useFiscalDocuments";
 import { useTenant } from "@/contexts/TenantContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,6 +62,7 @@ export default function Fiscal() {
                 <TabsTrigger value="documentos">
                   <FileText className="w-4 h-4 mr-2" /> Documentos Fiscais
                 </TabsTrigger>
+                <TabsTrigger value="tributos">Tributos (IBS/CBS/IS)</TabsTrigger>
                 <TabsTrigger value="config">Configuração</TabsTrigger>
               </TabsList>
 
@@ -74,6 +76,10 @@ export default function Fiscal() {
 
             <TabsContent value="documentos" className="mt-4">
               <FiscalDocumentsTab />
+            </TabsContent>
+
+            <TabsContent value="tributos" className="mt-4">
+              <TaxReportTab />
             </TabsContent>
 
             <TabsContent value="config" className="mt-4">

@@ -1,5 +1,6 @@
 import { buildNFCeXML, calcImpostosAproximados, generateChaveAcesso, FiscalCompany, FiscalItem, FiscalSale } from "@/lib/fiscal-utils";
-import { FiscalProvider, FiscalEmitPayload, FiscalEmitResult, FiscalCancelResult } from "./types";
+import { computeTaxes } from "@/lib/tax/client";
+import { FiscalProvider,FiscalEmitPayload, FiscalEmitResult, FiscalCancelResult } from "./types";
 
 /** 100% offline simulated provider — generates fake key, protocol, XML */
 export class SimuladoProvider implements FiscalProvider {
@@ -30,6 +31,7 @@ export class SimuladoProvider implements FiscalProvider {
       quantity: it.quantity,
       unit_price: it.unit_price,
       total: it.total,
+      discount: it.discount || 0,
       ncm: it.ncm || "00000000",
       cfop: it.cfop || "5102",
       csosn: it.csosn || "400",
@@ -49,7 +51,23 @@ export class SimuladoProvider implements FiscalProvider {
       chave,
     };
 
-    const xml = buildNFCeXML(sale, empresa, items);
+    // IBS/CBS/IS calculados no Web Worker (não trava o caixa durante a emissão)
+    const tax = payload.reforma?.enabled
+      ? await computeTaxes(
+          payload.items.map((it, i) => ({
+            key: String(i + 1),
+            quantity: it.quantity,
+            unit_price: it.unit_price,
+            discount: it.discount || 0,
+            ncm: it.ncm,
+            category: it.category,
+            tax: it.tax,
+          })),
+          payload.reforma
+        )
+      : null;
+
+    const xml = buildNFCeXML(sale, empresa, items, tax);
     const valor_impostos = calcImpostosAproximados(items);
     const protocolo = `SIM${Date.now()}${String(Math.floor(Math.random() * 1000)).padStart(3, "0")}`;
 
@@ -60,7 +78,7 @@ export class SimuladoProvider implements FiscalProvider {
       xml_content: xml,
       numero: payload.numero,
       serie: payload.serie,
-      valor_total: payload.totals.net,
+      valor_total: tax ? tax.totals.vTotal : payload.totals.net,
       valor_impostos,
       ambiente: payload.ambiente,
       message: "Documento simulado autorizado (sem validade fiscal)",

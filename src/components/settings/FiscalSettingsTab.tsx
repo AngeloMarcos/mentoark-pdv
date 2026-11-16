@@ -11,6 +11,8 @@ import { useCompanySettings, useUpdateCompanySettings } from "@/hooks/useCompany
 import { maskCpfCnpj } from "@/lib/br-masks";
 import { UF_LIST } from "@/lib/fiscal-utils";
 import { toast } from "sonner";
+import { ReformaTributariaCard } from "@/components/settings/ReformaTributariaCard";
+import { normalizeTaxConfig } from "@/lib/tax/engine";
 
 interface FiscalSettings {
   cnpj?: string;
@@ -34,6 +36,8 @@ interface FiscalSettings {
   municipio_ibge?: string;
   emite_nfce?: boolean;
   emite_sat?: boolean;
+  /** Reforma tributária: IBS/CBS/IS (ver src/lib/tax/engine.ts) */
+  reforma?: unknown;
 }
 
 const TAX_REGIMES = [
@@ -71,6 +75,7 @@ export function FiscalSettingsTab() {
       environment: fiscal.ambiente || fiscal.environment || "homologacao",
       regime_tributario: fiscal.regime_tributario || fiscal.tax_regime,
       tax_regime: fiscal.regime_tributario || fiscal.tax_regime,
+      reforma: normalizeTaxConfig(fiscal.reforma),
     };
     await updateSettings.mutateAsync({ settings: { fiscal: normalized } });
     toast.success("Configurações fiscais salvas!");
@@ -239,6 +244,11 @@ export function FiscalSettingsTab() {
           </div>
         </CardContent>
       </Card>
+
+      <ReformaTributariaCard
+        value={normalizeTaxConfig(fiscal.reforma)}
+        onChange={(reforma) => update({ reforma })}
+      />
 
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={updateSettings.isPending}>

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, useDeferredValue } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Minus, Trash2, ShoppingCart, Check, Barcode, Printer, AlertTriangle, DollarSign, Wallet, Tag, Loader2 } from "lucide-react";
+import { Search, ShoppingCart, Check, Barcode, Printer, AlertTriangle, DollarSign, Wallet, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ReceiptPreview } from "@/components/print/ReceiptPreview";
 import { useTenant } from "@/contexts/TenantContext";
@@ -28,6 +28,12 @@ import { Promotion } from "@/hooks/usePromotions";
 import { useFiscal } from "@/hooks/useFiscal";
 import { DanfeViewer } from "@/components/fiscal/DanfeViewer";
 import type { FiscalDocument } from "@/hooks/useFiscalDocuments";
+import { ProductVirtualList } from "@/components/pdv/ProductVirtualList";
+import { CartItemRow } from "@/components/pdv/CartItemRow";
+import { CartTaxSummary } from "@/components/pdv/CartTaxSummary";
+import { useCartTaxes, useTaxConfig } from "@/hooks/useTaxes";
+import { productTaxFields, type TaxItemInput } from "@/lib/tax/engine";
+import { formatBRL as formatCurrency } from "@/lib/utils";
 
 interface CartItem extends SaleItem {
   product_name: string;
@@ -54,14 +60,15 @@ const PDV = () => {
 
   const { currentTenant } = useTenant();
   const { hasFeature } = useCompany();
-  const { data: products = [] } = useProducts(search);
+  // A digitação fica sempre fluida: o filtro da lista roda em prioridade baixa.
+  const deferredSearch = useDeferredValue(search);
+  const { data: products = [] } = useProducts(deferredSearch);
+  const { data: allProducts = [] } = useProducts();
+  const taxConfig = useTaxConfig();
   const createSale = useCreateSale();
   const findByBarcode = useFindByBarcode();
   const { data: activeSession, isLoading: sessionLoading } = useActiveSession();
   const { emitNfce } = useFiscal();
-
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
   useEffect(() => {
     searchRef.current?.focus();
@@ -160,7 +167,7 @@ const PDV = () => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [cart, createSale.isPending, activeSession, showPaymentDialog]);
 
-  const updateQuantity = (productId: string, delta: number) => {
+  const updateQuantity = useCallback((productId: string, delta: number) => {
     setCart((prev) =>
       prev.map((item) => {
         if (item.product_id === productId) {
@@ -171,15 +178,43 @@ const PDV = () => {
         return item;
       }).filter((item) => item.quantity > 0)
     );
-  };
+  }, []);
 
-  const removeFromCart = (productId: string) => {
+  const removeFromCart = useCallback((productId: string) => {
     setCart((prev) => prev.filter((item) => item.product_id !== productId));
-  };
+  }, []);
 
-  const grossTotal = cart.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
-  const discountTotal = cart.reduce((sum, item) => sum + item.discount, 0);
-  const netTotal = grossTotal - discountTotal;
+  const cartRef = useRef(cart);
+  cartRef.current = cart;
+  const openPromotion = useCallback((productId: string) => {
+    setPromoTarget(cartRef.current.find((item) => item.product_id === productId) || null);
+  }, []);
+
+  const { grossTotal, discountTotal, netTotal } = useMemo(() => {
+    const gross = cart.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
+    const discount = cart.reduce((sum, item) => sum + item.discount, 0);
+    return { grossTotal: gross, discountTotal: discount, netTotal: gross - discount };
+  }, [cart]);
+
+  // Tributos da reforma (IBS/CBS/IS), calculados fora do thread principal.
+  const productTaxById = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof productTaxFields>>();
+    if (taxConfig.enabled) for (const p of allProducts) map.set(p.id, productTaxFields(p));
+    return map;
+  }, [allProducts, taxConfig.enabled]);
+
+  const taxItems = useMemo<TaxItemInput[]>(
+    () =>
+      cart.map((item) => ({
+        key: item.product_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        discount: item.discount,
+        ...(productTaxById.get(item.product_id) || {}),
+      })),
+    [cart, productTaxById]
+  );
+  const cartTaxes = useCartTaxes(taxItems, taxConfig);
 
   const handlePaymentConfirm = async (payments: SalePayment[]) => {
     if (cart.length === 0) {
@@ -340,7 +375,8 @@ const PDV = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input 
               ref={searchRef} 
-              placeholder="Buscar produto ou ler código de barras... (F4)" 
+              placeholder="Buscar produto ou ler código de barras... (F4)"
+              aria-label="Buscar produto ou ler código de barras"
               className="pl-10 pr-10 h-12 text-lg" 
               value={search} 
               onChange={(e) => setSearch(e.target.value)} 
@@ -357,36 +393,22 @@ const PDV = () => {
             <span className="px-2 py-1 bg-muted rounded">ESC Fechar</span>
           </div>
 
-          {search && products.length > 0 && (
-            <Card className="flex-1 overflow-auto">
-              <CardContent className="p-2 space-y-1">
-                {products.slice(0, 10).map((product) => (
-                  <button
-                    key={product.id}
-                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-secondary transition-colors text-left touch-target"
-                    onClick={() => addToCart(product)}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{product.name}</div>
-                      <div className="text-sm text-muted-foreground">{product.internal_code || product.barcode || ""}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold">{formatCurrency(product.sale_price)}</div>
-                      <div className="text-xs text-muted-foreground">Est: {product.stock_current}</div>
-                    </div>
-                    <Plus className="w-5 h-5 text-primary" />
-                  </button>
-                ))}
-              </CardContent>
+          {products.length > 0 ? (
+            <Card className="flex-1 min-h-[16rem] lg:min-h-0 overflow-hidden flex flex-col">
+              <ProductVirtualList products={products} onSelect={addToCart} className="flex-1 min-h-0" />
             </Card>
-          )}
-
-          {!search && cart.length === 0 && (
+          ) : (
             <Card className="flex-1 flex items-center justify-center">
-              <div className="text-center text-muted-foreground p-8">
-                <ShoppingCart className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                <p className="text-lg">Digite o nome ou leia o código de barras</p>
-                <p className="text-sm mt-2">Use um leitor de código de barras para busca rápida</p>
+              <div className="text-center text-muted-foreground p-8" role="status">
+                <ShoppingCart className="w-16 h-16 mx-auto mb-4 opacity-30" aria-hidden="true" />
+                {search ? (
+                  <p className="text-lg">Nenhum produto encontrado</p>
+                ) : (
+                  <>
+                    <p className="text-lg">Digite o nome ou leia o código de barras</p>
+                    <p className="text-sm mt-2">Use um leitor de código de barras para busca rápida</p>
+                  </>
+                )}
               </div>
             </Card>
           )}
@@ -402,39 +424,21 @@ const PDV = () => {
           </CardHeader>
           <CardContent className="flex-1 flex flex-col min-h-0 gap-4">
             {/* Cart Items */}
-            <div className="flex-1 overflow-auto space-y-2">
+            <div className="flex-1 overflow-auto">
               {cart.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">Carrinho vazio</p>
               ) : (
-                cart.map((item) => (
-                  <div key={item.product_id} className="pdv-item flex-wrap">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{item.product_name}</div>
-                      <div className="text-sm text-muted-foreground">{formatCurrency(item.unit_price)} × {item.quantity}</div>
-                      {item.promotion_name && (
-                        <Badge className="mt-1 gap-1 text-[10px]">
-                          <Tag className="w-3 h-3" /> {item.promotion_name} (-{formatCurrency(item.discount)})
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product_id, -1)}><Minus className="w-3 h-3" /></Button>
-                      <span className="w-8 text-center font-medium">{item.quantity}</span>
-                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.product_id, 1)}><Plus className="w-3 h-3" /></Button>
-                    </div>
-                    <div className="font-semibold w-20 text-right">{formatCurrency(item.total)}</div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      title="Aplicar promoção"
-                      onClick={() => setPromoTarget(item)}
-                    >
-                      <Tag className={`w-4 h-4 ${item.promotion_id ? "text-primary" : ""}`} />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeFromCart(item.product_id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
-                  </div>
-                ))
+                <ul className="space-y-2" aria-label="Itens do carrinho">
+                  {cart.map((item) => (
+                    <CartItemRow
+                      key={item.product_id}
+                      item={item}
+                      onQuantity={updateQuantity}
+                      onRemove={removeFromCart}
+                      onPromotion={openPromotion}
+                    />
+                  ))}
+                </ul>
               )}
             </div>
 
@@ -444,6 +448,7 @@ const PDV = () => {
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span>{formatCurrency(grossTotal)}</span></div>
                 {discountTotal > 0 && <div className="flex justify-between text-sm text-success"><span>Descontos</span><span>-{formatCurrency(discountTotal)}</span></div>}
                 <div className="flex justify-between text-xl font-bold"><span>Total</span><span>{formatCurrency(netTotal)}</span></div>
+                <CartTaxSummary result={cartTaxes} modo={taxConfig.modo} />
               </div>
 
               <Button

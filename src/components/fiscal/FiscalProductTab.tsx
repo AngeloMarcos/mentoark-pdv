@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { ExternalLink, HelpCircle, ScanLine, Loader2 } from "lucide-react";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { toast } from "sonner";
+import { CST_IBSCBS_OPTIONS, type ProductTax } from "@/lib/tax/engine";
 
 export interface FiscalFields {
   ncm?: string | null;
@@ -20,6 +21,8 @@ export interface FiscalFields {
   cofins_aliquota?: number | null;
   unidade_medida?: string | null;
   ean?: string | null;
+  /** Reforma tributária (IBS/CBS/IS) — gravado em products.extra_attributes.tax */
+  tax?: ProductTax | null;
 }
 
 interface Props {
@@ -88,6 +91,10 @@ export function FiscalProductTab({ values, onChange, regime = "simples" }: Props
       setScanActive(false);
     }, 5000);
   };
+  const tax = values.tax || {};
+  const setTax = (patch: Partial<ProductTax>) => onChange({ tax: { ...tax, ...patch } });
+  const parsePct = (v: string) => (v === "" ? null : Math.max(0, parseFloat(v) || 0));
+
   return (
     <div className="space-y-4 pt-2">
       <div className="grid sm:grid-cols-2 gap-4">
@@ -249,6 +256,67 @@ export function FiscalProductTab({ values, onChange, regime = "simples" }: Props
           </div>
         </div>
       </div>
+
+      <fieldset className="border-t pt-3 space-y-3">
+        <legend className="text-sm font-semibold">Reforma Tributária (IBS / CBS / IS)</legend>
+        <p className="text-xs text-muted-foreground">
+          As alíquotas de IBS e CBS vêm das Configurações Fiscais. Aqui ficam só as particularidades deste produto.
+        </p>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <Label className="flex items-center gap-1">
+              CST IBS/CBS <FieldTip text="Código de Situação Tributária do IBS/CBS. 000 = tributação integral; 200 = alíquota reduzida." />
+            </Label>
+            <Select value={tax.cst_ibscbs || "000"} onValueChange={(v) => setTax({ cst_ibscbs: v })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {CST_IBSCBS_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="tax-cclasstrib" className="flex items-center gap-1">
+              cClassTrib <FieldTip text="Código de Classificação Tributária (6 dígitos), conforme a tabela oficial da Receita/Comitê Gestor. 000001 = tributação integral." />
+            </Label>
+            <Input
+              id="tax-cclasstrib"
+              inputMode="numeric"
+              value={tax.cclasstrib || ""}
+              onChange={(e) => setTax({ cclasstrib: e.target.value.replace(/D/g, "").slice(0, 6) })}
+              placeholder="000001"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="tax-reducao" className="flex items-center gap-1">
+              Redução de alíquota (%) <FieldTip text="Redução aplicada às alíquotas de IBS e CBS. Ex.: 60 para regimes de alíquota reduzida, 100 para alíquota zero (cesta básica nacional)." />
+            </Label>
+            <Input
+              id="tax-reducao"
+              type="number" step="0.01" min="0" max="100"
+              value={tax.reducao ?? ""}
+              onChange={(e) => setTax({ reducao: e.target.value === "" ? null : Math.min(100, parsePct(e.target.value) || 0) })}
+              placeholder="0"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="tax-is" className="flex items-center gap-1">
+              Imposto Seletivo (%) <FieldTip text="Alíquota de IS específica deste produto. Em branco = usa as regras por NCM/categoria das Configurações Fiscais. Zero = sem IS." />
+            </Label>
+            <Input
+              id="tax-is"
+              type="number" step="0.01" min="0"
+              value={tax.is_aliquota ?? ""}
+              onChange={(e) => setTax({ is_aliquota: parsePct(e.target.value) })}
+              placeholder="regras gerais"
+            />
+          </div>
+        </div>
+      </fieldset>
     </div>
   );
 }

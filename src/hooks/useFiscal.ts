@@ -4,6 +4,7 @@ import { useTenant } from "@/contexts/TenantContext";
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/error-handler";
 import { getFiscalProvider, TenantFiscalSettings, FiscalEmitPayload } from "@/services/fiscal";
+import { normalizeTaxConfig, productTaxFields } from "@/lib/tax/engine";
 
 interface SaleRow {
   id: string;
@@ -17,9 +18,12 @@ interface SaleRow {
     product_id: string;
     quantity: number;
     unit_price: number;
+    discount: number | null;
     total: number;
     products: {
       name: string;
+      category: string | null;
+      extra_attributes: Record<string, unknown> | null;
       ncm: string | null;
       cfop: string | null;
       csosn: string | null;
@@ -54,7 +58,7 @@ export function useFiscal() {
       const { data: sale, error: sErr } = await supabase
         .from("sales")
         .select(
-          "id, tenant_id, net_total, gross_total, discount_total, payment_method, customer_id, sale_items(product_id, quantity, unit_price, total, products(name, ncm, cfop, csosn, unidade_medida, unit, ean, barcode))"
+          "id, tenant_id, net_total, gross_total, discount_total, payment_method, customer_id, sale_items(product_id, quantity, unit_price, discount, total, products(name, category, ncm, cfop, csosn, unidade_medida, unit, ean, barcode, extra_attributes))"
         )
         .eq("id", saleId)
         .single();
@@ -99,6 +103,9 @@ export function useFiscal() {
           quantity: Number(it.quantity),
           unit_price: Number(it.unit_price),
           total: Number(it.total),
+          discount: Number(it.discount || 0),
+          category: it.products?.category || null,
+          tax: productTaxFields(it.products).tax,
           ncm: it.products?.ncm || null,
           cfop: it.products?.cfop || null,
           csosn: it.products?.csosn || null,
@@ -111,6 +118,7 @@ export function useFiscal() {
           net: Number(s.net_total),
         },
         payment_method: s.payment_method,
+        reforma: normalizeTaxConfig(fiscal.reforma),
       };
 
       const provider = getFiscalProvider(fiscal);
