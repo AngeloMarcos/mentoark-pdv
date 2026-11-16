@@ -84,8 +84,8 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-secondary/30 p-4">
-      <Card className="w-full max-w-md animate-fade-in">
+    <div className="auth-surface min-h-screen flex items-center justify-center bg-background p-6">
+      <Card className="w-full max-w-md rounded-lg border-0 bg-transparent shadow-none motion-safe:animate-fade-in">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto w-20 h-20 flex items-center justify-center">
             <img src={brandLogo.url} alt="MentoArk" className="w-full h-full object-contain" />
