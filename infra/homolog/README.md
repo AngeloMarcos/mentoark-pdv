@@ -134,6 +134,25 @@ para IPv6 e o nginx só escuta em IPv4. Health check falhando no `pdv_hml_web`
   (arquivos e contêiner) ou `rollback.sh --com-banco` (também volta o banco
   para o backup `pdv_20261117_192836.dump`, apagando o que foi gravado depois).
 
+## Dados de demonstração
+
+A empresa **Mentoark** (`e63c3893-...`) foi preenchida em 2026-11-17 com
+`sql/seed-demo.sql`: 62 produtos de mercadinho (NCM, EAN, lotes com
+validade, alguns abaixo do mínimo), 30 clientes, 8 fornecedores, 5
+funcionários, 2 caixas, ~1.100 vendas em 46 dias (todas pela
+`checkout_sale_transaction`, a mesma do PDV), compras, contas a pagar e
+receber, promoções e fidelidade. Tudo é fictício (e-mails em `example.com`).
+O Caixa 01 fica com a sessão de hoje aberta.
+
+```bash
+cd /opt/pdv-homolog
+T=<uuid da empresa>; U=<uuid do usuário admin>
+# gerar (recusa se a empresa já tiver produtos)
+docker exec -i pdv_hml_db psql -U postgres -d pdv -v tenant=$T -v usuario=$U < sql/seed-demo.sql
+# limpar tudo da empresa (mantém empresa, usuários e configurações)
+docker exec -i pdv_hml_db psql -U postgres -d pdv -v tenant=$T < sql/seed-demo-reset.sql
+```
+
 ## Limitações
 
 - **Sem e-mail**: contas novas já entram confirmadas; "esqueci a senha" não
