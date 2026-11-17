@@ -1,0 +1,13 @@
+[Unit]
+Description=Bloqueia portas de banco para a internet (ver /usr/local/sbin/vps-firewall.sh)
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/vps-firewall.sh
+ExecStop=/usr/local/sbin/vps-firewall.sh --remove
+
+[Install]
+WantedBy=multi-user.target
