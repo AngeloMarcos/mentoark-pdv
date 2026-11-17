@@ -29,23 +29,77 @@ servidor: `DB_PASSWORD`, `AUTHENTICATOR_PASSWORD`, `JWT_SECRET`, `ANON_KEY`,
 `SERVICE_ROLE_KEY`. A `ANON_KEY` é pública (vai embutida no frontend); as
 demais nunca saem do servidor.
 
-## Publicar uma versão nova do frontend
+## Estrutura no servidor
 
-```bash
-git checkout <branch>
-bash infra/homolog/deploy-frontend.sh
+```
+/opt/pdv-homolog/
+├── docker-compose.yml
+├── .env                 segredos (600)
+├── migrations/          migrations aplicadas (a 20251214205815 tem patch manual)
+├── scripts/
+│   ├── migrate.sh       aplica só as migrations pendentes
+│   ├── backup.sh        banco + imagens, retenção de 14 dias
+│   ├── restore.sh       --check (teste em banco temporário) | --apply
+│   └── health.sh        checagem ponta a ponta
+├── backups/             pdv_*.dump, storage_*.tgz, backup.log (700)
+├── sql/                 bootstrap inicial
+├── mini-storage/
+└── web/                 nginx.conf + html/ (frontend)
 ```
 
-O script compila apontando para `https://homologpdv.mentoark.com.br`, falha
-se o build ainda apontar para o Supabase Cloud e troca os arquivos de uma vez.
+## Publicar
 
-## Aplicar migrations novas
+Do seu computador, na raiz do repositório, no branch que quer testar:
 
 ```bash
-scp supabase/migrations/<arquivo>.sql root@147.93.9.172:/opt/pdv-homolog/migrations/
-ssh root@147.93.9.172 'cd /opt/pdv-homolog && docker exec -i pdv_hml_db \
-  psql -U postgres -d pdv -v ON_ERROR_STOP=1 -1 < migrations/<arquivo>.sql'
+bash infra/homolog/deploy.sh               # migrations novas + frontend
+bash infra/homolog/deploy.sh --migrations  # só migrations
+bash infra/homolog/deploy.sh --frontend    # só frontend
 ```
+
+O script envia `supabase/migrations`, aplica só as pendentes (com backup
+antes), compila o frontend apontando para a homologação, troca os arquivos e
+roda o `health.sh` no fim.
+
+Pelo GitHub: o workflow **Deploy homologação** roda a cada push no branch
+`homolog` e pode ser disparado manualmente na aba Actions. Precisa do secret
+`HOMOLOG_SSH_KEY` no repositório.
+
+## Migrations
+
+O controle fica em `pdv_meta.schema_migrations` (nome do arquivo + data). Cada
+migration roda numa transação junto com o seu registro: ou entra inteira, ou
+nada muda. Uma migration já aplicada nunca é sobrescrita pelo deploy.
+
+```bash
+ssh root@147.93.9.172 /opt/pdv-homolog/scripts/migrate.sh --dry-run   # lista pendentes
+```
+
+## Backup e restauração
+
+- Diário às 03h20 (cron do root), depois do backup do Postgres compartilhado
+  (03h) e antes da limpeza Docker (04h). Log em `backups/backup.log`.
+- Os backups ficam **no mesmo disco** da VPS: protegem contra erro humano e
+  migration ruim, não contra perda do servidor.
+
+```bash
+# testar um backup sem mexer no banco real
+/opt/pdv-homolog/scripts/restore.sh --check pdv_AAAAMMDD_HHMMSS.dump
+# substituir o banco (faz backup do estado atual antes)
+/opt/pdv-homolog/scripts/restore.sh --apply pdv_AAAAMMDD_HHMMSS.dump
+```
+
+## Saúde
+
+```bash
+ssh root@147.93.9.172 /opt/pdv-homolog/scripts/health.sh
+```
+
+Confere os 5 contêineres, o `/ready` do PostgREST, site, login, API, storage
+pela URL pública e a idade do último backup. Os health checks do Docker usam
+`127.0.0.1` (não `localhost`): dentro das imagens Alpine `localhost` resolve
+para IPv6 e o nginx só escuta em IPv4. Health check falhando no `pdv_hml_web`
+**tira o site do ar**, porque o Traefik ignora contêineres não saudáveis.
 
 ## Como foi montado (refazer do zero)
 
@@ -59,7 +113,8 @@ ssh root@147.93.9.172 'cd /opt/pdv-homolog && docker exec -i pdv_hml_db \
    do Supabase Cloud.
 5. Gerar `ANON_KEY`/`SERVICE_ROLE_KEY` (JWT HS256 com `role` anon /
    service_role, assinado com `JWT_SECRET`) e gravar no `.env`.
-6. `docker compose up -d --build rest storage web` e publicar o frontend.
+6. `docker compose up -d --build rest storage web`.
+7. Registrar as migrations aplicadas em `pdv_meta.schema_migrations` (o `migrate.sh` cria a tabela) e publicar com `deploy.sh`.
 
 ## Limitações
 
@@ -68,6 +123,6 @@ ssh root@147.93.9.172 'cd /opt/pdv-homolog && docker exec -i pdv_hml_db \
 - **Sem Realtime**: Cozinha e Pedidos não atualizam sozinhos. O Postgres já
   está com `wal_level=logical`, então dá para adicionar sem reiniciar outros
   sistemas.
-- **Banco começa vazio** e não tem backup automático.
+- **Banco começa vazio.**
 - **Super admin**: nenhum. Para promover um usuário:
   `insert into public.system_users (user_id, role) select id, 'super_admin' from auth.users where email = '<email>';`

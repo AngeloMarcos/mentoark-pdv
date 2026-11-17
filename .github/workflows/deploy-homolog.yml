@@ -1,0 +1,46 @@
+name: Deploy homologação
+
+# Publica em https://homologpdv.mentoark.com.br
+#  - automático a cada push no branch "homolog"
+#  - manual pela aba Actions (escolhendo o branch)
+# Requer o secret HOMOLOG_SSH_KEY (chave privada com acesso a root@147.93.9.172).
+
+on:
+  push:
+    branches: [homolog]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-homolog
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: homolog
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Testes
+        run: npm test
+
+      - name: Configurar SSH
+        env:
+          SSH_KEY: ${{ secrets.HOMOLOG_SSH_KEY }}
+        run: |
+          test -n "$SSH_KEY" || { echo "::error::Secret HOMOLOG_SSH_KEY não configurado"; exit 1; }
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t ed25519 147.93.9.172 >> ~/.ssh/known_hosts
+
+      - name: Deploy (migrations + frontend)
+        run: bash infra/homolog/deploy.sh
