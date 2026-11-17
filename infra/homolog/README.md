@@ -12,7 +12,8 @@ não é afetada por nada daqui.
 | `pdv_hml_auth` | `supabase/gotrue:v2.174.0` | Cadastro e login | 128 MB |
 | `pdv_hml_rest` | `postgrest/postgrest:v12.2.8` | API REST com RLS | 96 MB |
 | `pdv_hml_storage` | build de `infra/mini-storage` | Imagens de produto | 64 MB |
-| `pdv_hml_web` | `nginx:1.27-alpine` | Frontend + `/auth/v1`, `/rest/v1`, `/storage/v1` | 48 MB |
+| `pdv_hml_fiscal` | build de `infra/fiscal-service` | Emissão NFC-e via Focus NFe (`/fiscal/v1`) | 96 MB |
+| `pdv_hml_web` | `nginx:1.27-alpine` | Frontend + `/auth/v1`, `/rest/v1`, `/storage/v1`, `/fiscal/v1` | 48 MB |
 
 Só o `pdv_hml_web` está na rede `proxy` (Traefik, HTTPS automático). O
 restante fica na rede interna `pdv_hml_internal`. Volumes:
@@ -44,7 +45,9 @@ demais nunca saem do servidor.
 ├── backups/             pdv_*.dump, storage_*.tgz, backup.log (700)
 ├── sql/                 bootstrap inicial
 ├── mini-storage/
-└── web/                 nginx.conf + html/ (frontend)
+├── fiscal-service/      cópia de infra/fiscal-service
+├── rollback/            cópias para desfazer mudanças (ver abaixo)
+└── web/                 nginx.conf + html/ (frontend; o nginx monta web/ inteira)
 ```
 
 ## Publicar
@@ -59,7 +62,12 @@ bash infra/homolog/deploy.sh --frontend    # só frontend
 
 O script envia `supabase/migrations`, aplica só as pendentes (com backup
 antes), compila o frontend apontando para a homologação, troca os arquivos e
-roda o `health.sh` no fim.
+roda o `health.sh` no fim. A troca do frontend **não reinicia** o
+`pdv_hml_web` (medido: 314 consultas durante um deploy, 0 falhas).
+
+O `deploy.sh` não sincroniza `infra/`. Mudou `docker-compose.yml`,
+`web/nginx.conf`, `scripts/` ou `infra/fiscal-service/`? Copie com `scp` e
+rode `docker compose up -d --build <serviço>`.
 
 Pelo GitHub: o workflow **Deploy homologação** roda a cada push no branch
 `homolog` e pode ser disparado manualmente na aba Actions. Precisa do secret
@@ -115,6 +123,16 @@ para IPv6 e o nginx só escuta em IPv4. Health check falhando no `pdv_hml_web`
    service_role, assinado com `JWT_SECRET`) e gravar no `.env`.
 6. `docker compose up -d --build rest storage web`.
 7. Registrar as migrations aplicadas em `pdv_meta.schema_migrations` (o `migrate.sh` cria a tabela) e publicar com `deploy.sh`.
+
+## Emissão fiscal (instalada em 2026-11-17)
+
+- Serviço `pdv_hml_fiscal`, rota `https://homologpdv.mentoark.com.br/fiscal/v1`.
+- **`FOCUS_URL_PRODUCAO` aponta para `homologacao.focusnfe.com.br`**: mesmo
+  com "Produção" escolhido na tela, a homologação nunca emite nota real.
+- Migration `20261117120000_emissao_fiscal_real.sql` aplicada.
+- Para desfazer: `/opt/pdv-homolog/rollback/pre-fiscal-20261117/rollback.sh`
+  (arquivos e contêiner) ou `rollback.sh --com-banco` (também volta o banco
+  para o backup `pdv_20261117_192836.dump`, apagando o que foi gravado depois).
 
 ## Limitações
 

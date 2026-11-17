@@ -33,7 +33,19 @@ Status em `fiscal_documents.status`: `processando`, `pendente`,
 `autorizado`, `rejeitado`, `denegado`, `cancelado` (+ `simulado` para o
 modo de teste antigo). O motivo da SEFAZ fica em `mensagem_sefaz`.
 
+## Homologação (VPS, já instalada)
+
+Em `homologpdv.mentoark.com.br` o serviço já está no ar como
+`pdv_hml_fiscal`, com as duas URLs da Focus apontando para homologação.
+Estrutura, deploy e rollback: `infra/homolog/README.md`. Atualizar o serviço:
+copiar `infra/fiscal-service/` para `/opt/pdv-homolog/fiscal-service/` e
+`docker compose up -d --build fiscal`.
+
 ## Colocar no ar (uma vez)
+
+> As instruções abaixo são para a instalação antiga em `/opt/pdv-backend`,
+> que **não existe mais** na VPS. A produção hoje roda no Lovable + Supabase
+> Cloud; ver a decisão pendente sobre onde o serviço fiscal de produção vai rodar.
 
 Na VPS, em `/opt/pdv-backend/` (mesmo lugar do `docker-compose.yml` do backend):
 

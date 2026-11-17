@@ -45,8 +45,8 @@ if [ "$MODE" = all ] || [ "$MODE" = --frontend ]; then
   echo "> Enviando frontend"
   tar -C "$OUT" -czf - . | "${SSH[@]}" "set -e; cd $DIR/web; rm -rf html.new; mkdir html.new; \
     tar -xzf - -C html.new; chmod -R a+rX html.new; rm -rf html.old; \
-    if [ -d html ]; then mv html html.old; fi; mv html.new html; rm -rf html.old; \
-    docker restart pdv_hml_web > /dev/null"
+    if [ -d html ]; then mv html html.old; fi; mv html.new html; rm -rf html.old"
+  # Sem restart: o nginx monta a pasta web/ inteira e serve o html/ novo na hora.
 fi
 
 echo "> Verificando"
