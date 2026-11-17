@@ -1,0 +1,162 @@
+# Homologação do PDV: https://homologpdv.mentoark.com.br
+# Pilha isolada em /opt/pdv-homolog na VPS. Postgres próprio (não usa o
+# Postgres compartilhado do CRM): os roles anon/authenticated/... são
+# globais do cluster e não devem se misturar com outros sistemas.
+# Segredos ficam em /opt/pdv-homolog/.env (chmod 600), nunca no git.
+name: pdv-homolog
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: pdv_hml_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: pdv
+    command:
+      - postgres
+      - -c
+      - wal_level=logical        # já pronto para Realtime no futuro
+      - -c
+      - max_connections=40
+      - -c
+      - shared_buffers=48MB
+      - -c
+      - work_mem=2MB
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./sql:/sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d pdv"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [internal]
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+
+  auth:
+    image: supabase/gotrue:v2.174.0
+    container_name: pdv_hml_auth
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: https://homologpdv.mentoark.com.br/auth/v1
+      GOTRUE_SITE_URL: https://homologpdv.mentoark.com.br
+      GOTRUE_URI_ALLOW_LIST: "https://homologpdv.mentoark.com.br/**"
+      GOTRUE_DB_DRIVER: postgres
+      DATABASE_URL: postgres://postgres:${DB_PASSWORD}@db:5432/pdv?search_path=auth
+      GOTRUE_DB_NAMESPACE: auth
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+      GOTRUE_DISABLE_SIGNUP: "false"
+      GOTRUE_EXTERNAL_EMAIL_ENABLED: "true"
+      # Homologação sem SMTP: conta criada já confirmada.
+      GOTRUE_MAILER_AUTOCONFIRM: "true"
+      GOTRUE_SMTP_ADMIN_EMAIL: no-reply@mentoark.com.br
+      GOTRUE_SECURITY_REFRESH_TOKEN_REUSE_INTERVAL: 10
+      GOTRUE_PASSWORD_MIN_LENGTH: 6
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:9999/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks: [internal]
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+
+  rest:
+    image: postgrest/postgrest:v12.2.8
+    container_name: pdv_hml_rest
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${AUTHENTICATOR_PASSWORD}@db:5432/pdv
+      PGRST_DB_SCHEMAS: public
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: "false"
+      PGRST_DB_POOL: 8
+      # /live e /ready para monitoramento (imagem sem shell: checado de fora, ver scripts/health.sh)
+      PGRST_ADMIN_SERVER_PORT: 3001
+    networks: [internal]
+    deploy:
+      resources:
+        limits:
+          memory: 96m
+
+  storage:
+    build:
+      context: ./mini-storage
+    image: pdv-mini-storage:hml
+    container_name: pdv_hml_storage
+    restart: always
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      POSTGREST_URL: http://rest:3000
+      DATA_DIR: /data
+    volumes:
+      - storage_data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:5000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks: [internal]
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+
+  web:
+    image: nginx:1.27-alpine
+    container_name: pdv_hml_web
+    restart: always
+    depends_on: [auth, rest, storage]
+    volumes:
+      - ./web/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./web/html:/usr/share/nginx/html:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1/version.json"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.pdv-hml.rule=Host(`homologpdv.mentoark.com.br`)
+      - traefik.http.routers.pdv-hml.entrypoints=websecure
+      - traefik.http.routers.pdv-hml.tls.certresolver=letsencrypt
+      - traefik.http.services.pdv-hml.loadbalancer.server.port=80
+    networks: [internal, proxy]
+    deploy:
+      resources:
+        limits:
+          memory: 48m
+
+networks:
+  internal:
+    name: pdv_hml_internal
+  proxy:
+    external: true
+
+volumes:
+  db_data:
+    name: pdv_hml_db_data
+  storage_data:
+    name: pdv_hml_storage_data
