@@ -39,5 +39,8 @@ jobs:
       - name: Testes (unitários + desempenho do motor tributário)
         run: npm test
 
+      - name: Testes do serviço fiscal (montagem da NFC-e)
+        run: npm run test:fiscal
+
       - name: Build
         run: npm run build

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/error-handler";
 import { getFiscalProvider, TenantFiscalSettings, FiscalEmitPayload } from "@/services/fiscal";
 import { normalizeTaxConfig, productTaxFields } from "@/lib/tax/engine";
+import { fiscalApi } from "@/services/fiscal/fiscalApi";
 
 interface SaleRow {
   id: string;
@@ -53,6 +54,12 @@ export function useFiscal() {
 
       const settingsObj = (tenant.settings || {}) as Record<string, unknown>;
       const fiscal = (settingsObj.fiscal || {}) as TenantFiscalSettings;
+
+      // Emissão real: o serviço fiscal monta a nota, fala com a Focus/SEFAZ
+      // e grava fiscal_documents. O navegador não toca em token nem numeração.
+      if (fiscal.provider === "focus_nfe") {
+        return fiscalApi.emitNfce(saleId);
+      }
 
       // Load sale + items + products
       const { data: sale, error: sErr } = await supabase
@@ -172,6 +179,11 @@ export function useFiscal() {
         .eq("id", docId)
         .single();
       if (error || !doc) throw error || new Error("Documento não encontrado");
+
+      // Nota real: cancelamento só pela SEFAZ, via serviço fiscal
+      if ((doc as { provider?: string }).provider && (doc as { provider?: string }).provider !== "simulado") {
+        return fiscalApi.cancel(docId, reason);
+      }
 
       // 24h rule
       const ageMs = Date.now() - new Date(doc.created_at).getTime();

@@ -320,6 +320,8 @@ export const FISCAL_STATUS_LABELS: Record<string, string> = {
   autorizado: "Autorizado",
   cancelado: "Cancelado",
   rejeitado: "Rejeitado",
+  processando: "Processando",
+  denegado: "Denegado",
 };
 
 export const FISCAL_STATUS_COLORS: Record<string, string> = {
@@ -328,4 +330,6 @@ export const FISCAL_STATUS_COLORS: Record<string, string> = {
   autorizado: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
   cancelado: "bg-destructive/15 text-destructive",
   rejeitado: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  processando: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  denegado: "bg-destructive/15 text-destructive",
 };

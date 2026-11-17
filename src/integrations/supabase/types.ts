@@ -752,6 +752,15 @@ export type Database = {
           updated_at: string
           valor_impostos: number
           valor_total: number
+          contingencia: boolean
+          mensagem_sefaz: string | null
+          payload: Json | null
+          provider: string
+          qrcode_url: string | null
+          ref: string | null
+          status_sefaz: string | null
+          tentativas: number
+          xml_url: string | null
           xml_content: string | null
         }
         Insert: {
@@ -772,6 +781,15 @@ export type Database = {
           updated_at?: string
           valor_impostos?: number
           valor_total?: number
+          contingencia?: boolean
+          mensagem_sefaz?: string | null
+          payload?: Json | null
+          provider?: string
+          qrcode_url?: string | null
+          ref?: string | null
+          status_sefaz?: string | null
+          tentativas?: number
+          xml_url?: string | null
           xml_content?: string | null
         }
         Update: {
@@ -792,6 +810,15 @@ export type Database = {
           updated_at?: string
           valor_impostos?: number
           valor_total?: number
+          contingencia?: boolean
+          mensagem_sefaz?: string | null
+          payload?: Json | null
+          provider?: string
+          qrcode_url?: string | null
+          ref?: string | null
+          status_sefaz?: string | null
+          tentativas?: number
+          xml_url?: string | null
           xml_content?: string | null
         }
         Relationships: []

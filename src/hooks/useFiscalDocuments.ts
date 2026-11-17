@@ -4,6 +4,7 @@ import { useTenant } from "@/contexts/TenantContext";
 import { toast } from "sonner";
 import { getUserFriendlyError } from "@/lib/error-handler";
 import { buildNFCeXML, FiscalItem, FiscalSale, FiscalCompany } from "@/lib/fiscal-utils";
+import { fiscalApi } from "@/services/fiscal/fiscalApi";
 
 export interface FiscalDocument {
   id: string;
@@ -23,7 +24,20 @@ export interface FiscalDocument {
   obs: string | null;
   created_at: string;
   updated_at: string;
+  /** "simulado" | "focus_nfe" */
+  provider?: string;
+  ref?: string | null;
+  status_sefaz?: string | null;
+  mensagem_sefaz?: string | null;
+  qrcode_url?: string | null;
+  xml_url?: string | null;
+  contingencia?: boolean;
+  tentativas?: number;
 }
+
+/** Nota que passou (ou vai passar) pela SEFAZ, e não um documento simulado. */
+export const isRealFiscalDocument = (d: Pick<FiscalDocument, "provider"> | null | undefined) =>
+  !!d?.provider && d.provider !== "simulado";
 
 export interface FiscalDocumentFilters {
   status?: string;
@@ -154,7 +168,10 @@ export function useCancelFiscalDocument() {
   const queryClient = useQueryClient();
   const { currentTenant } = useTenant();
   return useMutation({
-    mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
+    mutationFn: async ({ id, reason, provider }: { id: string; reason?: string; provider?: string }) => {
+      if (provider && provider !== "simulado") {
+        return fiscalApi.cancel(id, reason || "");
+      }
       const { data, error } = await supabase.rpc("cancel_fiscal_document" as never, {
         p_id: id,
         p_reason: reason || null,
@@ -165,6 +182,22 @@ export function useCancelFiscalDocument() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["fiscal-documents", currentTenant?.id] });
       toast.success("Documento cancelado");
+    },
+    onError: (err) => toast.error(getUserFriendlyError(err)),
+  });
+}
+
+/** Consulta a situação de uma nota real na Focus/SEFAZ e atualiza o registro. */
+export function useConsultFiscalDocument() {
+  const queryClient = useQueryClient();
+  const { currentTenant } = useTenant();
+  return useMutation({
+    mutationFn: (id: string) => fiscalApi.consult(id),
+    onSuccess: (doc) => {
+      queryClient.invalidateQueries({ queryKey: ["fiscal-documents", currentTenant?.id] });
+      if (doc.status === "autorizado") toast.success("Nota autorizada pela SEFAZ");
+      else if (doc.status === "rejeitado") toast.error(doc.mensagem_sefaz || "Nota rejeitada");
+      else toast.info("Nota ainda em processamento na SEFAZ");
     },
     onError: (err) => toast.error(getUserFriendlyError(err)),
   });

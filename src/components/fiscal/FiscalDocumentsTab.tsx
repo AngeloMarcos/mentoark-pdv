@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Eye, Copy, Printer, Ban, FileText, Loader2 } from "lucide-react";
-import { useFiscalDocuments, useCancelFiscalDocument, FiscalDocument } from "@/hooks/useFiscalDocuments";
+import { Eye, Copy, Printer, Ban, FileText, Loader2, RefreshCw, ExternalLink, WifiOff } from "lucide-react";
+import { useFiscalDocuments, useCancelFiscalDocument, useConsultFiscalDocument, isRealFiscalDocument, FiscalDocument } from "@/hooks/useFiscalDocuments";
 import { FISCAL_STATUS_COLORS, FISCAL_STATUS_LABELS } from "@/lib/fiscal-utils";
 import { DanfeViewer } from "./DanfeViewer";
 import { toast } from "sonner";
@@ -31,6 +31,7 @@ export function FiscalDocumentsTab() {
   });
 
   const cancelMut = useCancelFiscalDocument();
+  const consultMut = useConsultFiscalDocument();
 
   const filtered = useMemo(() => {
     if (!search) return docs;
@@ -74,7 +75,11 @@ export function FiscalDocumentsTab() {
 
   const handleCancel = async () => {
     if (!cancelTarget) return;
-    await cancelMut.mutateAsync({ id: cancelTarget.id, reason: cancelReason });
+    if (isRealFiscalDocument(cancelTarget) && cancelReason.trim().length < 15) {
+      toast.error("A SEFAZ exige justificativa com pelo menos 15 caracteres.");
+      return;
+    }
+    await cancelMut.mutateAsync({ id: cancelTarget.id, reason: cancelReason, provider: cancelTarget.provider });
     setCancelTarget(null);
     setCancelReason("");
   };
@@ -96,6 +101,8 @@ export function FiscalDocumentsTab() {
             <SelectItem value="autorizado">Autorizado</SelectItem>
             <SelectItem value="cancelado">Cancelado</SelectItem>
             <SelectItem value="rejeitado">Rejeitado</SelectItem>
+            <SelectItem value="processando">Processando</SelectItem>
+            <SelectItem value="pendente">Pendente</SelectItem>
           </SelectContent>
         </Select>
         <Select value={filterType} onValueChange={setFilterType}>
@@ -142,9 +149,27 @@ export function FiscalDocumentsTab() {
                     <TableCell className="text-right">{fmt(d.valor_total)}</TableCell>
                     <TableCell className="text-right text-muted-foreground">{fmt(d.valor_impostos)}</TableCell>
                     <TableCell>
-                      <Badge className={FISCAL_STATUS_COLORS[d.status] || ""}>
-                        {FISCAL_STATUS_LABELS[d.status] || d.status}
-                      </Badge>
+                      <div className="flex items-center gap-1">
+                        <Badge
+                          className={FISCAL_STATUS_COLORS[d.status] || ""}
+                          title={d.mensagem_sefaz || undefined}
+                        >
+                          {FISCAL_STATUS_LABELS[d.status] || d.status}
+                        </Badge>
+                        {d.contingencia && (
+                          <span title="Emitida em contingência offline">
+                            <WifiOff className="w-3.5 h-3.5 text-amber-600" />
+                          </span>
+                        )}
+                        {isRealFiscalDocument(d) && d.ambiente === "homologacao" && (
+                          <span className="text-[10px] uppercase text-muted-foreground">homolog.</span>
+                        )}
+                      </div>
+                      {d.mensagem_sefaz && ["rejeitado", "denegado", "pendente"].includes(d.status) && (
+                        <p className="text-xs text-muted-foreground mt-1 max-w-xs truncate" title={d.mensagem_sefaz}>
+                          {d.mensagem_sefaz}
+                        </p>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
@@ -154,10 +179,29 @@ export function FiscalDocumentsTab() {
                         <Button size="icon" variant="ghost" title="Copiar chave" onClick={() => copyChave(d)}>
                           <Copy className="w-4 h-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" title="Reimprimir" onClick={() => openView(d)}>
-                          <Printer className="w-4 h-4" />
-                        </Button>
-                        {d.status !== "cancelado" && (
+                        {d.danfe_url ? (
+                          <Button size="icon" variant="ghost" title="DANFE oficial (imprimir)" asChild>
+                            <a href={d.danfe_url} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          </Button>
+                        ) : (
+                          <Button size="icon" variant="ghost" title="Reimprimir" onClick={() => openView(d)}>
+                            <Printer className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {isRealFiscalDocument(d) && d.status !== "autorizado" && d.status !== "cancelado" && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title="Consultar na SEFAZ"
+                            disabled={consultMut.isPending}
+                            onClick={() => consultMut.mutate(d.id)}
+                          >
+                            <RefreshCw className={`w-4 h-4 ${consultMut.isPending && consultMut.variables === d.id ? "animate-spin" : ""}`} />
+                          </Button>
+                        )}
+                        {d.status !== "cancelado" && (!isRealFiscalDocument(d) || d.status === "autorizado") && (
                           <Button size="icon" variant="ghost" title="Cancelar" onClick={() => setCancelTarget(d)}>
                             <Ban className="w-4 h-4 text-destructive" />
                           </Button>
@@ -184,7 +228,9 @@ export function FiscalDocumentsTab() {
           <AlertDialogHeader>
             <AlertDialogTitle>Cancelar documento fiscal?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação marca o documento como cancelado. Informe um motivo (mínimo recomendado: 15 caracteres).
+              {isRealFiscalDocument(cancelTarget)
+                ? "O cancelamento é enviado à SEFAZ e não pode ser desfeito. Informe a justificativa (mínimo 15 caracteres)."
+                : "Esta ação marca o documento como cancelado. Informe um motivo (mínimo recomendado: 15 caracteres)."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <Input

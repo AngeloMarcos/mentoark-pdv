@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Printer, X, Copy } from "lucide-react";
-import { FiscalDocument } from "@/hooks/useFiscalDocuments";
+import { FiscalDocument, isRealFiscalDocument } from "@/hooks/useFiscalDocuments";
 import { formatChave, parseReformaTotals } from "@/lib/fiscal-utils";
 import { useTenant } from "@/contexts/TenantContext";
 import { toast } from "sonner";
@@ -117,12 +117,22 @@ export function DanfeViewer({ document, open, onOpenChange, items = [], paymentL
 
           <div className="my-2 border-t border-dashed" />
           <div className="text-center bg-muted py-1 px-2 rounded">
-            QR Code disponível após integração com SEFAZ
+            {document.qrcode_url ? (
+              <a href={document.qrcode_url} target="_blank" rel="noopener noreferrer" className="underline">
+                Consultar nota na SEFAZ (QR Code)
+              </a>
+            ) : (
+              "QR Code disponível após integração com SEFAZ"
+            )}
           </div>
 
           <div className="my-2 border-t border-dashed" />
           <div className="text-center font-bold text-amber-700 dark:text-amber-400">
-            *** DOCUMENTO SEM VALIDADE FISCAL ***
+            {isRealFiscalDocument(document) && document.status === "autorizado" && isProd ? (
+              <>Pré-visualização. Para o cliente, imprima o DANFE oficial.</>
+            ) : (
+              <>*** DOCUMENTO SEM VALIDADE FISCAL ***</>
+            )}
             <br />
             *** AMBIENTE DE {isProd ? "PRODUÇÃO" : "HOMOLOGAÇÃO"} ***
           </div>
@@ -132,9 +142,17 @@ export function DanfeViewer({ document, open, onOpenChange, items = [], paymentL
           <Button variant="outline" className="flex-1" onClick={copyChave}>
             <Copy className="w-4 h-4 mr-2" /> Copiar chave
           </Button>
-          <Button variant="outline" className="flex-1" onClick={() => window.print()}>
-            <Printer className="w-4 h-4 mr-2" /> Imprimir
-          </Button>
+          {document.danfe_url ? (
+            <Button className="flex-1" asChild>
+              <a href={document.danfe_url} target="_blank" rel="noopener noreferrer">
+                <Printer className="w-4 h-4 mr-2" /> Imprimir DANFE oficial
+              </a>
+            </Button>
+          ) : (
+            <Button variant="outline" className="flex-1" onClick={() => window.print()}>
+              <Printer className="w-4 h-4 mr-2" /> Imprimir
+            </Button>
+          )}
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             <X className="w-4 h-4" />
           </Button>

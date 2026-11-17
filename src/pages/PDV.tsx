@@ -259,7 +259,13 @@ const PDV = () => {
               total: c.total,
             }))
           );
-          toast.success("NFC-e emitida!");
+          const st = (doc as unknown as FiscalDocument).status;
+          const msg = (doc as unknown as FiscalDocument).mensagem_sefaz;
+          if (st === "autorizado" || st === "simulado") toast.success("NFC-e emitida!");
+          else if (st === "rejeitado" || st === "denegado")
+            toast.error(`NFC-e rejeitada: ${msg || "veja em Fiscal → Documentos"}`, { duration: 10000 });
+          else
+            toast.warning("NFC-e em processamento. O sistema tenta de novo sozinho; acompanhe em Fiscal → Documentos.", { duration: 8000 });
         } finally {
           setEmittingNfce(false);
         }

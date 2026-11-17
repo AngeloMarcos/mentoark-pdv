@@ -15,7 +15,8 @@ o app continua falando com uma API no formato Supabase normal
 | `pdv_auth` | `supabase/gotrue:v2.174.0` | Auth (signup/login/refresh) |
 | `pdv_rest` | `postgrest/postgrest:v12.2.8` | API REST sobre o Postgres (RLS) |
 | `pdv_storage` | build próprio (`infra/mini-storage`) | upload/download de arquivos (imagens de produto) |
-| `pdv_gateway` | `nginx:alpine` | roteia `/auth/v1`, `/rest/v1` e `/storage/v1` pros serviços acima, um domínio só |
+| `pdv_fiscal` | build próprio (`infra/fiscal-service`) | emissão de NFC-e real via Focus NFe (ver `docs/emissao-fiscal.md`) |
+| `pdv_gateway` | `nginx:alpine` | roteia `/auth/v1`, `/rest/v1`, `/storage/v1` e `/fiscal/v1` pros serviços acima, um domínio só |
 | `pdv_prod` | build próprio (`/opt/pdv/prod/Dockerfile`) | o frontend (Vite build + nginx) |
 
 **Deliberadamente fora do primeiro corte** (VPS com 1 vCPU / ~3.8GB RAM

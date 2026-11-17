@@ -12,6 +12,7 @@ import { maskCpfCnpj } from "@/lib/br-masks";
 import { UF_LIST } from "@/lib/fiscal-utils";
 import { toast } from "sonner";
 import { ReformaTributariaCard } from "@/components/settings/ReformaTributariaCard";
+import { FocusCredentialsCard } from "@/components/settings/FocusCredentialsCard";
 import { normalizeTaxConfig } from "@/lib/tax/engine";
 
 interface FiscalSettings {
@@ -28,8 +29,13 @@ interface FiscalSettings {
   nfce_series?: string;
   proximo_numero?: number;
   nfce_number?: number;
+  /** Legado: o CSC agora é cadastrado na Focus, não no PDV. */
   token_csc?: string;
   id_csc?: string;
+  provider?: "simulado" | "focus_nfe";
+  cfop_padrao?: string;
+  csosn_padrao?: string;
+  pis_cofins_cst_padrao?: string;
   ambiente?: "homologacao" | "producao";
   environment?: "homologacao" | "producao";
   uf?: string;
@@ -76,7 +82,11 @@ export function FiscalSettingsTab() {
       regime_tributario: fiscal.regime_tributario || fiscal.tax_regime,
       tax_regime: fiscal.regime_tributario || fiscal.tax_regime,
       reforma: normalizeTaxConfig(fiscal.reforma),
+      provider: fiscal.provider || "simulado",
     };
+    // CSC não fica mais no navegador (ver migração 20261117120000)
+    delete normalized.token_csc;
+    delete normalized.id_csc;
     await updateSettings.mutateAsync({ settings: { fiscal: normalized } });
     toast.success("Configurações fiscais salvas!");
   };
@@ -172,21 +182,49 @@ export function FiscalSettingsTab() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Token CSC</Label>
+              <Label>Provedor de emissão</Label>
+              <Select
+                value={fiscal.provider || "simulado"}
+                onValueChange={(v) => update({ provider: v as FiscalSettings["provider"] })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="simulado">Simulado (sem validade fiscal)</SelectItem>
+                  <SelectItem value="focus_nfe">Focus NFe (emissão real na SEFAZ)</SelectItem>
+                </SelectContent>
+              </Select>
+              {fiscal.provider === "focus_nfe" && (
+                <p className="text-xs text-muted-foreground">
+                  Série, numeração e CSC passam a ser controlados no cadastro da empresa na Focus.
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>CFOP padrão</Label>
               <Input
-                type="password"
-                value={fiscal.token_csc || ""}
-                onChange={(e) => update({ token_csc: e.target.value })}
-                placeholder="••••••••"
+                value={fiscal.cfop_padrao || ""}
+                onChange={(e) => update({ cfop_padrao: e.target.value.replace(/\D/g, "").slice(0, 4) })}
+                placeholder="5102"
               />
             </div>
             <div className="space-y-2">
-              <Label>ID CSC</Label>
+              <Label>CSOSN padrão (Simples)</Label>
               <Input
-                value={fiscal.id_csc || ""}
-                onChange={(e) => update({ id_csc: e.target.value })}
-                placeholder="000001"
+                value={fiscal.csosn_padrao || ""}
+                onChange={(e) => update({ csosn_padrao: e.target.value.replace(/\D/g, "").slice(0, 3) })}
+                placeholder="102"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>CST PIS/COFINS padrão</Label>
+              <Input
+                value={fiscal.pis_cofins_cst_padrao || ""}
+                onChange={(e) => update({ pis_cofins_cst_padrao: e.target.value.replace(/\D/g, "").slice(0, 2) })}
+                placeholder="49"
+              />
+              <p className="text-xs text-muted-foreground">
+                Usados quando o produto não tem o dado próprio. Confirme com o contador.
+              </p>
             </div>
             <div className="space-y-2">
               <Label>UF Emitente</Label>
@@ -244,6 +282,8 @@ export function FiscalSettingsTab() {
           </div>
         </CardContent>
       </Card>
+
+      {fiscal.provider === "focus_nfe" && <FocusCredentialsCard />}
 
       <ReformaTributariaCard
         value={normalizeTaxConfig(fiscal.reforma)}

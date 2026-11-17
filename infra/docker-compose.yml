@@ -72,6 +72,28 @@ services:
         limits:
           memory: 80m
 
+  fiscal:
+    # Emissão de NFC-e via Focus NFe (ver docs/emissao-fiscal.md).
+    # Os tokens da Focus ficam no banco (public.fiscal_credentials), não aqui.
+    build:
+      context: ./fiscal-service
+    container_name: pdv_fiscal
+    restart: always
+    environment:
+      JWT_SECRET: __JWT_SECRET__
+      SERVICE_ROLE_KEY: __SERVICE_ROLE_KEY__
+      POSTGREST_URL: http://rest:3000
+      ALLOWED_ORIGINS: https://lojasys.mentoark.com.br
+      FOCUS_URL_HOMOLOGACAO: https://homologacao.focusnfe.com.br
+      FOCUS_URL_PRODUCAO: https://api.focusnfe.com.br
+      TZ: America/Sao_Paulo
+    networks:
+      - proxy
+    deploy:
+      resources:
+        limits:
+          memory: 96m
+
   gateway:
     image: nginx:alpine
     container_name: pdv_gateway
@@ -82,6 +104,7 @@ services:
       - auth
       - rest
       - storage
+      - fiscal
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy

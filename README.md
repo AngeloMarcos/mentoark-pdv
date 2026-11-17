@@ -49,6 +49,10 @@ O projeto adota uma barreira arquitetural estrita (Clean Architecture) para maio
 
 O PDV calcula e destaca IBS, CBS e Imposto Seletivo (EC 132/2023, LC 214/2025), inclui os grupos da reforma no XML da NFC-e e tem um relatório diário/mensal de tributos em **Fiscal → Tributos**. Configuração, testes de desempenho e conferência do XML estão em [docs/reforma-tributaria.md](docs/reforma-tributaria.md).
 
+## Emissão fiscal real (NFC-e)
+
+A emissão de NFC-e válida na SEFAZ roda no serviço `infra/fiscal-service` (Focus NFe), nunca no navegador. Como colocar no ar e o checklist de implantação de cada comerciante estão em [docs/emissao-fiscal.md](docs/emissao-fiscal.md).
+
 ## Scripts
 
 | Comando | O que faz |
@@ -59,4 +63,5 @@ O PDV calcula e destaca IBS, CBS e Imposto Seletivo (EC 132/2023, LC 214/2025), 
 | `npm run test:perf` | Só os testes de desempenho do motor tributário |
 | `npm run typecheck` | Checagem de tipos |
 | `npm run lint:tax` | Lint do módulo tributário e dos componentes novos do PDV (bloqueante no CI) |
+| `npm run test:fiscal` | Testes da montagem da NFC-e do serviço fiscal |
 | `npm run lint` | Lint do projeto inteiro (ainda com erros antigos; não bloqueante no CI) |
