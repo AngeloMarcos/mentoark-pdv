@@ -1,7 +1,7 @@
 // node --test infra/fiscal-service
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { buildNfcePayload, mapFocusResponse, validGtin, nowSaoPaulo } = require("./focus-nfce");
+const { buildNfcePayload, applyIbpt, mapFocusResponse, validGtin, nowSaoPaulo } = require("./focus-nfce");
 
 const tenant = { name: "Mercadinho Teste", document: "11.222.333/0001-81" };
 
@@ -179,4 +179,35 @@ test("mapeia rejeição da SEFAZ e erro de validação", () => {
 test("mapeia contingência offline", () => {
   const m = mapFocusResponse(201, { status: "autorizado", contingencia_offline: true }, "");
   assert.equal(m.contingencia, true);
+});
+
+test("imposto aproximado pelo IBPT no texto do contribuinte", () => {
+  const s = sale({ sale_items: [
+    { product_id: "p1", quantity: 2, unit_price: 5, discount: 1, total: 9,
+      products: { name: "Refrigerante", ncm: "22021000" } },
+    { product_id: "p2", quantity: 1, unit_price: 15, discount: 0, total: 15,
+      products: { name: "Queijo importado", ncm: "04069000", origem: 1 } },
+    { product_id: "p3", quantity: 1, unit_price: 1, discount: 0, total: 1,
+      products: { name: "Sem tabela", ncm: "99999999" } },
+  ], sale_payments: [] });
+  const p = buildNfcePayload({ tenant, fiscal: {}, sale: s });
+  const t = applyIbpt(p, {
+    rates: [
+      { ncm: "22021000", ex: "", nacional_federal: 10, importados_federal: 20, estadual: 18, municipal: 0 },
+      { ncm: "04069000", ex: "", nacional_federal: 5, importados_federal: 12.5, estadual: 7, municipal: 1 },
+    ],
+    meta: { chave: "ABC123", fonte: "IBPT" },
+  });
+  // 9 x 10% = 0,90 + 15 x 12,5% = 1,88 (importado) | 9 x 18% = 1,62 + 15 x 7% = 1,05 | 15 x 1% = 0,15
+  assert.deepEqual(t, { federal: 2.78, estadual: 2.67, municipal: 0.15, total: 5.6, missing: ["99999999"] });
+  assert.equal(
+    p.informacoes_adicionais_contribuinte,
+    "Trib. aprox.: R$ 2,78 Federal, R$ 2,67 Estadual e R$ 0,15 Municipal. Fonte: IBPT ABC123"
+  );
+});
+
+test("sem tabela IBPT não mexe no payload", () => {
+  const p = buildNfcePayload({ tenant, fiscal: {}, sale: sale() });
+  assert.equal(applyIbpt(p, null), null);
+  assert.equal(p.informacoes_adicionais_contribuinte, undefined);
 });

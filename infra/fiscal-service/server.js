@@ -22,7 +22,7 @@
 
 const http = require("http");
 const crypto = require("crypto");
-const { buildNfcePayload, mapFocusResponse, FiscalInputError } = require("./focus-nfce");
+const { buildNfcePayload, applyIbpt, mapFocusResponse, FiscalInputError } = require("./focus-nfce");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const SERVICE_ROLE_KEY = process.env.SERVICE_ROLE_KEY;
@@ -260,6 +260,23 @@ async function consultFocus(doc, token, depth = 0) {
 
 // ---------------------------------------------------------------- handlers
 
+// Alíquotas IBPT só dos NCMs da venda, lidas com o token do usuário (RLS).
+// Tabela ausente ou erro de leitura não impede a emissão: a nota sai sem o texto.
+async function loadIbpt(token, tenantId, ncms) {
+  const list = [...new Set(ncms.filter((n) => /^\d{8}$/.test(n)))];
+  if (!list.length) return null;
+  try {
+    const [rates, versions] = await Promise.all([
+      pg(`/ibpt_rates?tenant_id=eq.${tenantId}&ncm=in.(${list.join(",")})&ex=eq.&select=ncm,ex,nacional_federal,importados_federal,estadual,municipal`, { token }),
+      pg(`/ibpt_versions?tenant_id=eq.${tenantId}&select=chave,fonte`, { token }),
+    ]);
+    return { rates: rates || [], meta: (versions && versions[0]) || {} };
+  } catch (err) {
+    console.error("[ibpt] leitura falhou:", err.message);
+    return null;
+  }
+}
+
 async function handleEmit(token, claims, body) {
   const saleId = body.sale_id;
   if (!isUuid(saleId)) throw new HttpError(400, "sale_id inválido");
@@ -300,6 +317,9 @@ async function handleEmit(token, claims, body) {
     throw err;
   }
 
+  // Lei 12.741: imposto aproximado pela tabela IBPT da empresa (se importada).
+  const impostos = applyIbpt(payload, await loadIbpt(token, tenant.id, payload.items.map((i) => i.codigo_ncm)));
+
   // Reaproveita a última tentativa rejeitada da mesma venda (mesma ref na
   // Focus = reenvio corrigido, sem gastar número novo)
   const rejected = await pg(
@@ -313,6 +333,7 @@ async function handleEmit(token, claims, body) {
       payload,
       ambiente,
       valor_total: Number(payload.valor_total),
+      valor_impostos: impostos ? impostos.total : 0,
       mensagem_sefaz: null,
     });
   } else {
@@ -331,6 +352,7 @@ async function handleEmit(token, claims, body) {
           ambiente,
           serie: String(fiscal.serie || fiscal.serie_nfce || "1"),
           valor_total: Number(payload.valor_total),
+          valor_impostos: impostos ? impostos.total : 0,
           payload,
           created_by: claims.sub || null,
         },

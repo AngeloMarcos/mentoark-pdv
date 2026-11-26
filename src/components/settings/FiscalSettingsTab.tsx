@@ -87,6 +87,10 @@ export function FiscalSettingsTab() {
     // CSC não fica mais no navegador (ver migração 20261117120000)
     delete normalized.token_csc;
     delete normalized.id_csc;
+    if (normalized.provider === "simulado" && normalized.ambiente === "producao") {
+      toast.error("O provedor Simulado não emite nota de verdade. Em Produção, escolha Focus NFe.");
+      return;
+    }
     await updateSettings.mutateAsync({ settings: { fiscal: normalized } });
     toast.success("Configurações fiscais salvas!");
   };

@@ -46,6 +46,8 @@ export interface FiscalEmitPayload {
   payment_method: string;
   /** Configuração IBS/CBS/IS do tenant. Ausente ou desabilitada = XML sem os grupos da reforma. */
   reforma?: TaxConfig | null;
+  /** Lei 12.741: imposto aproximado da venda pela tabela IBPT. */
+  impostos_aprox?: number;
 }
 
 export interface FiscalEmitResult {

@@ -1,4 +1,4 @@
-import { buildNFCeXML, calcImpostosAproximados, generateChaveAcesso, FiscalCompany, FiscalItem, FiscalSale } from "@/lib/fiscal-utils";
+import { buildNFCeXML, generateChaveAcesso, FiscalCompany, FiscalItem, FiscalSale } from "@/lib/fiscal-utils";
 import { computeTaxes } from "@/lib/tax/client";
 import { FiscalProvider,FiscalEmitPayload, FiscalEmitResult, FiscalCancelResult } from "./types";
 
@@ -67,8 +67,8 @@ export class SimuladoProvider implements FiscalProvider {
         )
       : null;
 
-    const xml = buildNFCeXML(sale, empresa, items, tax);
-    const valor_impostos = calcImpostosAproximados(items);
+    const valor_impostos = payload.impostos_aprox ?? 0;
+    const xml = buildNFCeXML(sale, empresa, items, tax, valor_impostos);
     const protocolo = `SIM${Date.now()}${String(Math.floor(Math.random() * 1000)).padStart(3, "0")}`;
 
     return {

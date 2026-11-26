@@ -9,6 +9,9 @@ import { FileText, Plus, AlertTriangle, Loader2 } from "lucide-react";
 import { FiscalDocumentsTab } from "@/components/fiscal/FiscalDocumentsTab";
 import { FiscalSettingsTab } from "@/components/settings/FiscalSettingsTab";
 import { TaxReportTab } from "@/components/fiscal/TaxReportTab";
+import { FiscalReadinessCard } from "@/components/fiscal/FiscalReadinessCard";
+import { IbptCard } from "@/components/fiscal/IbptCard";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
 import { useGenerateFiscalDocument } from "@/hooks/useFiscalDocuments";
 import { useTenant } from "@/contexts/TenantContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +23,10 @@ export default function Fiscal() {
   const { currentTenant } = useTenant();
   const generate = useGenerateFiscalDocument();
   const [generating, setGenerating] = useState(false);
+  const { settings } = useCompanySettings();
+  const fiscalCfg = (settings.fiscal || {}) as { provider?: string; ambiente?: string };
+  const isReal = fiscalCfg.provider === "focus_nfe";
+  const isProd = fiscalCfg.ambiente === "producao";
 
   const handleGenerateTest = async () => {
     if (!currentTenant) return;
@@ -47,18 +54,25 @@ export default function Fiscal() {
     <PermissionGuard permission="fiscal">
       <AppLayout title="Fiscal">
         <div className="space-y-4 animate-fade-in">
-          <Card className="border-amber-500/30 bg-amber-500/5">
-            <CardContent className="p-3 flex items-center gap-2 text-sm">
-              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-              <span>
-                Módulo em <strong>ambiente de homologação</strong>: documentos gerados são <strong>simulados</strong> e não têm validade fiscal.
-              </span>
-            </CardContent>
-          </Card>
+          {!(isReal && isProd) && (
+            <Card className="border-amber-500/30 bg-amber-500/5">
+              <CardContent className="p-3 flex items-center gap-2 text-sm">
+                <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span>
+                  {isReal ? (
+                    <>Focus NFe em <strong>homologação</strong>: as notas passam pela SEFAZ de teste e <strong>não têm validade fiscal</strong>.</>
+                  ) : (
+                    <>Provedor <strong>simulado</strong>: os documentos não passam pela SEFAZ e <strong>não têm validade fiscal</strong>. Veja a aba Prontidão.</>
+                  )}
+                </span>
+              </CardContent>
+            </Card>
+          )}
 
           <Tabs value={tab} onValueChange={(v) => setSearchParams({ tab: v })}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <TabsList>
+                <TabsTrigger value="prontidao">Prontidão</TabsTrigger>
                 <TabsTrigger value="documentos">
                   <FileText className="w-4 h-4 mr-2" /> Documentos Fiscais
                 </TabsTrigger>
@@ -73,6 +87,11 @@ export default function Fiscal() {
                 </Button>
               )}
             </div>
+
+            <TabsContent value="prontidao" className="mt-4 space-y-4">
+              <FiscalReadinessCard onOpenTab={(t) => setSearchParams({ tab: t })} />
+              <IbptCard />
+            </TabsContent>
 
             <TabsContent value="documentos" className="mt-4">
               <FiscalDocumentsTab />

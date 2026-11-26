@@ -142,7 +142,7 @@ export function useGenerateFiscalDocument() {
             ambiente: (document.ambiente as "homologacao" | "producao") || "homologacao",
             chave: document.chave_acesso || "",
           };
-          const xml = buildNFCeXML(fiscalSale, empresa, items);
+          const xml = buildNFCeXML(fiscalSale, empresa, items, null, Number(document.valor_impostos || 0));
           await supabase
             .from("fiscal_documents" as never)
             .update({ xml_content: xml } as never)

@@ -246,4 +246,40 @@ class FiscalInputError extends Error {
   }
 }
 
-module.exports = { buildNfcePayload, mapFocusResponse, validGtin, nowSaoPaulo, FiscalInputError, TPAG };
+/**
+ * Lei 12.741/2012: imposto aproximado pela tabela IBPT (mesma regra de
+ * src/lib/ibpt.ts). Base = valor do item já com desconto; origem 1, 2, 6 e 7
+ * usa a alíquota federal de importados. Acrescenta o texto em
+ * informacoes_adicionais_contribuinte e devolve os totais.
+ * @param {object} payload  resultado de buildNfcePayload (é alterado)
+ * @param {{rates: Array<object>, meta?: {chave?: string, fonte?: string}}|null} ibpt
+ */
+function applyIbpt(payload, ibpt) {
+  if (!ibpt || !Array.isArray(ibpt.rates) || ibpt.rates.length === 0) return null;
+  const byNcm = new Map();
+  for (const r of ibpt.rates) if (!r.ex) byNcm.set(onlyDigits(r.ncm), r);
+
+  const cents = (v) => Math.round(v * 100);
+  let fed = 0, est = 0, mun = 0;
+  const missing = [];
+  for (const it of payload.items) {
+    const r = byNcm.get(it.codigo_ncm);
+    if (!r) { missing.push(it.codigo_ncm); continue; }
+    const base = Math.max(0, Number(it.valor_bruto) - Number(it.valor_desconto || 0));
+    const imported = ["1", "2", "6", "7"].includes(String(it.icms_origem));
+    fed += cents((base * Number(imported ? r.importados_federal : r.nacional_federal)) / 100);
+    est += cents((base * Number(r.estadual)) / 100);
+    mun += cents((base * Number(r.municipal)) / 100);
+  }
+  const brl = (c) => "R$ " + (c / 100).toFixed(2).replace(".", ",");
+  const meta = ibpt.meta || {};
+  const fonte = [meta.fonte || "IBPT", meta.chave].filter(Boolean).join(" ");
+  const texto = `Trib. aprox.: ${brl(fed)} Federal, ${brl(est)} Estadual e ${brl(mun)} Municipal. Fonte: ${fonte}`;
+  payload.informacoes_adicionais_contribuinte = [payload.informacoes_adicionais_contribuinte, texto]
+    .filter(Boolean)
+    .join(" | ")
+    .slice(0, 5000);
+  return { federal: fed / 100, estadual: est / 100, municipal: mun / 100, total: (fed + est + mun) / 100, missing };
+}
+
+module.exports = { buildNfcePayload, applyIbpt, mapFocusResponse, validGtin, nowSaoPaulo, FiscalInputError, TPAG };

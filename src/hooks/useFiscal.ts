@@ -6,6 +6,8 @@ import { getUserFriendlyError } from "@/lib/error-handler";
 import { getFiscalProvider, TenantFiscalSettings, FiscalEmitPayload } from "@/services/fiscal";
 import { normalizeTaxConfig, productTaxFields } from "@/lib/tax/engine";
 import { fiscalApi } from "@/services/fiscal/fiscalApi";
+import { calcIbpt } from "@/lib/ibpt";
+import { fetchIbptRates } from "@/hooks/useIbpt";
 
 interface SaleRow {
   id: string;
@@ -26,6 +28,7 @@ interface SaleRow {
       category: string | null;
       extra_attributes: Record<string, unknown> | null;
       ncm: string | null;
+      origem: number | null;
       cfop: string | null;
       csosn: string | null;
       unidade_medida: string | null;
@@ -60,12 +63,16 @@ export function useFiscal() {
       if (fiscal.provider === "focus_nfe") {
         return fiscalApi.emitNfce(saleId);
       }
+      // Simulado gera um documento sem validade; nunca pode passar por nota real.
+      if (fiscal.ambiente === "producao") {
+        throw new Error("Emissão em Produção exige o provedor Focus NFe (Fiscal → Configuração).");
+      }
 
       // Load sale + items + products
       const { data: sale, error: sErr } = await supabase
         .from("sales")
         .select(
-          "id, tenant_id, net_total, gross_total, discount_total, payment_method, customer_id, sale_items(product_id, quantity, unit_price, discount, total, products(name, category, ncm, cfop, csosn, unidade_medida, unit, ean, barcode, extra_attributes))"
+          "id, tenant_id, net_total, gross_total, discount_total, payment_method, customer_id, sale_items(product_id, quantity, unit_price, discount, total, products(name, category, ncm, origem, cfop, csosn, unidade_medida, unit, ean, barcode, extra_attributes))"
         )
         .eq("id", saleId)
         .single();
@@ -126,6 +133,10 @@ export function useFiscal() {
         },
         payment_method: s.payment_method,
         reforma: normalizeTaxConfig(fiscal.reforma),
+        impostos_aprox: calcIbpt(
+          s.sale_items.map((it) => ({ ncm: it.products?.ncm, total: Number(it.total), origem: it.products?.origem })),
+          await fetchIbptRates(tenant.id, s.sale_items.map((it) => it.products?.ncm)),
+        ).total,
       };
 
       const provider = getFiscalProvider(fiscal);

@@ -94,11 +94,6 @@ export function formatChave(chave: string): string {
   return chave.replace(/(.{4})/g, "$1 ").trim();
 }
 
-/** Lei 12.741: estimativa simples de impostos (~5% para Simples Nacional) */
-export function calcImpostosAproximados(items: FiscalItem[]): number {
-  const total = items.reduce((s, i) => s + i.total, 0);
-  return Math.round(total * 0.05 * 100) / 100;
-}
 
 function escapeXml(str: string): string {
   return String(str)
@@ -190,12 +185,13 @@ export function buildNFCeXML(
   sale: FiscalSale,
   empresa: FiscalCompany,
   items: FiscalItem[],
-  tax?: TaxResult | null
+  tax?: TaxResult | null,
+  /** Lei 12.741: imposto aproximado pela tabela IBPT (src/lib/ibpt.ts). */
+  totalImpostos = 0
 ): string {
   const cnpj = (empresa.cnpj || "").replace(/\D/g, "").padStart(14, "0");
   const tpAmb = sale.ambiente === "producao" ? "1" : "2";
   const dhEmi = sale.datetime.toISOString().replace(/\.\d{3}Z$/, "-03:00");
-  const totalImpostos = calcImpostosAproximados(items);
   const vDescTotal = items.reduce((s, it) => s + (Number(it.discount) || 0), 0);
   const vProdTotal = items.reduce((s, it) => s + it.total + (Number(it.discount) || 0), 0);
   // No modo "por fora" os tributos da reforma somam ao total da nota.
