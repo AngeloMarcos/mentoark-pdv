@@ -143,9 +143,9 @@ BEGIN
       END IF;
 
       IF v_promo.discount_type = 'percentage' THEN
-        v_line_discount := ROUND(v_price * GREATEST(1, v_qty) * v_promo.discount_value / 100, 2);
+        v_line_discount := ROUND(v_price * v_qty * v_promo.discount_value / 100, 2);
       ELSE
-        v_line_discount := ROUND(v_promo.discount_value * GREATEST(1, v_qty), 2);
+        v_line_discount := ROUND(v_promo.discount_value * v_qty, 2);
       END IF;
       v_line_discount := LEAST(GREATEST(v_line_discount, 0), v_line_gross);
     END IF;

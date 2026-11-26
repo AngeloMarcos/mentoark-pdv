@@ -35,9 +35,23 @@ import { useCartTaxes, useTaxConfig } from "@/hooks/useTaxes";
 import { productTaxFields, type TaxItemInput } from "@/lib/tax/engine";
 import { formatBRL as formatCurrency } from "@/lib/utils";
 import { cartTotals, lineGross, round2 } from "@/lib/money";
+import {
+  formatQty,
+  matchesScaleCode,
+  normalizeScaleConfig,
+  parseScaleBarcode,
+  quantityFromLabel,
+  roundQty,
+  sellsFractional,
+} from "@/lib/weighing";
+import { WeightDialog, type WeightTarget } from "@/components/pdv/WeightDialog";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
+
+type CartProduct = Pick<Product, "id" | "name" | "unit" | "sale_price">;
 
 interface CartItem extends SaleItem {
   product_name: string;
+  unit?: string | null;
   promotion_id?: string | null;
   promotion_name?: string | null;
   promotion?: Pick<Promotion, "discount_type" | "discount_value"> | null;
@@ -91,28 +105,62 @@ const PDV = () => {
     searchRef.current?.focus();
   }, []);
 
-  const addToCart = useCallback((product: Product) => {
+  /** Soma a quantidade ao item (ou substitui, ao corrigir o peso). */
+  const putInCart = useCallback((product: CartProduct, quantity: number, replace = false) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.product_id === product.id);
       if (existing) {
         return prev.map((item) =>
           item.product_id === product.id
-            ? withQuantity(item, item.quantity + 1)
+            ? withQuantity(item, replace ? quantity : roundQty(item.quantity + quantity))
             : item
         );
       }
       return [...prev, {
         product_id: product.id,
         product_name: product.name,
-        quantity: 1,
+        unit: product.unit,
+        quantity,
         unit_price: product.sale_price,
         discount: 0,
-        total: product.sale_price,
+        total: lineGross(quantity, product.sale_price),
       }];
     });
     setSearch("");
     searchRef.current?.focus();
   }, []);
+
+  // Produto a granel (KG, L, M): pede o peso antes de lançar.
+  const [weighTarget, setWeighTarget] = useState<WeightTarget | null>(null);
+
+  const addToCart = useCallback((product: Product) => {
+    if (sellsFractional(product.unit)) {
+      setWeighTarget({
+        product_id: product.id,
+        product_name: product.name,
+        unit: product.unit,
+        unit_price: product.sale_price,
+      });
+      return;
+    }
+    putInCart(product, 1);
+  }, [putInCart]);
+
+  const confirmWeight = useCallback((quantity: number) => {
+    if (!weighTarget) return;
+    putInCart(
+      { id: weighTarget.product_id, name: weighTarget.product_name, unit: weighTarget.unit, sale_price: weighTarget.unit_price },
+      quantity,
+      weighTarget.current !== undefined,
+    );
+    setWeighTarget(null);
+  }, [weighTarget, putInCart]);
+
+  const { settings: companySettings } = useCompanySettings();
+  const scaleConfig = useMemo(
+    () => normalizeScaleConfig((companySettings.pdv as { scale_barcode?: unknown } | undefined)?.scale_barcode),
+    [companySettings],
+  );
 
   // Handler para busca por código de barras (Alta Performance)
   const handleBarcodeSearch = useCallback(async (barcode: string) => {
@@ -124,7 +172,25 @@ const PDV = () => {
 
     if (localProduct) {
       addToCart(localProduct);
-      toast.success(`${localProduct.name} adicionado`);
+      if (!sellsFractional(localProduct.unit)) toast.success(`${localProduct.name} adicionado`);
+      return;
+    }
+
+    // Etiqueta da balança: código do produto + preço ou peso no próprio código.
+    const label = parseScaleBarcode(barcode, scaleConfig);
+    if (label) {
+      const product = cachedProducts.find((p) => matchesScaleCode(p.internal_code, label.productCode));
+      if (!product) {
+        toast.error(`Etiqueta da balança: nenhum produto com código interno ${label.productCode}`);
+        return;
+      }
+      const quantity = quantityFromLabel(label, product.sale_price);
+      if (!quantity) {
+        toast.error("Não foi possível ler o peso desta etiqueta");
+        return;
+      }
+      putInCart(product, quantity);
+      toast.success(`${product.name}: ${formatQty(quantity, product.unit)}`);
       return;
     }
 
@@ -133,14 +199,14 @@ const PDV = () => {
       const product = await findByBarcode.mutateAsync(barcode);
       if (product) {
         addToCart(product as Product);
-        toast.success(`${(product as Product).name} adicionado`);
+        if (!sellsFractional((product as Product).unit)) toast.success(`${(product as Product).name} adicionado`);
       } else {
         toast.error("Produto não encontrado");
       }
     } catch {
       toast.error("Erro ao buscar produto");
     }
-  }, [findByBarcode, addToCart, queryClient, currentTenant?.id]);
+  }, [findByBarcode, addToCart, putInCart, scaleConfig, queryClient, currentTenant?.id]);
 
   // Global barcode scanner — detecta leitura rápida (<50ms entre teclas)
   // ignoreInputs=false porque o foco fica no input de busca
@@ -150,7 +216,7 @@ const PDV = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // F2 - Abrir pagamento
-      if (e.key === "F2" && cart.length > 0 && !createSale.isPending) {
+      if (e.key === "F2" && cart.length > 0 && !createSale.isPending && !weighTarget) {
         e.preventDefault();
         if (!activeSession) {
           toast.error("Abra o caixa antes de realizar vendas");
@@ -182,7 +248,7 @@ const PDV = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [cart, createSale.isPending, activeSession, showPaymentDialog]);
+  }, [cart, createSale.isPending, activeSession, showPaymentDialog, weighTarget]);
 
   const updateQuantity = useCallback((productId: string, delta: number) => {
     setCart((prev) =>
@@ -203,6 +269,18 @@ const PDV = () => {
 
   const cartRef = useRef(cart);
   cartRef.current = cart;
+  const editWeight = useCallback((productId: string) => {
+    const item = cartRef.current.find((it) => it.product_id === productId);
+    if (!item) return;
+    setWeighTarget({
+      product_id: item.product_id,
+      product_name: item.product_name,
+      unit: item.unit || "KG",
+      unit_price: item.unit_price,
+      current: item.quantity,
+    });
+  }, []);
+
   const openPromotion = useCallback((productId: string) => {
     setPromoTarget(cartRef.current.find((item) => item.product_id === productId) || null);
   }, []);
@@ -458,6 +536,7 @@ const PDV = () => {
                       onQuantity={updateQuantity}
                       onRemove={removeFromCart}
                       onPromotion={openPromotion}
+                      onEditWeight={editWeight}
                     />
                   ))}
                 </ul>
@@ -487,6 +566,8 @@ const PDV = () => {
       </div>
 
       {/* Payment Dialog */}
+      <WeightDialog target={weighTarget} onClose={() => setWeighTarget(null)} onConfirm={confirmWeight} />
+
       <PaymentDialog
         open={showPaymentDialog}
         onOpenChange={setShowPaymentDialog}

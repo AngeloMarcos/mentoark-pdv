@@ -4,9 +4,12 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Save, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ShoppingCart, Save, Loader2, Scale } from "lucide-react";
 import { useCompanySettings, useUpdateCompanySettings } from "@/hooks/useCompanySettings";
 import { toast } from "sonner";
+import { formatBRL } from "@/lib/utils";
+import { normalizeScaleConfig, parseScaleBarcode, type ScaleBarcodeConfig } from "@/lib/weighing";
 
 interface PdvSettings {
   auto_open_cash?: boolean;
@@ -15,6 +18,7 @@ interface PdvSettings {
   ask_customer_on_sale?: boolean;
   block_negative_stock?: boolean;
   default_payment_method?: string;
+  scale_barcode?: Partial<ScaleBarcodeConfig>;
 }
 
 export function PdvSettingsTab() {
@@ -97,6 +101,11 @@ export function PdvSettingsTab() {
         </CardContent>
       </Card>
 
+      <ScaleBarcodeCard
+        value={normalizeScaleConfig(pdv.scale_barcode)}
+        onChange={(scale_barcode) => update({ scale_barcode })}
+      />
+
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={updateSettings.isPending}>
           {updateSettings.isPending ? (
@@ -130,5 +139,116 @@ function Toggle({
       </div>
       <Switch checked={checked} onCheckedChange={onChange} />
     </div>
+  );
+}
+
+/** Formato da etiqueta impressa pela balança (EAN-13 começando com 2). */
+function ScaleBarcodeCard({
+  value,
+  onChange,
+}: {
+  value: ScaleBarcodeConfig;
+  onChange: (v: ScaleBarcodeConfig) => void;
+}) {
+  const [sample, setSample] = useState("");
+  const set = (patch: Partial<ScaleBarcodeConfig>) => onChange({ ...value, ...patch });
+  const fill = 13 - 1 - value.prefix.length - value.code_length - value.value_length;
+  const layout =
+    value.prefix +
+    "C".repeat(value.code_length) +
+    "0".repeat(Math.max(0, fill)) +
+    (value.value_type === "price" ? "P" : "G").repeat(value.value_length) +
+    "D";
+  const parsed = sample.trim() ? parseScaleBarcode(sample, { ...value, enabled: true }) : null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Scale className="w-5 h-5" /> Etiqueta da balança
+        </CardTitle>
+        <CardDescription>
+          Para açougue, padaria e hortifrúti: o PDV lê o código impresso pela balança e lança o produto
+          com o peso. O código do produto na etiqueta deve ser o <strong>código interno</strong> do cadastro.
+          Produtos com unidade KG, L ou M pedem o peso ao serem escolhidos na lista.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <Toggle
+          label="Ler etiquetas da balança"
+          description="Use o mesmo formato configurado na sua balança (veja o manual ou uma etiqueta impressa)."
+          checked={value.enabled}
+          onChange={(enabled) => set({ enabled })}
+        />
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="space-y-2">
+            <Label>Prefixo</Label>
+            <Input
+              inputMode="numeric"
+              maxLength={2}
+              value={value.prefix}
+              onChange={(e) => set({ prefix: e.target.value.replace(/\D/g, "") || "2" })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Dígitos do código</Label>
+            <Select value={String(value.code_length)} onValueChange={(v) => set({ code_length: Number(v) })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {[4, 5, 6].map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>A etiqueta traz</Label>
+            <Select value={value.value_type} onValueChange={(v) => set({ value_type: v as ScaleBarcodeConfig["value_type"] })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="price">Preço total</SelectItem>
+                <SelectItem value="weight">Peso (gramas)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Dígitos do valor</Label>
+            <Select value={String(value.value_length)} onValueChange={(v) => set({ value_length: Number(v) })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {[5, 6].map((n) => <SelectItem key={n} value={String(n)}>{n}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <p className="text-sm text-muted-foreground">
+          Formato: <code className="font-mono tracking-widest">{layout}</code> — C = código do produto,{" "}
+          {value.value_type === "price" ? "P = preço em centavos" : "G = peso em gramas"}, D = dígito verificador.
+          {fill < 0 && <span className="text-destructive"> Os campos passam de 13 dígitos; reduza os tamanhos.</span>}
+        </p>
+
+        <div className="space-y-2">
+          <Label htmlFor="scale-sample">Testar com uma etiqueta</Label>
+          <Input
+            id="scale-sample"
+            inputMode="numeric"
+            placeholder="Leia ou digite o código de uma etiqueta impressa"
+            value={sample}
+            onChange={(e) => setSample(e.target.value)}
+          />
+          {sample.trim() && (
+            <p className={parsed ? "text-sm text-success" : "text-sm text-destructive"}>
+              {parsed
+                ? `Produto código ${parsed.productCode} — ${
+                    parsed.price !== undefined
+                      ? `preço ${formatBRL(parsed.price)}`
+                      : `peso ${parsed.weight!.toLocaleString("pt-BR", { minimumFractionDigits: 3 })} kg`
+                  }`
+                : "Esta etiqueta não confere com o formato acima (tamanho, prefixo ou dígito verificador)."}
+            </p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

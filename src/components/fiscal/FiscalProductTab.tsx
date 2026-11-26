@@ -285,7 +285,7 @@ export function FiscalProductTab({ values, onChange, regime = "simples" }: Props
               id="tax-cclasstrib"
               inputMode="numeric"
               value={tax.cclasstrib || ""}
-              onChange={(e) => setTax({ cclasstrib: e.target.value.replace(/D/g, "").slice(0, 6) })}
+              onChange={(e) => setTax({ cclasstrib: e.target.value.replace(/\D/g, "").slice(0, 6) })}
               placeholder="000001"
             />
           </div>

@@ -1,3 +1,4 @@
+import { cartTotals, round2 } from "@/lib/money";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
@@ -202,10 +203,10 @@ export function useCreateSale() {
       };
       validateInput(CreateSaleInputSchema, validationInput);
 
-      const grossTotal = input.items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
-      const itemDiscounts = input.items.reduce((sum, item) => sum + item.discount, 0);
-      const discountTotal = (input.discount_total || 0) + itemDiscounts;
-      const netTotal = grossTotal - discountTotal;
+      // Mesmo arredondamento por linha do banco (venda por quilo: 0,375 x 39,90).
+      const { grossTotal, discountTotal: itemDiscounts } = cartTotals(input.items);
+      const discountTotal = round2((input.discount_total || 0) + itemDiscounts);
+      const netTotal = round2(grossTotal - discountTotal);
 
       // Validate calculated totals
       if (netTotal < 0) throw new Error("Total líquido não pode ser negativo");

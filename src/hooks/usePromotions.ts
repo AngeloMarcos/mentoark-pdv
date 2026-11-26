@@ -148,7 +148,8 @@ export function calcPromotionDiscount(
   unitPrice: number,
   quantity: number,
 ): number {
-  const qty = Math.max(1, quantity);
+  // Quantidade real: em 0,375 kg o desconto vale sobre 0,375 kg, não sobre 1.
+  const qty = Math.max(0, quantity);
   if (promo.discount_type === "percentage") {
     return +(unitPrice * qty * (promo.discount_value / 100)).toFixed(2);
   }

@@ -2,10 +2,12 @@ import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import { PixQRCode } from "./PixQRCode";
+import { formatQty } from "@/lib/weighing";
 
 interface SaleItem {
   product_name?: string;
   quantity: number;
+  unit?: string | null;
   unit_price: number;
   discount: number;
   total: number;
@@ -140,7 +142,7 @@ export function ReceiptPreview({ data, paperWidth = 80, onPrint }: ReceiptPrevie
               <p className="item-name text-xs">{item.product_name || "Produto"}</p>
               <div className="item-details text-xs flex justify-between">
                 <span>
-                  {item.quantity} x {formatCurrency(item.unit_price)}
+                  {formatQty(item.quantity, item.unit)} x {formatCurrency(item.unit_price)}
                   {item.discount > 0 && ` (-${formatCurrency(item.discount)})`}
                 </span>
                 <span>{formatCurrency(item.total)}</span>
