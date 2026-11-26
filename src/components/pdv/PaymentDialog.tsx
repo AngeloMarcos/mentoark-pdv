@@ -9,7 +9,7 @@ import { PaymentMethodCard } from "./PaymentMethodCard";
 import { PixPaymentSection } from "./PixPaymentSection";
 import { useTenant } from "@/contexts/TenantContext";
 import { AlertTriangle, Plus, Check, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { paymentStatus, toStoredPayment, type PaymentDraft } from "@/lib/money";
 
 interface PaymentDialogProps {
   open: boolean;
@@ -27,6 +27,12 @@ interface PaymentEntry {
   receivedAmount?: number;
   installments: number;
 }
+
+const toDraft = (p: PaymentEntry): PaymentDraft => ({
+  amount: p.amount,
+  receivedAmount: p.receivedAmount,
+  requiresChange: !!p.method.requires_change,
+});
 
 export function PaymentDialog({
   open,
@@ -62,20 +68,14 @@ export function PaymentDialog({
     }
   }, [open, isLoading, paymentMethods.length, currentTenant]);
 
-  const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
-  const remaining = total - totalPaid;
-  const totalChange = payments.reduce((sum, p) => {
-    if (p.method.requires_change && p.receivedAmount) {
-      return sum + Math.max(0, p.receivedAmount - p.amount);
-    }
-    return sum;
-  }, 0);
+  const drafts = payments.map(toDraft);
+  const { paid: totalPaid, remaining, excess, change: totalChange, settled } = paymentStatus(total, drafts);
 
   const hasCreditPayment = payments.some(p => p.method.type === "credit" || p.method.code === "fiado");
   const missingCustomerForCredit = hasCreditPayment && !hasCustomer;
 
   const canFinish =
-    totalPaid >= total && payments.every(p => p.amount > 0) && !missingCustomerForCredit;
+    settled && payments.every(p => p.amount > 0) && !missingCustomerForCredit;
 
 
   const addPayment = (method: PaymentMethod) => {
@@ -101,13 +101,12 @@ export function PaymentDialog({
   };
 
   const handleConfirm = () => {
+    // Convenção do banco, das comandas e da NFC-e: amount = valor entregue
+    // pelo cliente, change_amount = troco. O líquido da forma é amount - troco.
     const salePayments: SalePayment[] = payments.map(p => ({
       payment_method_id: p.method.id,
       payment_method_code: p.method.code,
-      amount: p.amount,
-      change_amount: p.method.requires_change && p.receivedAmount
-        ? Math.max(0, p.receivedAmount - p.amount)
-        : 0,
+      ...toStoredPayment(toDraft(p)),
       installments: p.installments,
     }));
 
@@ -265,6 +264,16 @@ export function PaymentDialog({
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               Faltam {formatCurrency(remaining)} para completar o pagamento
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {excess > 0 && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              As formas somam {formatCurrency(excess)} a mais que a venda. Ajuste os valores; em dinheiro,
+              informe o valor recebido para calcular o troco.
             </AlertDescription>
           </Alert>
         )}

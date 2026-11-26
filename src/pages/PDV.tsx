@@ -24,7 +24,7 @@ import { ReceiptPreview } from "@/components/print/ReceiptPreview";
 import { useTenant } from "@/contexts/TenantContext";
 import { useCompany } from "@/contexts/CompanyContext";
 import { ApplyPromotionDialog } from "@/components/promotions/ApplyPromotionDialog";
-import { Promotion } from "@/hooks/usePromotions";
+import { Promotion, calcPromotionDiscount } from "@/hooks/usePromotions";
 import { useFiscal } from "@/hooks/useFiscal";
 import { DanfeViewer } from "@/components/fiscal/DanfeViewer";
 import type { FiscalDocument } from "@/hooks/useFiscalDocuments";
@@ -34,11 +34,22 @@ import { CartTaxSummary } from "@/components/pdv/CartTaxSummary";
 import { useCartTaxes, useTaxConfig } from "@/hooks/useTaxes";
 import { productTaxFields, type TaxItemInput } from "@/lib/tax/engine";
 import { formatBRL as formatCurrency } from "@/lib/utils";
+import { cartTotals, lineGross, round2 } from "@/lib/money";
 
 interface CartItem extends SaleItem {
   product_name: string;
   promotion_id?: string | null;
   promotion_name?: string | null;
+  promotion?: Pick<Promotion, "discount_type" | "discount_value"> | null;
+}
+
+/** Recalcula total (e desconto da promoção, se houver) para uma nova quantidade. */
+function withQuantity(item: CartItem, quantity: number): CartItem {
+  const gross = lineGross(quantity, item.unit_price);
+  const discount = item.promotion
+    ? Math.min(calcPromotionDiscount(item.promotion, item.unit_price, quantity), gross)
+    : item.discount;
+  return { ...item, quantity, discount, total: round2(gross - discount) };
 }
 
 const PDV = () => {
@@ -57,6 +68,12 @@ const PDV = () => {
   const [emittingNfce, setEmittingNfce] = useState(false);
   const [nfceDoc, setNfceDoc] = useState<FiscalDocument | null>(null);
   const [nfceItems, setNfceItems] = useState<Array<{ product_name: string; quantity: number; unit_price: number; total: number }>>([]);
+  // Chave da venda: a mesma enquanto o carrinho não muda, para que um reenvio
+  // (rede caiu depois de gravar) devolva a venda já gravada em vez de duplicar.
+  const checkoutKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    checkoutKeyRef.current = null;
+  }, [cart]);
 
   const { currentTenant } = useTenant();
   const { hasFeature } = useCompany();
@@ -80,7 +97,7 @@ const PDV = () => {
       if (existing) {
         return prev.map((item) =>
           item.product_id === product.id
-            ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.unit_price - item.discount }
+            ? withQuantity(item, item.quantity + 1)
             : item
         );
       }
@@ -173,7 +190,7 @@ const PDV = () => {
         if (item.product_id === productId) {
           const newQty = Math.max(0, item.quantity + delta);
           if (newQty === 0) return item;
-          return { ...item, quantity: newQty, total: newQty * item.unit_price - item.discount };
+          return withQuantity(item, newQty);
         }
         return item;
       }).filter((item) => item.quantity > 0)
@@ -190,11 +207,7 @@ const PDV = () => {
     setPromoTarget(cartRef.current.find((item) => item.product_id === productId) || null);
   }, []);
 
-  const { grossTotal, discountTotal, netTotal } = useMemo(() => {
-    const gross = cart.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
-    const discount = cart.reduce((sum, item) => sum + item.discount, 0);
-    return { grossTotal: gross, discountTotal: discount, netTotal: gross - discount };
-  }, [cart]);
+  const { grossTotal, discountTotal, netTotal } = useMemo(() => cartTotals(cart), [cart]);
 
   // Tributos da reforma (IBS/CBS/IS), calculados fora do thread principal.
   const productTaxById = useMemo(() => {
@@ -227,11 +240,13 @@ const PDV = () => {
       return;
     }
 
+    checkoutKeyRef.current ??= crypto.randomUUID();
     const sale = await createSale.mutateAsync({
       items: cart,
       payments,
       customer_id: customer?.id ?? null,
       session_id: activeSession.id,
+      client_request_id: checkoutKeyRef.current,
     });
 
     setLastSale({ id: sale.id, netTotal, payments });
@@ -298,6 +313,7 @@ const PDV = () => {
                   {lastSale.payments.map((p, i) => (
                     <Badge key={i} variant="secondary">
                       {p.payment_method_code}: {formatCurrency(p.amount)}
+                      {p.change_amount ? ` (troco ${formatCurrency(p.change_amount)})` : ""}
                     </Badge>
                   ))}
                 </div>
@@ -497,9 +513,10 @@ const PDV = () => {
                   ? {
                       ...it,
                       discount: discountAmount,
-                      total: it.unit_price * it.quantity - discountAmount,
+                      total: round2(lineGross(it.quantity, it.unit_price) - discountAmount),
                       promotion_id: promo.id,
                       promotion_name: promo.name,
+                      promotion: { discount_type: promo.discount_type, discount_value: promo.discount_value },
                     }
                   : it,
               ),
@@ -513,9 +530,10 @@ const PDV = () => {
                   ? {
                       ...it,
                       discount: 0,
-                      total: it.unit_price * it.quantity,
+                      total: lineGross(it.quantity, it.unit_price),
                       promotion_id: null,
                       promotion_name: null,
+                      promotion: null,
                     }
                   : it,
               ),

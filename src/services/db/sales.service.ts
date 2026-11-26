@@ -6,6 +6,7 @@ export interface SaleItemInput {
   unit_price: number;
   discount: number;
   total: number;
+  promotion_id?: string | null;
 }
 
 export interface SalePaymentInput {
@@ -22,6 +23,8 @@ export interface CheckoutSalePayload {
   user_id: string;
   customer_id?: string | null;
   session_id?: string | null;
+  /** Mesma chave em reenvios: o banco devolve a venda já gravada em vez de duplicar. */
+  client_request_id?: string | null;
   gross_total: number;
   discount_total: number;
   net_total: number;
@@ -35,6 +38,7 @@ export const salesService = {
   /**
    * Executa a finalização da venda em uma única transação atômica
    * via PostgreSQL RPC, garantindo consistência no banco de dados.
+   * O banco recalcula preço, desconto e totais e recusa o que não conferir.
    */
   async checkoutSale(payload: CheckoutSalePayload): Promise<{ sale_id: string }> {
     const { data, error } = await supabase.rpc("checkout_sale_transaction", {

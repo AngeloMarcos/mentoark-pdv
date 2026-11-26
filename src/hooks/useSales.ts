@@ -15,6 +15,7 @@ export interface SaleItem {
   discount: number;
   total: number;
   product_name?: string;
+  promotion_id?: string | null;
 }
 
 export interface Sale {
@@ -39,6 +40,8 @@ export interface CreateSaleInput {
   discount_total?: number;
   notes?: string;
   session_id?: string | null;
+  /** Gerada uma vez por carrinho; reenviar a mesma não duplica a venda. */
+  client_request_id?: string | null;
   // Legacy support
   payment_method?: string;
 }
@@ -209,8 +212,9 @@ export function useCreateSale() {
       if (discountTotal > grossTotal) throw new Error("Desconto não pode ser maior que o valor bruto");
 
       // Validate payments total
-      const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
-      if (totalPayments < netTotal) throw new Error("Valor dos pagamentos insuficiente");
+      // amount = valor entregue; o que abate a venda é amount - troco
+      const totalPayments = payments.reduce((sum, p) => sum + p.amount - (p.change_amount || 0), 0);
+      if (totalPayments < netTotal - 0.01) throw new Error("Valor dos pagamentos insuficiente");
 
       const primaryPaymentMethod = payments[0].payment_method_code;
 
@@ -220,6 +224,7 @@ export function useCreateSale() {
         user_id: user.id,
         customer_id: input.customer_id || null,
         session_id: input.session_id || null,
+        client_request_id: input.client_request_id || null,
         gross_total: grossTotal,
         discount_total: discountTotal,
         net_total: netTotal,
@@ -231,6 +236,7 @@ export function useCreateSale() {
           unit_price: item.unit_price,
           discount: item.discount,
           total: item.total,
+          promotion_id: item.promotion_id || null,
         })),
         payments: payments.map((p) => ({
           payment_method_id: p.payment_method_id || null,
