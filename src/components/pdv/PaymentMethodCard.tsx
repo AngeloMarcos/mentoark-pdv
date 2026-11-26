@@ -1,3 +1,4 @@
+import { round2 } from "@/lib/money";
 import { useState } from "react";
 import { PaymentMethod, PAYMENT_TYPE_ICONS } from "@/hooks/usePaymentMethods";
 import { Card } from "@/components/ui/card";
@@ -57,7 +58,7 @@ export function PaymentMethodCard({
   };
 
   const changeAmount = method.requires_change && receivedAmount !== undefined
-    ? receivedAmount - amount
+    ? round2(receivedAmount - amount)
     : 0;
 
   // Sugestões de valor para dinheiro
