@@ -7,6 +7,7 @@ import { CreateSaleInputSchema, validateInput } from "@/lib/validations";
 import { getUserFriendlyError } from "@/lib/error-handler";
 import { SalePayment } from "@/hooks/usePaymentMethods";
 import { salesService } from "@/services/db/sales.service";
+import { round2, sumMoney, toCents } from "@/lib/money";
 
 export interface SaleItem {
   product_id: string;
@@ -199,18 +200,27 @@ export function useCreateSale() {
       };
       validateInput(CreateSaleInputSchema, validationInput);
 
-      const grossTotal = input.items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
-      const itemDiscounts = input.items.reduce((sum, item) => sum + item.discount, 0);
-      const discountTotal = (input.discount_total || 0) + itemDiscounts;
-      const netTotal = grossTotal - discountTotal;
+      // Normaliza cada item em centavos: total = qtd × preço − desconto
+      const items = input.items.map((item) => {
+        const gross = round2(item.quantity * item.unit_price);
+        const discount = Math.min(round2(item.discount || 0), gross);
+        return { ...item, unit_price: round2(item.unit_price), discount, total: round2(gross - discount) };
+      });
+      const grossTotal = sumMoney(items.map((i) => round2(i.quantity * i.unit_price)));
+      const itemDiscounts = sumMoney(items.map((i) => i.discount));
+      const discountTotal = round2((input.discount_total || 0) + itemDiscounts);
+      const netTotal = round2(grossTotal - discountTotal);
 
       // Validate calculated totals
       if (netTotal < 0) throw new Error("Total líquido não pode ser negativo");
       if (discountTotal > grossTotal) throw new Error("Desconto não pode ser maior que o valor bruto");
 
       // Validate payments total
-      const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
-      if (totalPayments < netTotal) throw new Error("Valor dos pagamentos insuficiente");
+      // Valor efetivamente aplicado na venda = entregue − troco
+      const totalPaymentsCents = payments.reduce(
+        (sum, p) => sum + toCents(p.amount) - toCents(p.change_amount || 0), 0);
+      if (totalPaymentsCents < toCents(netTotal)) throw new Error("Valor dos pagamentos insuficiente");
+      if (totalPaymentsCents > toCents(netTotal)) throw new Error("Pagamentos acima do total da venda. Use o troco para dinheiro.");
 
       const primaryPaymentMethod = payments[0].payment_method_code;
 
@@ -225,7 +235,7 @@ export function useCreateSale() {
         net_total: netTotal,
         payment_method: primaryPaymentMethod,
         notes: input.notes || null,
-        items: input.items.map((item) => ({
+        items: items.map((item) => ({
           product_id: item.product_id,
           quantity: item.quantity,
           unit_price: item.unit_price,
@@ -235,8 +245,8 @@ export function useCreateSale() {
         payments: payments.map((p) => ({
           payment_method_id: p.payment_method_id || null,
           payment_method_code: p.payment_method_code,
-          amount: p.amount,
-          change_amount: p.change_amount || 0,
+          amount: round2(p.amount),
+          change_amount: round2(p.change_amount || 0),
           installments: p.installments || 1,
           authorization_code: p.authorization_code || null,
         })),

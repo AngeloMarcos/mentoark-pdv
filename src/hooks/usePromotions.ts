@@ -1,3 +1,4 @@
+import { calcLineDiscount } from "@/lib/money";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTenant } from "@/contexts/TenantContext";
@@ -142,16 +143,11 @@ export function useDeletePromotion() {
   });
 }
 
-/** Calcula desconto em R$ por unidade dada uma promoção e o preço unitário. */
+/** Calcula o desconto total (R$) da promoção para a quantidade informada. */
 export function calcPromotionDiscount(
   promo: Pick<Promotion, "discount_type" | "discount_value">,
   unitPrice: number,
   quantity: number,
 ): number {
-  const qty = Math.max(1, quantity);
-  if (promo.discount_type === "percentage") {
-    return +(unitPrice * qty * (promo.discount_value / 100)).toFixed(2);
-  }
-  // fixed = R$ off por unidade
-  return +(promo.discount_value * qty).toFixed(2);
+  return calcLineDiscount(promo.discount_type, Number(promo.discount_value), unitPrice, Math.max(1, quantity));
 }

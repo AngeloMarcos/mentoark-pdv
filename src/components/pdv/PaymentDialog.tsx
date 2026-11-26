@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toCents, round2, sumMoney } from "@/lib/money";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -62,26 +63,38 @@ export function PaymentDialog({
     }
   }, [open, isLoading, paymentMethods.length, currentTenant]);
 
-  const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
-  const remaining = total - totalPaid;
-  const totalChange = payments.reduce((sum, p) => {
-    if (p.method.requires_change && p.receivedAmount) {
-      return sum + Math.max(0, p.receivedAmount - p.amount);
-    }
-    return sum;
-  }, 0);
+  // Comparações sempre em centavos para evitar erro de ponto flutuante
+  const totalCents = toCents(total);
+  const paidCents = payments.reduce((sum, p) => sum + toCents(p.amount), 0);
+  const totalPaid = paidCents / 100;
+  const remaining = Math.max(0, totalCents - paidCents) / 100;
+  const excess = Math.max(0, paidCents - totalCents) / 100;
+  const changeOf = (p: PaymentEntry) =>
+    p.method.requires_change && p.receivedAmount
+      ? Math.max(0, toCents(p.receivedAmount) - toCents(p.amount)) / 100
+      : 0;
+  const totalChange = sumMoney(payments.map(changeOf));
+  // Dinheiro: valor recebido informado menor que o valor lançado
+  const insufficientCash = payments.some(
+    (p) => p.method.requires_change && p.receivedAmount !== undefined && p.receivedAmount > 0 &&
+      toCents(p.receivedAmount) < toCents(p.amount)
+  );
 
   const hasCreditPayment = payments.some(p => p.method.type === "credit" || p.method.code === "fiado");
   const missingCustomerForCredit = hasCreditPayment && !hasCustomer;
 
   const canFinish =
-    totalPaid >= total && payments.every(p => p.amount > 0) && !missingCustomerForCredit;
+    payments.length > 0 &&
+    paidCents === totalCents &&
+    payments.every(p => toCents(p.amount) > 0) &&
+    !insufficientCash &&
+    !missingCustomerForCredit;
 
 
   const addPayment = (method: PaymentMethod) => {
     // Em modo simples, substitui
     if (activeTab === "simple") {
-      setPayments([{ method, amount: total, installments: 1 }]);
+      setPayments([{ method, amount: round2(total), installments: 1 }]);
     } else {
       // Em modo misto, adiciona
       if (!payments.find(p => p.method.id === method.id)) {
@@ -104,10 +117,10 @@ export function PaymentDialog({
     const salePayments: SalePayment[] = payments.map(p => ({
       payment_method_id: p.method.id,
       payment_method_code: p.method.code,
-      amount: p.amount,
-      change_amount: p.method.requires_change && p.receivedAmount
-        ? Math.max(0, p.receivedAmount - p.amount)
-        : 0,
+      // Padrão do banco (igual à comanda): amount = valor entregue,
+      // change_amount = troco. O caixa registra amount − change_amount.
+      amount: round2(p.amount + changeOf(p)),
+      change_amount: changeOf(p),
       installments: p.installments,
     }));
 
@@ -265,6 +278,25 @@ export function PaymentDialog({
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               Faltam {formatCurrency(remaining)} para completar o pagamento
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Valor lançado acima do total */}
+        {excess > 0 && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Os pagamentos passam {formatCurrency(excess)} do total. Ajuste os valores — para dar troco em dinheiro, use o campo "valor recebido".
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {insufficientCash && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              O valor recebido em dinheiro é menor que o valor lançado.
             </AlertDescription>
           </Alert>
         )}

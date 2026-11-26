@@ -25,6 +25,7 @@ import { useTenant } from "@/contexts/TenantContext";
 import { useCompany } from "@/contexts/CompanyContext";
 import { ApplyPromotionDialog } from "@/components/promotions/ApplyPromotionDialog";
 import { Promotion } from "@/hooks/usePromotions";
+import { recalcLine, cartTotals, round2, PromoDiscountType } from "@/lib/money";
 import { useFiscal } from "@/hooks/useFiscal";
 import { DanfeViewer } from "@/components/fiscal/DanfeViewer";
 import type { FiscalDocument } from "@/hooks/useFiscalDocuments";
@@ -33,6 +34,8 @@ interface CartItem extends SaleItem {
   product_name: string;
   promotion_id?: string | null;
   promotion_name?: string | null;
+  promo_discount_type?: PromoDiscountType | null;
+  promo_discount_value?: number | null;
 }
 
 const PDV = () => {
@@ -73,7 +76,7 @@ const PDV = () => {
       if (existing) {
         return prev.map((item) =>
           item.product_id === product.id
-            ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.unit_price - item.discount }
+            ? recalcLine(item, item.quantity + 1)
             : item
         );
       }
@@ -81,9 +84,9 @@ const PDV = () => {
         product_id: product.id,
         product_name: product.name,
         quantity: 1,
-        unit_price: product.sale_price,
+        unit_price: round2(Number(product.sale_price) || 0),
         discount: 0,
-        total: product.sale_price,
+        total: round2(Number(product.sale_price) || 0),
       }];
     });
     setSearch("");
@@ -166,7 +169,7 @@ const PDV = () => {
         if (item.product_id === productId) {
           const newQty = Math.max(0, item.quantity + delta);
           if (newQty === 0) return item;
-          return { ...item, quantity: newQty, total: newQty * item.unit_price - item.discount };
+          return recalcLine(item, newQty);
         }
         return item;
       }).filter((item) => item.quantity > 0)
@@ -177,9 +180,7 @@ const PDV = () => {
     setCart((prev) => prev.filter((item) => item.product_id !== productId));
   };
 
-  const grossTotal = cart.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
-  const discountTotal = cart.reduce((sum, item) => sum + item.discount, 0);
-  const netTotal = grossTotal - discountTotal;
+  const { grossTotal, discountTotal, netTotal } = cartTotals(cart);
 
   const handlePaymentConfirm = async (payments: SalePayment[]) => {
     if (cart.length === 0) {
@@ -479,17 +480,17 @@ const PDV = () => {
           unitPrice={promoTarget.unit_price}
           quantity={promoTarget.quantity}
           hasDiscount={!!promoTarget.promotion_id}
-          onApply={(promo: Promotion, discountAmount: number) => {
+          onApply={(promo: Promotion) => {
             setCart((prev) =>
               prev.map((it) =>
                 it.product_id === promoTarget.product_id
-                  ? {
+                  ? recalcLine({
                       ...it,
-                      discount: discountAmount,
-                      total: it.unit_price * it.quantity - discountAmount,
                       promotion_id: promo.id,
                       promotion_name: promo.name,
-                    }
+                      promo_discount_type: promo.discount_type,
+                      promo_discount_value: Number(promo.discount_value),
+                    })
                   : it,
               ),
             );
@@ -502,9 +503,11 @@ const PDV = () => {
                   ? {
                       ...it,
                       discount: 0,
-                      total: it.unit_price * it.quantity,
+                      total: round2(it.unit_price * it.quantity),
                       promotion_id: null,
                       promotion_name: null,
+                      promo_discount_type: null,
+                      promo_discount_value: null,
                     }
                   : it,
               ),
