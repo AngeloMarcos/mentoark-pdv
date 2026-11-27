@@ -17,8 +17,8 @@ jwt() { # jwt <role> <secret>: chave de API HS256 de 10 anos, igual às do Supab
 
 if [ ! -f .env ]; then
   echo "> gerando segredos em .env"
-  umask 077
   JWT_SECRET="$(openssl rand -hex 32)"
+  touch .env && chmod 600 .env
   cat > .env <<EOF
 STACK_PREFIX=pdv_prd
 # true só na virada do DNS (liga a rota no Traefik e o certificado)
@@ -44,6 +44,8 @@ chmod 600 .env
 mkdir -p backups migrations imports rollback web/html
 chmod 700 backups imports
 [ -f web/html/version.json ] || echo '{"version":"instalando"}' > web/html/version.json
+# O nginx do contêiner roda como outro usuário: o site precisa ser legível.
+chmod -R a+rX web
 
 val() { grep -E "^$1=" .env | cut -d= -f2-; }
 psql_db() { docker exec -i pdv_prd_db psql -U postgres -d pdv -v ON_ERROR_STOP=1 -X -q "$@"; }

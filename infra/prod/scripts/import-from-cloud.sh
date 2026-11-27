@@ -50,7 +50,11 @@ do_dump() {
                 where t.tgrelid = 'auth.users'::regclass and not t.tgisinternal" > "$out/auth_triggers.sql"
 
   echo "> migrations já aplicadas na Cloud"
-  cpsql -At -c "select version from supabase_migrations.schema_migrations order by 1" > "$out/cloud_migrations.txt" || : > "$out/cloud_migrations.txt"
+  # Cloud: supabase_migrations; pilha nossa (ensaio com a homologação): pdv_meta. Guarda só o prefixo numérico.
+  cpsql -At -c "select version from supabase_migrations.schema_migrations order by 1" > "$out/cloud_migrations.txt" 2>/dev/null \
+    || cpsql -At -c "select split_part(version, '_', 1) from pdv_meta.schema_migrations order by 1" > "$out/cloud_migrations.txt"
+  [ -s "$out/cloud_migrations.txt" ] || { echo "não achei a lista de migrations aplicadas na origem"; exit 1; }
+  echo "  $(wc -l < "$out/cloud_migrations.txt") migrations na origem"
 
   echo "> lista de imagens"
   cpsql -At -c "copy (select name from storage.objects where bucket_id = 'product-images' order by name) to stdout" > "$out/storage_objects.txt"
