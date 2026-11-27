@@ -1,6 +1,6 @@
 FROM node:20-alpine
 WORKDIR /app
-COPY package.json focus-nfce.js server.js ./
+COPY package.json focus-nfce.js zip.js xml-mensal.js server.js ./
 ENV NODE_ENV=production
 USER node
 EXPOSE 5100

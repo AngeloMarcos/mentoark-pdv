@@ -14,7 +14,7 @@
     "test:watch": "vitest",
     "test:perf": "vitest run src/lib/tax/engine.perf.test.ts",
     "lint:tax": "eslint src/lib/tax src/workers src/hooks/useTaxes.ts src/components/pdv/ProductVirtualList.tsx src/components/pdv/CartItemRow.tsx src/components/pdv/CartTaxSummary.tsx src/components/fiscal/TaxReportTab.tsx src/components/settings/ReformaTributariaCard.tsx src/lib/fiscal-utils.ts src/services/fiscal src/components/settings/FocusCredentialsCard.tsx",
-    "test:fiscal": "node --test infra/fiscal-service/focus-nfce.test.js"
+    "test:fiscal": "node --test infra/fiscal-service/focus-nfce.test.js infra/fiscal-service/xml-mensal.test.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

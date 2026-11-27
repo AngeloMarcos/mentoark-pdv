@@ -40,7 +40,43 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
   return payload as T;
 }
 
+export interface MonthlyXmlPackage {
+  blob: Blob;
+  filename: string;
+  total: number;
+  /** Notas cujo XML não veio da Focus (o resumo.csv aponta quais). */
+  faltando: number;
+}
+
+/** Pacote .zip com os XMLs do mês (autorizadas + cancelamentos) e o resumo.csv. */
+async function downloadMonthlyXml(tenantId: string, mes: string): Promise<MonthlyXmlPackage> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Sessão expirada. Entre novamente.");
+
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}/xml-mensal/${tenantId}?mes=${encodeURIComponent(mes)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    throw new Error("Sem conexão com o serviço fiscal. Verifique a internet e tente novamente.");
+  }
+  if (!res.ok) {
+    const payload = await res.json().catch(() => ({}));
+    throw new Error(payload?.message || `Serviço fiscal respondeu ${res.status}`);
+  }
+  const disposition = res.headers.get("content-disposition") || "";
+  return {
+    blob: await res.blob(),
+    filename: /filename="([^"]+)"/.exec(disposition)?.[1] || `nfce-${mes}.zip`,
+    total: Number(res.headers.get("x-notas-total") || 0),
+    faltando: Number(res.headers.get("x-xml-faltando") || 0),
+  };
+}
+
 export const fiscalApi = {
+  downloadMonthlyXml,
   emitNfce: (saleId: string) => call<FiscalDocument>("POST", "/nfce", { sale_id: saleId }),
   consult: (docId: string) => call<FiscalDocument>("POST", `/documents/${docId}/consultar`),
   cancel: (docId: string, justificativa: string) =>

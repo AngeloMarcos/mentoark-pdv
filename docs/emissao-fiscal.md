@@ -113,6 +113,16 @@ Isto é o que a taxa de implantação paga.
 Desconto dado no total da venda é rateado entre os itens (a SEFAZ exige que
 a soma dos descontos dos itens feche com o desconto da nota).
 
+## XML do mês para o contador
+
+Em Fiscal → Documentos, botão **XML do mês**: baixa um .zip com
+`autorizadas/<chave>-nfce.xml`, `cancelamentos/<chave>-can.xml` e um
+`resumo.csv` (abre no Excel). Só admin. Só do ambiente em uso; em homologação
+o nome do arquivo diz "sem valor fiscal". Os XMLs vêm da Focus na hora; se
+algum falhar, o resumo marca quais e o aviso na tela pede para baixar de novo.
+Rota: `GET /fiscal/v1/xml-mensal/:tenantId?mes=AAAA-MM`. Precisa da migração
+`20261127120000_xml_cancelamento.sql`.
+
 ## Testes
 
 ```bash
@@ -128,8 +138,7 @@ npm run test:fiscal   # montagem do JSON da NFC-e e leitura das respostas da Foc
 - **IBS/CBS na nota real:** o PDV calcula e mostra, mas ainda não manda os
   grupos da reforma para a Focus. Ligar quando a Focus documentar os campos
   para NFC-e no layout RTC.
-- Lei da Transparência (valor aproximado de tributos por item/IBPT).
 - Envio do DANFE/XML por WhatsApp (Evolution) e e-mail.
-- XML do mês para o contador; aviso de vencimento do certificado A1.
+- Aviso de vencimento do certificado A1.
 - Cadastro da empresa na Focus via API (hoje é pelo painel).
 - Tela de inutilização de numeração (a rota `POST /nfce/inutilizar` já existe).

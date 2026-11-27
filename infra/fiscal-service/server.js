@@ -14,6 +14,7 @@
 //   POST /documents/:id/consultar                                                      -> fiscal_documents
 //   POST /documents/:id/cancelar          <- { justificativa }                         (admin)
 //   POST /nfce/inutilizar                 <- { tenant_id, serie, numero_inicial, numero_final, justificativa } (admin)
+//   GET  /xml-mensal/:tenantId?mes=AAAA-MM                                             -> .zip para o contador (admin)
 //
 // Um worker interno reenvia/consulta notas "pendente"/"processando" a cada
 // minuto (queda de internet, timeout da SEFAZ, Focus fora do ar).
@@ -23,6 +24,8 @@
 const http = require("http");
 const crypto = require("crypto");
 const { buildNfcePayload, applyIbpt, mapFocusResponse, FiscalInputError } = require("./focus-nfce");
+const { buildZip } = require("./zip");
+const { monthRange, xmlFileName, buildResumoCsv } = require("./xml-mensal");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 const SERVICE_ROLE_KEY = process.env.SERVICE_ROLE_KEY;
@@ -113,6 +116,7 @@ function cors(req, res) {
     res.setHeader("Access-Control-Allow-Headers", "authorization, content-type, apikey, x-client-info");
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS");
     res.setHeader("Access-Control-Max-Age", "600");
+    res.setHeader("Access-Control-Expose-Headers", "content-disposition, x-notas-total, x-xml-faltando");
   }
 }
 
@@ -406,8 +410,106 @@ async function handleCancel(token, id, body) {
     status: "cancelado",
     status_sefaz: mapped.status_sefaz,
     mensagem_sefaz: mapped.mensagem_sefaz,
+    ...(mapped.xml_cancelamento_url ? { xml_cancelamento_url: mapped.xml_cancelamento_url } : {}),
     obs: `Cancelada: ${justificativa}`,
   });
+}
+
+// Baixa um arquivo da Focus. O token só vai para o host da própria Focus.
+async function fetchFocusFile(url, ambiente, token) {
+  const headers = {};
+  if (new URL(url).origin === new URL(FOCUS_URL[ambiente]).origin) {
+    headers.Authorization = `Basic ${Buffer.from(`${token}:`).toString("base64")}`;
+  }
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), FOCUS_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { headers, signal: ctrl.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return Buffer.from(await res.arrayBuffer());
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+const XML_MENSAL_LIMITE = 20000;
+
+// XMLs do mês (autorizadas + cancelamentos) e um resumo em CSV, num .zip.
+// Só do ambiente em uso: em homologação o pacote sai marcado como teste.
+async function handleXmlMensal(token, tenantId, mes) {
+  if (!isUuid(tenantId)) throw new HttpError(400, "tenant_id inválido");
+  const range = monthRange(mes);
+  if (!range) throw new HttpError(400, "Mês inválido. Use o formato AAAA-MM.");
+  if (!(await isTenantAdmin(token, tenantId))) throw new HttpError(403, "Apenas administradores podem baixar os XMLs");
+
+  const tenant = await getTenant(tenantId);
+  const fiscal = (tenant.settings && tenant.settings.fiscal) || {};
+  const ambiente = fiscal.ambiente === "producao" ? "producao" : "homologacao";
+  const creds = await getCredentials(tenantId);
+  const focusToken = tokenFor(creds, ambiente);
+
+  const docs = [];
+  const PAGE = 1000;
+  for (let offset = 0; ; offset += PAGE) {
+    const rows = await pg(
+      `/fiscal_documents?tenant_id=eq.${tenantId}&provider=eq.focus_nfe&ambiente=eq.${ambiente}` +
+        `&status=in.(autorizado,cancelado)` +
+        `&created_at=gte.${encodeURIComponent(range.inicio)}&created_at=lt.${encodeURIComponent(range.fim)}` +
+        `&select=id,ref,numero_nota,serie,chave_acesso,status,valor_total,valor_impostos,contingencia,created_at,xml_url,xml_cancelamento_url` +
+        `&order=serie.asc,numero_nota.asc&limit=${PAGE}&offset=${offset}`
+    );
+    docs.push(...(rows || []));
+    if (!rows || rows.length < PAGE) break;
+    if (docs.length > XML_MENSAL_LIMITE) throw new HttpError(413, "Mês com notas demais para um pacote só. Fale com o suporte.");
+  }
+
+  // Canceladas antes de o serviço guardar o link do XML de cancelamento: pergunta à Focus uma vez e grava.
+  for (const d of docs.filter((x) => x.status === "cancelado" && !x.xml_cancelamento_url && x.ref)) {
+    try {
+      const r = await focus(ambiente, focusToken, "GET", `/v2/nfce/${encodeURIComponent(d.ref)}?completa=0`);
+      const mapped = mapFocusResponse(r.status, r.body, r.base);
+      if (mapped.xml_cancelamento_url) {
+        d.xml_cancelamento_url = mapped.xml_cancelamento_url;
+        await updateDocument(d.id, { xml_cancelamento_url: d.xml_cancelamento_url });
+      }
+    } catch (err) {
+      console.error(`[xml-mensal] consulta do cancelamento ${d.id}: ${err.message}`);
+    }
+  }
+
+  // O XML de cada nota e, se cancelada, o do evento de cancelamento.
+  const jobs = [];
+  for (const d of docs) {
+    if (d.xml_url) jobs.push({ doc: d, tipo: "nota", url: d.xml_url });
+    if (d.status === "cancelado" && d.xml_cancelamento_url) jobs.push({ doc: d, tipo: "cancelamento", url: d.xml_cancelamento_url });
+  }
+
+  const files = [];
+  const faltando = new Set(docs.filter((d) => !d.xml_url).map((d) => d.id));
+  let next = 0;
+  async function worker() {
+    while (next < jobs.length) {
+      const job = jobs[next++];
+      try {
+        files.push({ name: xmlFileName(job.doc, job.tipo), data: await fetchFocusFile(job.url, ambiente, focusToken) });
+      } catch (err) {
+        console.error(`[xml-mensal] ${job.doc.id} ${job.tipo}: ${err.message}`);
+        if (job.tipo === "nota") faltando.add(job.doc.id);
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: 5 }, worker));
+  files.sort((a, b) => a.name.localeCompare(b.name));
+  files.unshift({ name: "resumo.csv", data: buildResumoCsv(docs, faltando) });
+
+  const cnpj = String(fiscal.cnpj || tenant.document || "").replace(/\D/g, "") || "empresa";
+  const sufixo = ambiente === "homologacao" ? "-HOMOLOGACAO-sem-valor-fiscal" : "";
+  return {
+    filename: `nfce-${cnpj}-${mes}${sufixo}.zip`,
+    zip: buildZip(files),
+    total: docs.length,
+    faltando: faltando.size,
+  };
 }
 
 async function handleInutilizar(token, body) {
@@ -508,6 +610,17 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === "POST" && seg[0] === "documents" && seg[2] === "cancelar") {
       return json(res, 200, publicDoc(await handleCancel(token, seg[1], await readJson(req))));
+    }
+    if (req.method === "GET" && seg[0] === "xml-mensal" && seg[1]) {
+      const out = await handleXmlMensal(token, seg[1], url.searchParams.get("mes"));
+      res.writeHead(200, {
+        "Content-Type": "application/zip",
+        "Content-Length": out.zip.length,
+        "Content-Disposition": `attachment; filename="${out.filename}"`,
+        "X-Notas-Total": String(out.total),
+        "X-Xml-Faltando": String(out.faltando),
+      });
+      return res.end(out.zip);
     }
     return json(res, 404, { error: "not_found" });
   } catch (err) {

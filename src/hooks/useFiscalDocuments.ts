@@ -31,6 +31,7 @@ export interface FiscalDocument {
   mensagem_sefaz?: string | null;
   qrcode_url?: string | null;
   xml_url?: string | null;
+  xml_cancelamento_url?: string | null;
   contingencia?: boolean;
   tentativas?: number;
 }

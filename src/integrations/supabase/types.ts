@@ -761,6 +761,7 @@ export type Database = {
           status_sefaz: string | null
           tentativas: number
           xml_url: string | null
+          xml_cancelamento_url: string | null
           xml_content: string | null
         }
         Insert: {
@@ -790,6 +791,7 @@ export type Database = {
           status_sefaz?: string | null
           tentativas?: number
           xml_url?: string | null
+          xml_cancelamento_url?: string | null
           xml_content?: string | null
         }
         Update: {
@@ -819,6 +821,7 @@ export type Database = {
           status_sefaz?: string | null
           tentativas?: number
           xml_url?: string | null
+          xml_cancelamento_url?: string | null
           xml_content?: string | null
         }
         Relationships: []

@@ -234,6 +234,7 @@ function mapFocusResponse(httpStatus, body, baseUrl) {
   if (body.protocolo || body.numero_protocolo) out.protocolo = String(body.protocolo || body.numero_protocolo);
   if (body.caminho_danfe) out.danfe_url = link(body.caminho_danfe);
   if (body.caminho_xml_nota_fiscal) out.xml_url = link(body.caminho_xml_nota_fiscal);
+  if (body.caminho_xml_cancelamento) out.xml_cancelamento_url = link(body.caminho_xml_cancelamento);
   if (body.qrcode_url) out.qrcode_url = body.qrcode_url;
   if (body.contingencia_offline === true || body.contingencia_offline === "true") out.contingencia = true;
   return out;

@@ -10,6 +10,7 @@ import { Eye, Copy, Printer, Ban, FileText, Loader2, RefreshCw, ExternalLink, Wi
 import { useFiscalDocuments, useCancelFiscalDocument, useConsultFiscalDocument, isRealFiscalDocument, FiscalDocument } from "@/hooks/useFiscalDocuments";
 import { FISCAL_STATUS_COLORS, FISCAL_STATUS_LABELS } from "@/lib/fiscal-utils";
 import { DanfeViewer } from "./DanfeViewer";
+import { MonthlyXmlExport } from "./MonthlyXmlExport";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -114,6 +115,7 @@ export function FiscalDocumentsTab() {
             <SelectItem value="nf">NF-e</SelectItem>
           </SelectContent>
         </Select>
+        <MonthlyXmlExport />
       </div>
 
       <Card>
