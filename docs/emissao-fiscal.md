@@ -41,34 +41,12 @@ Estrutura, deploy e rollback: `infra/homolog/README.md`. Atualizar o serviço:
 copiar `infra/fiscal-service/` para `/opt/pdv-homolog/fiscal-service/` e
 `docker compose up -d --build fiscal`.
 
-## Colocar no ar (uma vez)
+## Produção
 
-> As instruções abaixo são para a instalação antiga em `/opt/pdv-backend`,
-> que **não existe mais** na VPS. A produção hoje roda no Lovable + Supabase
-> Cloud; ver a decisão pendente sobre onde o serviço fiscal de produção vai rodar.
-
-Na VPS, em `/opt/pdv-backend/` (mesmo lugar do `docker-compose.yml` do backend):
-
-1. Aplicar a migração:
-   ```bash
-   docker exec -i <container-postgres> psql -U mentoark -d pdv_prod \
-     < supabase/migrations/20261117120000_emissao_fiscal_real.sql
-   ```
-2. Copiar `infra/fiscal-service/` e os novos `docker-compose.yml` e
-   `gateway.conf` para `/opt/pdv-backend/`.
-3. No `docker-compose.yml`, trocar `__JWT_SECRET__` e
-   `__SERVICE_ROLE_KEY__` (os mesmos já usados por `auth`/`rest`).
-4. Subir o serviço e recarregar o gateway:
-   ```bash
-   docker compose up -d --build fiscal
-   docker compose restart gateway
-   curl -s https://pdvapi.mentoark.com.br/fiscal/v1/health   # {"ok":true}
-   ```
-5. Rebuild do frontend (`/opt/pdv/prod`) com o código desta branch. Não
-   precisa de variável nova: o app usa `<VITE_SUPABASE_URL>/fiscal/v1`.
-   Para apontar para outro lugar, use `VITE_FISCAL_API_URL`.
-
-Uso de memória do serviço: limite de 96 MB, normalmente bem menos.
+O serviço de produção é o `pdv_prd_fiscal`, na pilha `/opt/pdv-prod` da VPS,
+com `FOCUS_URL_PRODUCAO=https://api.focusnfe.com.br` (nota com valor fiscal
+quando a empresa escolhe o ambiente "Produção"). Instalação, deploy e a
+migração do Supabase Cloud: `infra/prod/README.md`.
 
 ## Implantar um comerciante novo (checklist)
 

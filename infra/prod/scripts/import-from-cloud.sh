@@ -66,7 +66,8 @@ do_dump() {
 
   echo "> extensões e papéis usados no dump (o restore precisa deles)"
   cpsql -At -c "select extname || ' ' || n.nspname from pg_extension e join pg_namespace n on n.oid = e.extnamespace order by 1" > "$out/extensions.txt"
-  grep -oE 'TO "?[a-z_]+"?' "$out/public.sql" | sort | uniq -c > "$out/roles_in_policies.txt" || true
+  { grep -E '^CREATE POLICY' "$out/public.sql" || true; } | grep -oE ' TO [^ ]+( *, *[^ ]+)*' | tr ',' '\n' \
+    | sed -E 's/^ TO //; s/[" ]//g' | sort | uniq -c > "$out/roles_in_policies.txt"
 
   chmod 600 "$out"/*
   echo "dump em $out"
@@ -83,26 +84,32 @@ do_restore() {
   cd "$ROOT"
   docker compose stop rest storage fiscal auth > /dev/null
 
-  # 1. public do zero, com as extensões no schema "extensions" como na Cloud
+  # 1. public do zero; extensões no mesmo schema da origem (na Cloud, "extensions")
   lpsql <<'SQL'
 drop schema if exists public cascade;
 create schema public;
 create schema if not exists extensions;
 grant usage on schema extensions to anon, authenticated, service_role;
-create extension if not exists pgcrypto with schema extensions;
-create extension if not exists "uuid-ossp" with schema extensions;
 alter database pdv set search_path = "$user", public, extensions;
+SQL
+  while read -r ext sch; do
+    case "$ext" in plpgsql|"") continue ;; esac
+    if [ -n "$(lpsql -At -c "select 1 from pg_available_extensions where name = '$ext'")" ]; then
+      lpsql -c "create schema if not exists \"$sch\"; drop extension if exists \"$ext\" cascade; create extension \"$ext\" with schema \"$sch\";" \
+        && echo "  extensão $ext em $sch"
+    else
+      echo "  extensão $ext não existe no Postgres puro (recurso só da Supabase): ignorada"
+    fi
+  done < "$src/extensions.txt"
+  lpsql <<'SQL'
 grant usage on schema public to postgres, anon, authenticated, service_role;
 alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
 alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
 alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
 SQL
 
-  # 2. estrutura + dados do public (uma transação: ou entra tudo, ou nada)
-  { echo 'set search_path = public, extensions;'; cat "$src/public.sql"; } | lpsql -1 > "$src/restore.log" 2>&1 \
-    || { echo "FALHA no public.sql — ver $src/restore.log"; tail -20 "$src/restore.log"; docker compose start auth rest storage fiscal > /dev/null; exit 1; }
-
-  # 3. usuários: só as colunas que existem nos dois lados (o GoTrue da Cloud pode ser mais novo)
+  # 2. usuários antes do public (as tabelas do public têm FK para auth.users).
+  #    Só as colunas que existem nos dois lados (o GoTrue da Cloud pode ser mais novo).
   docker cp "$src/auth_users.jsonl" "$DB_CT:/tmp/auth_users.jsonl"
   docker cp "$src/auth_identities.jsonl" "$DB_CT:/tmp/auth_identities.jsonl"
   lpsql -1 <<'SQL'
@@ -127,6 +134,11 @@ end $$;
 select 'usuarios: ' || pg_temp.load_auth('users', '_u');
 select 'identidades: ' || pg_temp.load_auth('identities', '_i');
 SQL
+
+  # 3. estrutura + dados do public (uma transação: ou entra tudo, ou nada)
+  #    (o dump traz o próprio CREATE SCHEMA public, que já criamos acima)
+  { echo 'set search_path = public, extensions;'; sed -E '/^CREATE SCHEMA "?public"?;$/d' "$src/public.sql"; } | lpsql -1 > "$src/restore.log" 2>&1 \
+    || { echo "FALHA no public.sql — ver $src/restore.log"; tail -20 "$src/restore.log"; docker compose start auth rest storage fiscal > /dev/null; exit 1; }
 
   # 4. triggers em auth.users só agora (não disparam na importação)
   if [ -s "$src/auth_triggers.sql" ]; then

@@ -1,0 +1,50 @@
+name: Deploy produção
+
+# Publica a main em https://pdv.mentoark.com.br (pilha /opt/pdv-prod na VPS).
+# Só manual, pela aba Actions. Requer o secret PROD_SSH_KEY.
+
+on:
+  workflow_dispatch:
+    inputs:
+      parte:
+        description: "O que publicar"
+        type: choice
+        options: [tudo, --frontend, --migrations, --infra]
+        default: tudo
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Testes
+        run: npm test && npm run test:fiscal
+
+      - name: Configurar SSH
+        env:
+          SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+        run: |
+          test -n "$SSH_KEY" || { echo "::error::Secret PROD_SSH_KEY não configurado"; exit 1; }
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t ed25519 147.93.9.172 >> ~/.ssh/known_hosts
+
+      - name: Deploy
+        run: |
+          if [ "${{ inputs.parte }}" = tudo ]; then bash infra/prod/deploy.sh; else bash infra/prod/deploy.sh "${{ inputs.parte }}"; fi
