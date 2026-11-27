@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import { Product, ProductInput } from "@/hooks/useProducts";
 import { FiscalProductTab, FiscalFields } from "@/components/fiscal/FiscalProductTab";
 import { productTaxFields } from "@/lib/tax/engine";
+import { useCompanySettings } from "@/hooks/useCompanySettings";
+import { toast } from "sonner";
 
 const UNITS = [
   { value: "UN", label: "UN — Unidade" },
@@ -182,7 +184,12 @@ export function ProductFormDialog({ open, onOpenChange, editingProduct, onSubmit
     syncForm(open);
   }, [open, syncForm]);
 
+  const { settings: companySettings } = useCompanySettings();
+  const emiteNfce = !!(companySettings.fiscal as { emite_nfce?: boolean } | undefined)?.emite_nfce;
+  const [tab, setTab] = useState("geral");
+
   const handleOpenChange = useCallback((isOpen: boolean) => {
+    if (isOpen) setTab("geral");
     syncForm(isOpen);
     onOpenChange(isOpen);
   }, [syncForm, onOpenChange]);
@@ -226,6 +233,12 @@ export function ProductFormDialog({ open, onOpenChange, editingProduct, onSubmit
     // Mark all required as touched
     setTouched(new Set(["name", "sale_price"]));
     if (!isFormValid) return;
+    // Quem emite NFC-e não pode cadastrar produto sem NCM: a SEFAZ recusaria a nota.
+    if (emiteNfce && String((form as FiscalFields).ncm || "").replace(/[^0-9]/g, "").length !== 8) {
+      setTab("fiscal");
+      toast.error("Informe o NCM (8 dígitos). Use o botão Buscar se não souber o código.");
+      return;
+    }
     await onSubmit(form);
   };
 
@@ -266,7 +279,7 @@ export function ProductFormDialog({ open, onOpenChange, editingProduct, onSubmit
           </p>
         </DialogHeader>
 
-        <Tabs defaultValue="geral" className="pt-1">
+        <Tabs value={tab} onValueChange={setTab} className="pt-1">
           <TabsList className="grid w-full grid-cols-2 h-9">
             <TabsTrigger value="geral" className="text-xs h-7">Geral</TabsTrigger>
             <TabsTrigger value="fiscal" className="text-xs h-7">Fiscal</TabsTrigger>
@@ -472,6 +485,7 @@ export function ProductFormDialog({ open, onOpenChange, editingProduct, onSubmit
           <TabsContent value="fiscal" className="mt-3">
             <FiscalProductTab
               values={form as FiscalFields}
+              productName={form.name}
               onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
             />
           </TabsContent>

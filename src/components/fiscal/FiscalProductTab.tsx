@@ -4,10 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ExternalLink, HelpCircle, ScanLine, Loader2 } from "lucide-react";
+import { HelpCircle, ScanLine, Loader2 } from "lucide-react";
 import { useBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { toast } from "sonner";
 import { CST_IBSCBS_OPTIONS, type ProductTax } from "@/lib/tax/engine";
+import { NcmPicker } from "@/components/fiscal/NcmPicker";
 
 export interface FiscalFields {
   ncm?: string | null;
@@ -30,6 +31,8 @@ interface Props {
   onChange: (patch: Partial<FiscalFields>) => void;
   /** "simples" or "normal" — decides between CSOSN and CST */
   regime?: "simples" | "normal";
+  /** Nome do produto, usado como sugestão na busca de NCM. */
+  productName?: string;
 }
 
 const ORIGEM_OPTS = [
@@ -59,14 +62,7 @@ function FieldTip({ text }: { text: string }) {
   );
 }
 
-function maskNcm(v: string): string {
-  const d = v.replace(/\D/g, "").slice(0, 8);
-  if (d.length <= 4) return d;
-  if (d.length <= 6) return `${d.slice(0, 4)}.${d.slice(4)}`;
-  return `${d.slice(0, 4)}.${d.slice(4, 6)}.${d.slice(6)}`;
-}
-
-export function FiscalProductTab({ values, onChange, regime = "simples" }: Props) {
+export function FiscalProductTab({ values, onChange, regime = "simples", productName }: Props) {
   const [scanActive, setScanActive] = useState(false);
   const { pause, resume } = useBarcodeScanner(
     (code) => {
@@ -102,21 +98,7 @@ export function FiscalProductTab({ values, onChange, regime = "simples" }: Props
           <Label className="flex items-center gap-1">
             NCM <FieldTip text="Nomenclatura Comum do Mercosul — 8 dígitos. Identifica a classificação fiscal do produto." />
           </Label>
-          <div className="flex gap-2">
-            <Input
-              value={values.ncm || ""}
-              onChange={(e) => onChange({ ncm: maskNcm(e.target.value) })}
-              placeholder="0000.00.00"
-            />
-            <a
-              href="https://www.gov.br/receitafederal/pt-br/assuntos/aduana-e-comercio-exterior/classificacao-fiscal-de-mercadorias"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center text-xs text-primary underline gap-1 self-center"
-            >
-              <ExternalLink className="w-3 h-3" /> Consultar
-            </a>
-          </div>
+          <NcmPicker value={values.ncm} onChange={(ncm) => onChange({ ncm })} productName={productName} />
         </div>
 
         <div className="space-y-1">
