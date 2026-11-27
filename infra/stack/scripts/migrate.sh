@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
-# Aplica as migrations pendentes de /opt/pdv-homolog/migrations, em ordem.
+# Aplica as migrations pendentes de <pilha>/migrations, em ordem.
 # Cada arquivo roda numa transação única junto com o registro em
 # pdv_meta.schema_migrations: ou entra inteiro e fica registrado, ou nada muda.
-# Uso: /opt/pdv-homolog/scripts/migrate.sh [--dry-run]
+# Uso: /opt/<pilha>/scripts/migrate.sh [--dry-run]
 set -euo pipefail
+source "$(dirname "$0")/env.sh"
 
-DIR="/opt/pdv-homolog/migrations"
+DIR="$ROOT/migrations"
 DRY="${1:-}"
-psql_db() { docker exec -i pdv_hml_db psql -U postgres -d pdv -v ON_ERROR_STOP=1 -q "$@"; }
+psql_db() { docker exec -i "$DB_CT" psql -U postgres -d pdv -v ON_ERROR_STOP=1 -q "$@"; }
 
 psql_db <<'SQL'
 create schema if not exists pdv_meta;
@@ -26,7 +27,7 @@ for f in $(ls "$DIR"/*.sql | sort); do
   if [ "$DRY" = "--dry-run" ]; then echo "pendente: $name"; continue; fi
   echo "aplicando: $name"
   # Backup leve antes de cada lote de mudanças de schema.
-  if [ "$pending" = 1 ]; then /opt/pdv-homolog/scripts/backup.sh > /dev/null; fi
+  if [ "$pending" = 1 ]; then "$ROOT/scripts/backup.sh" > /dev/null; fi
   { cat "$f"; printf "\ninsert into pdv_meta.schema_migrations(version) values ('%s');\n" "$name"; } \
     | psql_db -1
 done

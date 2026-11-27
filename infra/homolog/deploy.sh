@@ -34,7 +34,7 @@ if [ "$MODE" = all ] || [ "$MODE" = --frontend ]; then
 
   echo "> Build"
   mkdir -p dist   # o plugin de versão grava em dist/version.json mesmo com --outDir
-  VITE_SUPABASE_URL="$URL" VITE_SUPABASE_PUBLISHABLE_KEY="$ANON" \
+  VITE_SUPABASE_URL="$URL" VITE_SUPABASE_PUBLISHABLE_KEY="$ANON" VITE_REALTIME_ENABLED=false \
     npx vite build --outDir "$OUT" --emptyOutDir
   cp dist/version.json "$OUT/version.json"   # o plugin de versão grava sempre em dist/
   printf 'User-agent: *\nDisallow: /\n' > "$OUT/robots.txt"

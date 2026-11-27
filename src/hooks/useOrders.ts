@@ -122,41 +122,72 @@ export interface CreateOrderInput {
   delivery?: Partial<DeliveryInfo> & { estimated_minutes?: number | null };
 }
 
-/** Subscribes to realtime changes on orders for the current tenant. */
+/** Sem servidor de Realtime (VPS), o build define VITE_REALTIME_ENABLED=false. */
+const REALTIME_ENABLED = import.meta.env.VITE_REALTIME_ENABLED !== 'false';
+/** Intervalo de atualização quando não há Realtime: pedido novo aparece na cozinha em até 5 s. */
+const ORDERS_POLL_MS = 5000;
+
+/**
+ * Mantém Cozinha/Garçom/Pedidos atualizados: pelo Realtime quando existe e o
+ * canal está de pé; senão, consultando a cada 5 s enquanto a tela está visível.
+ */
 export function useOrdersRealtime() {
   const qc = useQueryClient();
   const { currentTenant } = useTenant();
 
   useEffect(() => {
     if (!currentTenant?.id) return;
-    const channel = supabase
-      .channel(`orders-${currentTenant.id}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders', filter: `tenant_id=eq.${currentTenant.id}` },
-        () => qc.invalidateQueries({ queryKey: ['orders'] })
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'order_items', filter: `tenant_id=eq.${currentTenant.id}` },
-        () => qc.invalidateQueries({ queryKey: ['orders'] })
-      )
-      .subscribe((status) => {
-        // Após queda de rede/aba suspensa o canal pode morrer: revalida ao reconectar
-        if (status === 'SUBSCRIBED') qc.invalidateQueries({ queryKey: ['orders'] });
-      });
+    const refresh = () => qc.invalidateQueries({ queryKey: ['orders'] });
+
+    let poll: ReturnType<typeof setInterval> | null = null;
+    const startPolling = () => {
+      if (poll) return;
+      poll = setInterval(() => {
+        if (document.visibilityState === 'visible') refresh();
+      }, ORDERS_POLL_MS);
+    };
+    const stopPolling = () => {
+      if (poll) clearInterval(poll);
+      poll = null;
+    };
+
+    const channel = REALTIME_ENABLED
+      ? supabase
+          .channel(`orders-${currentTenant.id}`)
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'orders', filter: `tenant_id=eq.${currentTenant.id}` },
+            refresh
+          )
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'order_items', filter: `tenant_id=eq.${currentTenant.id}` },
+            refresh
+          )
+          .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              // Após queda de rede/aba suspensa o canal pode morrer: revalida ao reconectar
+              stopPolling();
+              refresh();
+            } else {
+              startPolling();
+            }
+          })
+      : null;
+    if (!channel) startPolling();
 
     const resync = () => {
       if (document.visibilityState !== 'visible') return;
-      qc.invalidateQueries({ queryKey: ['orders'] });
+      refresh();
     };
     document.addEventListener('visibilitychange', resync);
     window.addEventListener('online', resync);
 
     return () => {
+      stopPolling();
       document.removeEventListener('visibilitychange', resync);
       window.removeEventListener('online', resync);
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [currentTenant?.id, qc]);
 }
